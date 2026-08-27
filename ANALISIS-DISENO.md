@@ -26,7 +26,7 @@ Desde que se escribió este análisis (commit `da33231`) hubo dos commits más e
 | Paso 2 — backend (datasets, calculadora, repos, endpoints, validación, CORS, `EVENTOS.md`) | ✅ Hecho |
 | Paso 3 — frontend: sistema visual (fuentes, tokens de color) | ✅ Hecho |
 | Paso 4 — frontend: estado y contexto de sesión (rol/sede/período) | ✅ Hecho |
-| Paso 5 — frontend: shell (sidebar/header con los datos y filtros reales) | ⏳ Pendiente, sin empezar |
+| Paso 5 — frontend: shell (sidebar/header con los datos y filtros reales) | ✅ Hecho |
 | Paso 6 — frontend: primitivas de gráficos | ⏳ Pendiente, sin empezar |
 | Paso 7 — frontend: los 3 tableros | ⏳ Pendiente, sin empezar |
 
@@ -235,9 +235,14 @@ Reescribir las entidades del backend y espejarlas en el front. Es el paso que de
 
    Nota: la copia de la bajada del panel izquierdo de la Pantalla 0 (el subtítulo debajo del `<h1>`) no estaba transcripta en la auditoría original; se redactó una equivalente en espíritu al diseño, a falta del texto exacto del `.dc.html`. Ajustar si se detecta diferencia contra el prototipo, igual que con los `GASTO_COLORS` del Paso 3.
 
-### Paso 5 — Frontend: shell ⏳ Pendiente
-1. `sidebar.component.tsx` — navy `#1A2B48`, 232px, los 5 ítems del diseño (con "Eventos académicos" como sub-ítem que hace scroll a `#eventos`, y los 2 inactivos), card "INGESTA" al pie. Filtrar ítems según el rol activo.
-2. `dashboard-header.component.tsx` — títulos del diseño; `SiteFilter` y `PeriodFilter` **controlados** contra el contexto y alimentados por `GET /filters`; label del período dinámico; **reemplazar `ExportReportButton` por "Cambiar rol"**.
+### Paso 5 — Frontend: shell ✅ Hecho
+1. `sidebar.component.tsx` — navy `#1A2B48`, 232px, los 5 ítems del diseño ("Eventos académicos" como sub-ítem que intenta el scroll a `#eventos`, y los 2 inactivos: "Fuentes de datos" con hint "9", "Permisos por rol"), card "INGESTA" al pie.
+2. `dashboard-header.component.tsx` — títulos del diseño ("Rendimiento académico" / "Situación económica y financiera"); Sede y Período **controlados** contra el contexto de sesión y alimentados por `GET /filters` (`useFilters`, escrito en el Paso 4 pero sin consumidores hasta ahora); label del período dinámico ("Cuatrimestre" en académica, "Período" en el resto); **reemplazado `ExportReportButton` por "Cambiar rol"** (llama a `changeRole()` del contexto).
+
+Notas de la implementación:
+- Se decodificó el bundle publicado del prototipo (`prototipo.md` → artefacto de Claude Design) para extraer el `<aside>`/`<header>` y la lógica de `nav` tal cual, en vez de derivar el layout solo de la auditoría original. Esto corrigió un supuesto de este plan: **el sidebar no filtra ítems según el rol activo**. En el prototipo, "Académica" y "Financiera" están siempre habilitados y clickeables (cambian `st.rol`, que en el diseño es a la vez "rol logueado" y "tablero visible"); nuestro código ya se comportaba así desde antes de este paso (no había gating por rol), así que no hubo que tocar nada al respecto — la itemización original de este documento estaba equivocada, no el código.
+- El sub-ítem "Eventos académicos" nunca se resalta como activo (`act(false)` fijo en el prototipo, incluso estando en esa sección) y siempre intenta el `scrollTo("#eventos")`; como el Paso 7 todavía no anida `EventsDashboard` dentro de `financial-dashboard.component.tsx` con ese id, el scroll no encuentra nodo y no hace nada — mismo comportamiento defensivo que el propio prototipo (`if (el)`). Se implementó ya así, para que empiece a funcionar solo cuando el Paso 7 agregue el ancla.
+- Verificado en el navegador (backend + frontend corriendo): sidebar y header calcan el prototipo pixel a pixel (colores, tipografías, espaciados); cambiar "Sede" dispara refetch de los 3 tableros con la query correcta (`GET .../academic?sede=Sede+Belgrano&cuatrimestre=2026-1C`, confirmado por Network); cambiar de "Académica" a "Financiera" actualiza eyebrow/título y el label de período de "Cuatrimestre" a "Período"; "Cambiar rol" vuelve a la Pantalla 0 conservando sede/período. No se pudo ver el *contenido* de los 3 tableros porque siguen rotos por el motivo ya documentado (Paso 7): se verificó con un error boundary temporal (no commiteado) que aisló el crash y confirmó que sidebar/header renderizan bien alrededor de él.
 
 ### Paso 6 — Frontend: primitivas de gráficos (reutilizables entre los 3 tableros) ⏳ Pendiente
 Crear en `presentation/components/charts/`:
