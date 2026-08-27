@@ -9,10 +9,12 @@ export class RecordEventUseCase {
   execute(dto: RecordEventDto): Promise<void> {
     return this.analyticsRepository.recordEvent({
       id: randomUUID(),
+      eventId: dto.eventId,
       sourceModule: dto.sourceModule,
       eventType: dto.eventType,
       payload: dto.payload,
-      occurredAt: new Date().toISOString(),
+      occurredAt: dto.occurredAt,
+      receivedAt: new Date().toISOString(),
     });
   }
 }
