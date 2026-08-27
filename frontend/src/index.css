@@ -24,18 +24,20 @@
   --bar-scale-3: var(--blue);
 
   /*
-   * 7 azules para la barra apilada de gastos administrativos (GASTO_COLORS del prototipo).
-   * El audit original no dejó registrados los 7 valores exactos del .dc.html (solo describe
-   * "paleta de 7 azules"): esta es una escala interpolada dentro de la misma familia navy/blue,
-   * de más clara a más oscura. Ajustar contra el prototipo si se detectan diferencias.
+   * 7 azules para la barra apilada de gastos administrativos (GASTO_COLORS del prototipo,
+   * de más oscuro a más claro — así vienen ordenados en el array). Valores confirmados
+   * decodificando el bundle del prototipo (ver Paso 6 en ANALISIS-DISENO.md); reemplazan la
+   * escala interpolada que se había usado como aproximación en el Paso 3. El backend ya sirve
+   * estos mismos 7 valores por categoría (`AdministrativeExpense.color`, `analytics.dataset.ts`),
+   * así que en la práctica el frontend no necesita este token — queda como referencia.
    */
-  --gasto-color-1: #eaf0f8;
-  --gasto-color-2: #d7e1f0;
-  --gasto-color-3: #c0d3e8;
-  --gasto-color-4: #a3bedd;
-  --gasto-color-5: #6d94c7;
-  --gasto-color-6: #3e6fae;
-  --gasto-color-7: var(--blue);
+  --gasto-color-1: #1a2b48;
+  --gasto-color-2: #2d5da1;
+  --gasto-color-3: #4b79b8;
+  --gasto-color-4: #6d94c7;
+  --gasto-color-5: #94b2d8;
+  --gasto-color-6: #bacde7;
+  --gasto-color-7: #dce5f1;
 
   --font-body: "Hanken Grotesk", system-ui, "Segoe UI", Roboto, sans-serif;
   --font-title: "Libre Caslon Text", Georgia, "Times New Roman", serif;

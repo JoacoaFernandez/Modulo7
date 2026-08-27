@@ -1,22 +1,45 @@
-// Presentation components: app-specific components composed from shadcn/ui primitives (components/ui).
-import { cn } from "@/lib/utils";
+// Presentation components: primitivas de gráficos, reutilizables entre los 3 tableros.
+// El diseño usa dos patrones de color por Delta.tone, ambos con los mismos 3 pares de colores
+// (chipOf/sign en Analitica Institucional.dc.html): un chip con fondo (solo en los KPI cards) y
+// texto de color plano en todo lo demás (deltas de materia, docente, facultad, saldo, gastos...).
+import type { DeltaTone } from "@/domain/entities/analytics.entity";
 
-export type TrendTone = "positive" | "warning" | "negative";
+// bg/fg exactos del prototipo: `chipBg: g===POS?"#E4F1EB":(g===NEG?"#F7E4E7":"#F1F3F6")`.
+const toneColors: Record<DeltaTone, { bg: string; fg: string }> = {
+  positive: { bg: "#E4F1EB", fg: "#127453" },
+  negative: { bg: "#F7E4E7", fg: "#A51C30" },
+  neutral: { bg: "#F1F3F6", fg: "#647188" },
+};
 
 interface TrendPillProps {
   label: string;
-  tone: TrendTone;
+  tone: DeltaTone;
 }
 
-const toneClasses: Record<TrendTone, string> = {
-  positive: "bg-green-50 text-green-700 border-green-200",
-  warning: "bg-amber-50 text-amber-700 border-amber-200",
-  negative: "bg-red-50 text-red-700 border-red-200",
-};
-
+// Chip con fondo: solo el delta de los 4 KPI cards de cada tablero.
 export function TrendPill({ label, tone }: TrendPillProps) {
+  const { bg, fg } = toneColors[tone];
   return (
-    <span className={cn("inline-flex w-fit items-center rounded-full border px-2 py-0.5 text-xs font-medium", toneClasses[tone])}>
+    <span
+      className="inline-flex w-fit items-center whitespace-nowrap rounded text-[11.5px] font-medium"
+      style={{ background: bg, color: fg, padding: "4px 6px" }}
+    >
+      {label}
+    </span>
+  );
+}
+
+interface DeltaLabelProps {
+  label: string;
+  tone: DeltaTone;
+  className?: string;
+}
+
+// Texto de color plano, sin fondo: el patrón que usa todo lo demás (leyendas de gráficos,
+// filas de bar-list, ejes de barras agrupadas).
+export function DeltaLabel({ label, tone, className }: DeltaLabelProps) {
+  return (
+    <span className={className} style={{ color: toneColors[tone].fg }}>
       {label}
     </span>
   );

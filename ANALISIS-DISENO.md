@@ -27,7 +27,7 @@ Desde que se escribió este análisis (commit `da33231`) hubo dos commits más e
 | Paso 3 — frontend: sistema visual (fuentes, tokens de color) | ✅ Hecho |
 | Paso 4 — frontend: estado y contexto de sesión (rol/sede/período) | ✅ Hecho |
 | Paso 5 — frontend: shell (sidebar/header con los datos y filtros reales) | ✅ Hecho |
-| Paso 6 — frontend: primitivas de gráficos | ⏳ Pendiente, sin empezar |
+| Paso 6 — frontend: primitivas de gráficos | ✅ Hecho |
 | Paso 7 — frontend: los 3 tableros | ⏳ Pendiente, sin empezar |
 
 **Hallazgo del Paso 3 (ya resuelto por el Paso 4):** el Paso 1 se había completado solo del lado del contrato (`analytics.entity.ts` con los tipos nuevos), pero nada más del frontend lo consumía. El Paso 4 migró el cliente HTTP, el repositorio, los use cases y el hook de datos a ese contrato, y agregó la Pantalla 0 (selector de rol) y el contexto de sesión. Lo que **sigue** roto, y es explícitamente trabajo del Paso 7 (no de un paso anterior sin hacer):
@@ -244,16 +244,24 @@ Notas de la implementación:
 - El sub-ítem "Eventos académicos" nunca se resalta como activo (`act(false)` fijo en el prototipo, incluso estando en esa sección) y siempre intenta el `scrollTo("#eventos")`; como el Paso 7 todavía no anida `EventsDashboard` dentro de `financial-dashboard.component.tsx` con ese id, el scroll no encuentra nodo y no hace nada — mismo comportamiento defensivo que el propio prototipo (`if (el)`). Se implementó ya así, para que empiece a funcionar solo cuando el Paso 7 agregue el ancla.
 - Verificado en el navegador (backend + frontend corriendo): sidebar y header calcan el prototipo pixel a pixel (colores, tipografías, espaciados); cambiar "Sede" dispara refetch de los 3 tableros con la query correcta (`GET .../academic?sede=Sede+Belgrano&cuatrimestre=2026-1C`, confirmado por Network); cambiar de "Académica" a "Financiera" actualiza eyebrow/título y el label de período de "Cuatrimestre" a "Período"; "Cambiar rol" vuelve a la Pantalla 0 conservando sede/período. No se pudo ver el *contenido* de los 3 tableros porque siguen rotos por el motivo ya documentado (Paso 7): se verificó con un error boundary temporal (no commiteado) que aisló el crash y confirmó que sidebar/header renderizan bien alrededor de él.
 
-### Paso 6 — Frontend: primitivas de gráficos (reutilizables entre los 3 tableros) ⏳ Pendiente
-Crear en `presentation/components/charts/`:
-- `grouped-bar-chart.component.tsx` — barras agrupadas + grilla punteada + tooltip en hover. **Lo usan 3 bloques**: aprobación por materia (3 series), balance ingresos/egresos (2 series), frecuencia de eventos (1 serie).
-- `line-chart.component.tsx` — SVG multi-serie con grilla y puntos (tendencia por facultad).
-- `area-line-chart.component.tsx` — variante con `<polygon>` de relleno (saldo acumulado, concurrencia).
-- `bar-list.component.tsx` — reemplazo del actual `approval-rate-bar-list`, generalizado para docentes, tienda, presentismo por tipo.
-- `stacked-bar.component.tsx` — barra apilada 100% (gastos).
-- Portar las funciones de escala del diseño (`x(n) = 44 + n*(584/5)`, `y(v) = 16 + (1-(v-50)/42)*160`, etc.) a `lib/chart-scale.ts`.
+### Paso 6 — Frontend: primitivas de gráficos (reutilizables entre los 3 tableros) ✅ Hecho
+Creado en `presentation/components/charts/`:
+- `grouped-bar-chart.component.tsx` — barras agrupadas + grilla punteada + tooltip en hover. Cubre los 3 usos del diseño (aprobación por materia con 3 series, balance ingresos/egresos con 2, frecuencia de eventos con 1) vía props (`seriesColors`, `columnGap`/`columnPadding`/`barGap` por instancia, `tooltipAnchorHeight` por columna porque el prototipo no siempre ancla el tooltip en la última barra — balance lo ancla en "Ingresos", no en "Egresos"). El hover queda con estado interno (`useState`), no hace falta cablearlo desde afuera.
+- `chart-tooltip.component.tsx` — el tooltip que comparten las 3 barras agrupadas: título opcional + filas swatch/label/valor, y una fila final "emphasized" (Resultado, Presentismo) con divisor y negrita.
+- `line-chart.component.tsx` — SVG multi-serie con grilla, puntos y leyenda (nombre + último valor + delta). Tendencia por facultad.
+- `area-line-chart.component.tsx` — variante con `<polygon>` de relleno + cabecera propia (label + valor grande). Saldo acumulado y concurrencia de eventos comparten el mismo componente (ambos en verde en el prototipo).
+- `bar-list.component.tsx` — reemplazo de `approval-rate-bar-list`, con dos variantes: `"inline"` (nombre+subtítulo / barra / valor / delta opcional — docentes, tienda, y también sirve para la leyenda de gastos vía `columns` y omitiendo `bar`) y `"stacked"` (label+valor arriba, barra de ancho completo abajo — presentismo por tipo).
+- `stacked-bar.component.tsx` — la tira de segmentos 100% de gastos administrativos (solo la barra; la leyenda de abajo es un `BarList`).
+- `lib/chart-scale.ts` — `createScale`/`buildPolylinePoints`/`buildDots`/`buildAreaPoints`/`buildGridRows`, generalizando las funciones `x()`/`y()` que el prototipo recalcula inline por gráfico (`x = n => 44 + n*(584/5)`, `y = v => 16 + (1-(v-50)/42)*160` para facultades; constantes propias para saldo acumulado y concurrencia).
 
-`stat-card.component.tsx` y `trend-pill.component.tsx` se rehacen contra el nuevo `Delta` (chip con `chipBg`/`chipFg` en vez de `tone` de Tailwind). `approval-rate-badge.component.tsx` queda sin uso — borrarlo.
+`stat-card.component.tsx` y `trend-pill.component.tsx` (ahora exporta `TrendPill`, el chip con fondo de los KPI cards, y `DeltaLabel`, el texto de color plano que usa todo lo demás — son dos patrones visuales distintos en el prototipo, no uno) rehechos contra `Delta`, con los colores exactos decodificados del bundle: positivo `#127453`/`#E4F1EB`, negativo `#A51C30`/`#F7E4E7`, neutro `#647188`/`#F1F3F6`.
+
+Notas de la implementación:
+- Igual que en el Paso 5, se decodificó el bundle publicado del prototipo (no solo la auditoría) para sacar la geometría exacta de cada gráfico: viewBox, márgenes, radios, gaps, y — importante — la lógica completa de `renderVals()`/`finVals()` (cálculo de KPIs, escalado por sede, deltas). Ahí salieron dos correcciones a los supuestos originales de este documento:
+  1. **`GASTO_COLORS` no era una aproximación**: el backend (Paso 2) ya tenía los 7 valores exactos (`#1A2B48`→`#DCE5F1`, de más oscuro a más claro). El que estaba desactualizado era el comentario en `index.css` (Paso 3), que los describía como "escala interpolada, ajustar si se detecta diferencia" — corregido ahora que se pudo verificar contra el prototipo. Esos tokens de CSS en la práctica no se usan: el backend sirve el color por categoría directamente (`AdministrativeExpense.color`), igual que hace con `FacultyTrendSeries.color`.
+  2. El delta de los KPI cards (`chipOf`/`chip()` en el prototipo) es un chip con fondo, pero **todos los demás deltas del diseño son texto de color plano, sin fondo** (leyenda de facultades, filas de docentes, gastos, saldo). Son dos componentes visuales distintos aunque comparten los mismos 3 colores por tono — de ahí la separación `TrendPill` vs `DeltaLabel`.
+- **No se tocaron** `academic-dashboard.component.tsx`, `financial-dashboard.component.tsx`, `events-dashboard.component.tsx`, `approval-rate-bar-list.component.tsx` ni `approval-history-chart.component.tsx` — son responsabilidad del Paso 7. Cambiar la forma de `StatCard` (de `trend={{label,tone}}` a `delta`+`comparisonLabel` tipados) hizo que los errores de build en los 2 archivos que lo usan cambien de mensaje (de "propiedad no existe en `AcademicStats`" a también "`trend` no existe en `StatCardProps`"), pero siguen siendo los mismos 2 archivos, ya rotos antes de este paso y sin efecto en runtime (no renderizan igual). `npm run build` sigue dando errores solo en esos 3 componentes + el call-site de `EventsDashboard` ya documentado.
+- **`approval-rate-badge.component.tsx` no se borró todavía**, a pesar de que el plan original de este paso lo pedía: sigue usado por `academic-dashboard.component.tsx` y `events-dashboard.component.tsx` (Paso 7 sin empezar). Borrarlo ahora solo cambiaría el tipo de error de esos 2 archivos (de "propiedad inexistente" a "módulo no encontrado") sin ningún beneficio real; queda como limpieza natural del Paso 7, cuando esos archivos dejen de importarlo.
 
 ### Paso 7 — Frontend: los 3 tableros ⏳ Pendiente
 1. `academic-dashboard.component.tsx` — 4 KPIs, barras agrupadas por materia con eje X de código/nombre/delta, líneas por facultad con leyenda, grid de 2 columnas de docentes, footer de ingesta.
