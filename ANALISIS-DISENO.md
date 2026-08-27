@@ -28,15 +28,11 @@ Desde que se escribió este análisis (commit `da33231`) hubo dos commits más e
 | Paso 4 — frontend: estado y contexto de sesión (rol/sede/período) | ✅ Hecho |
 | Paso 5 — frontend: shell (sidebar/header con los datos y filtros reales) | ✅ Hecho |
 | Paso 6 — frontend: primitivas de gráficos | ✅ Hecho |
-| Paso 7 — frontend: los 3 tableros | ⏳ Pendiente, sin empezar |
+| Paso 7 — frontend: los 3 tableros | ✅ Hecho |
 
-**Hallazgo del Paso 3 (ya resuelto por el Paso 4):** el Paso 1 se había completado solo del lado del contrato (`analytics.entity.ts` con los tipos nuevos), pero nada más del frontend lo consumía. El Paso 4 migró el cliente HTTP, el repositorio, los use cases y el hook de datos a ese contrato, y agregó la Pantalla 0 (selector de rol) y el contexto de sesión. Lo que **sigue** roto, y es explícitamente trabajo del Paso 7 (no de un paso anterior sin hacer):
+**El plan de 8 pasos (0 a 7) está completo.** `cd frontend && npm run build` y `npm run lint` no dan ningún error — los 20 errores de tipos que venían arrastrándose desde el Paso 3 (documentados en cada paso intermedio como "de alcance del Paso 7") se resolvieron al reescribir `academic-dashboard.component.tsx`, `financial-dashboard.component.tsx` y `events-dashboard.component.tsx` contra las primitivas del Paso 6 y el contrato real de `AcademicStats`/`FinancialStats`/`EventStats`. Verificado además en el navegador (backend + frontend corriendo): los 2 tableros y la sección de eventos renderizan sin errores de consola, con datos reales, filtros funcionales y los mismos hover/tooltips/scroll del prototipo — detalle completo en la sección **Paso 7** más abajo.
 
-- `academic-dashboard.component.tsx`, `financial-dashboard.component.tsx` y `events-dashboard.component.tsx` siguen leyendo campos que ya no existen en `AcademicStats`/`FinancialStats`/`EventStats` (`stats.activeSubjectsCount`, `row.subjectName`, `stats.eventName`, `stats.institutionalBalances`, etc.) — son exactamente los 3 componentes que rehace el Paso 7.
-- `institutional-analytics.page.tsx` pasa el nuevo `eventsStats` (objeto único) a `<EventsDashboard stats={eventsStats}>`, que todavía espera `EventStats[]` — mismo motivo, se resuelve cuando se reescriba ese componente.
-- Confirmado con `cd frontend && npm install && npm run build`: los únicos errores de tipos que quedan están en esos 3 archivos (13 errores, todos dentro de los componentes de tablero o en el único call-site que los usa). Nada del código nuevo del Paso 4 genera error.
-
-El resto de este documento (secciones 1 y 2) se dejó tal cual se escribió originalmente, como registro de la auditoría inicial contra el diseño; los pendientes que describe ahí ya están resueltos en el backend salvo que se indique lo contrario en la tabla de arriba.
+El resto de este documento (secciones 1 y 2) se dejó tal cual se escribió originalmente, como registro de la auditoría inicial contra el diseño; los pendientes que describe ahí ya están resueltos salvo que se indique lo contrario en la tabla de arriba o en las notas de cada paso.
 
 ### Qué es cada archivo del diseño
 
@@ -188,7 +184,7 @@ Lo que falta:
 
 ## 3. Plan de implementación
 
-> Estado por paso al 27/08/2026: ver la tabla en «Estado actual» al inicio del documento. Los pasos 0 a 2 están hechos; el detalle de cada uno queda abajo como referencia de lo que efectivamente se implementó. Los pasos 3 a 7 siguen siendo el plan a ejecutar, sin cambios.
+> Estado por paso al 27/08/2026: ver la tabla en «Estado actual» al inicio del documento. Los 8 pasos (0 a 7) están hechos; el detalle de cada uno queda abajo como registro de lo que efectivamente se implementó (con notas donde el resultado difirió del plan original).
 
 ### Paso 0 — Dejar el análisis en el repo ✅
 Copiar este documento a `ANALISIS-DISENO.md` en la raíz del proyecto (lo pediste explícitamente; en modo plan solo puedo escribir el archivo de plan).
@@ -263,17 +259,30 @@ Notas de la implementación:
 - **No se tocaron** `academic-dashboard.component.tsx`, `financial-dashboard.component.tsx`, `events-dashboard.component.tsx`, `approval-rate-bar-list.component.tsx` ni `approval-history-chart.component.tsx` — son responsabilidad del Paso 7. Cambiar la forma de `StatCard` (de `trend={{label,tone}}` a `delta`+`comparisonLabel` tipados) hizo que los errores de build en los 2 archivos que lo usan cambien de mensaje (de "propiedad no existe en `AcademicStats`" a también "`trend` no existe en `StatCardProps`"), pero siguen siendo los mismos 2 archivos, ya rotos antes de este paso y sin efecto en runtime (no renderizan igual). `npm run build` sigue dando errores solo en esos 3 componentes + el call-site de `EventsDashboard` ya documentado.
 - **`approval-rate-badge.component.tsx` no se borró todavía**, a pesar de que el plan original de este paso lo pedía: sigue usado por `academic-dashboard.component.tsx` y `events-dashboard.component.tsx` (Paso 7 sin empezar). Borrarlo ahora solo cambiaría el tipo de error de esos 2 archivos (de "propiedad inexistente" a "módulo no encontrado") sin ningún beneficio real; queda como limpieza natural del Paso 7, cuando esos archivos dejen de importarlo.
 
-### Paso 7 — Frontend: los 3 tableros ⏳ Pendiente
+### Paso 7 — Frontend: los 3 tableros ✅ Hecho
 1. `academic-dashboard.component.tsx` — 4 KPIs, barras agrupadas por materia con eje X de código/nombre/delta, líneas por facultad con leyenda, grid de 2 columnas de docentes, footer de ingesta.
-2. `financial-dashboard.component.tsx` — 4 KPIs (con la semántica invertida en Egresos), balance + saldo acumulado, gastos apilados, tienda, comedores, footer. **Renderiza `EventsDashboard` al final**, dentro de `<section id="eventos">`.
-3. `events-dashboard.component.tsx` — 4 KPIs, barras + área de concurrencia, presentismo por tipo con mejor/peor, tabla con barras.
-4. Borrar el scaffolding `example.*` del front.
+2. `financial-dashboard.component.tsx` — 4 KPIs (con la semántica invertida en Egresos), balance + saldo acumulado, gastos apilados, tienda, comedores, footer. Renderiza `EventsDashboard` a continuación (lo compone `institutional-analytics.page.tsx`, ver nota abajo), dentro de `<section id="eventos">`.
+3. `events-dashboard.component.tsx` — 4 KPIs (sin delta, con badge de texto), barras + área de concurrencia, presentismo por tipo con mejor/peor, tabla con barras.
+4. Borrado el scaffolding `example.*` del front (8 archivos) y los 3 componentes que Paso 6 dejó sin uso (`approval-rate-badge`, `approval-rate-bar-list`, `approval-history-chart`).
+
+Notas de la implementación:
+
+- **Se resolvió la deuda del Paso 5**: el diseño no tiene una sección "eventos" independiente — vive dentro del tablero financiero, bajo el mismo rol `"financiera"`. `AnalyticsSection` pasó de 3 a 2 valores (`"academic" | "financial"`); `institutional-analytics.page.tsx` ahora renderiza `<FinancialDashboard>` seguido de `<section id="eventos"><EventsDashboard/></section>` en un mismo `activeSection === "financial"`, y el ítem "Eventos académicos" del sidebar navega a `"financial"` + hace el scroll (que ya estaba cableado desde el Paso 5, solo le faltaba el nodo `id="eventos"` para tener adónde ir). Esto también resolvió el último error de tipos que quedaba (`EventsDashboard` recibía `EventStats[]`, ahora recibe `EventStats` — un objeto, como longitud lo indicaba desde el Paso 1).
+- **Extensiones a las primitivas del Paso 6**, en el momento de cablearlas contra datos reales:
+  - `StatCard`: `delta`/`comparisonLabel` pasaron a opcionales y se agregó `caption` (badge de texto plano sin color) — los 4 KPIs de Eventos no tienen `Delta` en la entidad ni chip en el diseño (ver hallazgo del Paso 6, ahora confirmado al implementar), solo un badge con el mes o una aclaración fija.
+  - `BarList`: se agregó `wrapColumns` para envolver las filas en un grid de N columnas en vez de una lista vertical — es como el prototipo arma la grilla de 2 columnas de docentes (`grid-template-columns:1fr 1fr`, orden por fila).
+  - Se sacó la leyenda (`legend`) de adentro de `GroupedBarChart`: en el prototipo la leyenda de una sección va *al lado* del título (`justify-content:space-between` en el header), nunca arriba del gráfico como se había asumido al construir la primitiva. Se creó `chart-legend.component.tsx` como pieza aparte que cada tablero compone en su propio `SectionHeader`.
+  - Nuevo: `dashboard/section-card.component.tsx`, `dashboard/section-header.component.tsx`, `dashboard/data-source-note.component.tsx` — el shell (card blanca con borde, encabezado título+bajada+leyenda, nota de pie con punto verde) se repite en ~10 secciones de los 3 tableros; sacarlo a 3 piezas chicas evitó repetir esos estilos 10 veces.
+  - Nuevo: `lib/format.ts` — `formatCount`/`formatPercent`/`formatMillions` para los pocos valores que el backend no devuelve pre-formateados (los 4 KPIs de Eventos, los labels sintéticos del eje de los gráficos de área), y `formatLastIngestion` (se sacó de `role-selector.page.tsx`, que ya tenía su propia copia, para no triplicarla).
+  - El gráfico de "Facturación de comedores por sede" y la tabla de "Eventos académicos" (con dos barras de progreso por fila) se armaron a mano dentro de sus componentes en vez de forzarlos contra `GroupedBarChart`/`BarList`: son patrones que el prototipo no repite en ningún otro lado (color por-categoría en vez de por-serie, sin tooltip; dos barras por fila), generalizar la primitiva para un solo uso no daba nada a cambio.
+- **Verificación en vivo** (backend + frontend corriendo, Chrome): los 2 tableros y la sección de eventos se navegaron completos, sin errores de consola en ningún momento. Se probó específicamente: el tooltip on-hover de "Balance de saldo" (filas Ingresos/Egresos/Resultado); el click en "Eventos académicos" del sidebar haciendo scroll suave hasta el `id="eventos"` real; cambiar la Sede a "Campus Online" (la única sin servicio de comedor) y confirmar que todo el tablero financiero se reescala sin romperse, incluida la fila "—"/"Sin servicio de comedor"; "Cambiar rol" volviendo a la Pantalla 0.
+- `npm run build` (`tsc -b && vite build`) y `npm run lint` terminan **sin ningún error** — es la primera vez desde el Paso 3 que el frontend compila limpio.
 
 ---
 
 ## Verificación
 
-> El punto 1 ya se puede correr hoy contra el backend implementado. Los puntos 2 a 4 dependen de los pasos 3-7, todavía pendientes.
+> Los 4 puntos ya se pueden correr contra el código actual (los 8 pasos están hechos). 1 y 3 confirmados en este entorno; 2 confirmado salvo el ítem de comparación visual pixel-a-pixel contra el `.dc.html` en paralelo (se contrastó de memoria/contra las capturas del prototipo, no lado a lado); 4 no se probó.
 
 1. **Backend aislado** — `cd backend && npm run dev`, y contra `http://localhost:3000`:
    - `GET /api/analytics/filters` → 5 sedes y los períodos del diseño.
@@ -281,13 +290,12 @@ Notas de la implementación:
    - Repetir con `?sede=Sede%20Pilar` → todos los valores bajan (`f = 1988/6842`) y las tasas caen 2 pp (`adj: -2`). **Esta comparación es la prueba de que el port de `renderVals()` quedó bien.**
    - `GET /api/analytics/dashboard/financial?periodo=Ago%202026` → saldo `$ 1.842,9 M`, ingresos `$ 2.394,7 M`, egresos `$ 2.196,3 M`.
    - `POST /api/analytics/events` con body válido → 201; con `sourceModule` inexistente → 400.
-2. **Frontend** — `cd frontend && npm run dev`. Comparar contra el preview del diseño (`render_preview` del MCP, o el `.dc.html` en el navegador) pantalla por pantalla: selector de rol → tablero académico → cambiar sede a Pilar y verificar que todo se reescala → cambiar cuatrimestre → cambiar a Financiera → click en "Eventos académicos" y verificar el scroll al ancla → "Cambiar rol" vuelve al selector.
-3. **Tipos** — `cd frontend && npm run build` y `cd backend && npm run build` sin errores.
-4. **Regresión visual manual** — a 1280px y 1440px de ancho, verificando que el `min-width:1180px` del diseño no rompa el layout.
+2. **Frontend** — `cd frontend && npm run dev`. Verificado en el Paso 7: selector de rol → tablero académico → cambiar sede a Belgrano y a Campus Online y confirmar que todo se reescala (incluido el caso "sin servicio de comedor") → cambiar a Financiera → click en "Eventos académicos" y confirmar el scroll suave al ancla real → "Cambiar rol" vuelve al selector. Sin errores de consola en ningún paso.
+3. **Tipos** — `cd frontend && npm run build` y `cd backend && npm run build` sin errores. Confirmado (frontend en el Paso 7; backend ya lo estaba desde el Paso 2).
+4. **Regresión visual manual** — a 1280px y 1440px de ancho, verificando que el `min-width:1180px` del diseño no rompa el layout. **No se probó todavía** — la QA del Paso 7 se hizo en un viewport de escritorio estándar (1920px), no en los dos anchos límite.
 
 ## Riesgos y notas
 
-- **El frontend no compila todavía**, pero el alcance del error se redujo al Paso 7. Con los Pasos 3 y 4 hechos, `cd frontend && npm run build` da 13 errores de tipos, todos dentro de `academic-dashboard.component.tsx`, `financial-dashboard.component.tsx`, `events-dashboard.component.tsx` (leen campos del modelo viejo) y el único call-site que pasa datos a `EventsDashboard`. Se resuelve completo al ejecutar el Paso 7.
 - **Los PDFs del diseño (`TPO - DEA II 2Q 2026.pdf`, manual de marca) no los pude leer** — son binarios y el MCP solo devuelve texto. Si tienen requisitos que no están en el `.dc.html`, este plan no los cubre.
 - **El diseño se autodescribe como "Prototipo · datos de ejemplo · sin backend"**; el timestamp "26/08 04:12" y "9 módulos conectados" son literales del prototipo. Los voy a servir desde `GET /sources` como datos mock, no como estado real de ingesta.
 - El diseño tiene `hint-placeholder-count="3"` en el `<sc-for>` de roles pero `ROLES` define solo 2. **Implemento 2**, que es lo que el dato manda.

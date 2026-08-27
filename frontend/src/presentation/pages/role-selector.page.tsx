@@ -8,6 +8,7 @@ import { GetRolesUseCase } from "@/application/use-cases/get-roles.use-case";
 import { GetEventSourcesUseCase } from "@/application/use-cases/get-event-sources.use-case";
 import { useSession } from "@/presentation/context/session.context";
 import { cn } from "@/lib/utils";
+import { formatLastIngestion } from "@/lib/format";
 
 const analyticsRepository = new AnalyticsRepositoryImpl();
 const getRolesUseCase = new GetRolesUseCase(analyticsRepository);
@@ -48,23 +49,6 @@ function useRoleSelectorData(): RoleSelectorData {
   }, []);
 
   return state;
-}
-
-// "26/08 04:12", en la zona horaria del dato (el mock viaja con su propio offset -03:00).
-function formatLastIngestion(iso: string): string {
-  const date = new Date(iso);
-  if (Number.isNaN(date.getTime())) return iso;
-
-  return new Intl.DateTimeFormat("es-AR", {
-    day: "2-digit",
-    month: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-    timeZone: "America/Argentina/Buenos_Aires",
-  })
-    .format(date)
-    .replace(",", "");
 }
 
 export function RoleSelectorPage() {

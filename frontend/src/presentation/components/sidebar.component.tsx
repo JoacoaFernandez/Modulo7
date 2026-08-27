@@ -2,16 +2,16 @@
 // Colores, espaciados y textos porteados 1:1 del <aside> del prototipo (Analitica Institucional.dc.html).
 import { cn } from "@/lib/utils";
 
-export type AnalyticsSection = "academic" | "financial" | "events";
+// El diseño no tiene una tercera sección "eventos": esa vista vive *dentro* del tablero
+// financiero, en un <section id="eventos"> (mismo rol "financiera", ver Paso 7). Por eso acá
+// solo hay 2 secciones — "Eventos académicos" no navega a otra, solo hace scroll.
+export type AnalyticsSection = "academic" | "financial";
 
 interface SidebarProps {
   activeSection: AnalyticsSection;
   onSelectSection: (section: AnalyticsSection) => void;
 }
 
-// El diseño ancla "Eventos académicos" a un <section id="eventos"> dentro del tablero
-// financiero (lo agrega el Paso 7). El scroll queda cableado desde ahora, igual que en el
-// prototipo: hasta que ese nodo exista, `if (el)` simplemente no hace nada.
 function scrollToEventsAnchor() {
   setTimeout(() => {
     const el = document.getElementById("eventos");
@@ -42,7 +42,7 @@ export function Sidebar({ activeSection, onSelectSection }: SidebarProps) {
       sub: true,
       isActive: false,
       onClick: () => {
-        onSelectSection("events");
+        onSelectSection("financial");
         scrollToEventsAnchor();
       },
     },

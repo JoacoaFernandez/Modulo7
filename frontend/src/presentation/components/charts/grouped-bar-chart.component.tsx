@@ -5,11 +5,6 @@
 import { useState, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-export interface GroupedBarLegendItem {
-  color: string;
-  label: string;
-}
-
 export interface GroupedBarCategory {
   key: string;
   // Un alto por serie, en el mismo orden que `seriesColors` ("74%", ya listo para `height`).
@@ -25,7 +20,6 @@ export interface GroupedBarCategory {
 interface GroupedBarChartProps {
   heightPx?: number;
   seriesColors: string[];
-  legend?: GroupedBarLegendItem[];
   categories: GroupedBarCategory[];
   columnGap?: string;
   columnPadding?: string;
@@ -36,7 +30,6 @@ interface GroupedBarChartProps {
 export function GroupedBarChart({
   heightPx = 216,
   seriesColors,
-  legend,
   categories,
   columnGap = "10px",
   columnPadding = "0 6%",
@@ -47,17 +40,6 @@ export function GroupedBarChart({
 
   return (
     <div className="flex flex-col">
-      {legend && (
-        <div className="mb-[18px] flex flex-shrink-0 gap-3">
-          {legend.map((item) => (
-            <span key={item.label} className="flex items-center gap-[5px] text-[11px] text-[#52607A]">
-              <span className="size-[9px] shrink-0 rounded-sm" style={{ background: item.color }} />
-              {item.label}
-            </span>
-          ))}
-        </div>
-      )}
-
       <div className="relative border-b border-[#DCE1E8]" style={{ height: heightPx }}>
         <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
           {Array.from({ length: gridLines }, (_, index) => (

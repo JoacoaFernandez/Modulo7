@@ -9,13 +9,12 @@ import { EventsDashboard } from "../components/events-dashboard.component";
 import { Sidebar, type AnalyticsSection } from "../components/sidebar.component";
 import { DashboardHeader } from "../components/dashboard-header.component";
 
-// Eyebrow y título literales del prototipo (rolActual / tituloVista). "events" vive dentro
-// del mismo rol "financiera" que "financial" (ver Sidebar): comparte su encabezado hasta que
-// el Paso 7 la anide dentro de esa página con <section id="eventos">.
+// Eyebrow y título literales del prototipo (rolActual / tituloVista). No hay un tercero para
+// "eventos": esa sección vive dentro de "financial" (ver Sidebar y el <section id="eventos">
+// más abajo), así que comparte el mismo encabezado.
 const sectionMeta: Record<AnalyticsSection, { eyebrow: string; title: string }> = {
   academic: { eyebrow: "Dirección Académica", title: "Rendimiento académico" },
   financial: { eyebrow: "Dirección Financiera", title: "Situación económica y financiera" },
-  events: { eyebrow: "Dirección Financiera", title: "Situación económica y financiera" },
 };
 
 export function InstitutionalAnalyticsPage() {
@@ -63,8 +62,16 @@ export function InstitutionalAnalyticsPage() {
           {!isLoading && !error && (
             <>
               {activeSection === "academic" && academicStats && <AcademicDashboard stats={academicStats} />}
-              {activeSection === "financial" && financialStats && <FinancialDashboard stats={financialStats} />}
-              {activeSection === "events" && <EventsDashboard stats={eventsStats} />}
+              {activeSection === "financial" && financialStats && (
+                <div className="flex flex-col gap-8">
+                  <FinancialDashboard stats={financialStats} />
+                  {eventsStats && (
+                    <section id="eventos">
+                      <EventsDashboard stats={eventsStats} />
+                    </section>
+                  )}
+                </div>
+              )}
             </>
           )}
         </main>
