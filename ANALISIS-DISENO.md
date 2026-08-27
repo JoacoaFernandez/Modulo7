@@ -25,19 +25,16 @@ Desde que se escribió este análisis (commit `da33231`) hubo dos commits más e
 | Paso 1 — contrato compartido (entidades) | ✅ Hecho en backend y espejado en `frontend/src/domain/entities/analytics.entity.ts` |
 | Paso 2 — backend (datasets, calculadora, repos, endpoints, validación, CORS, `EVENTOS.md`) | ✅ Hecho |
 | Paso 3 — frontend: sistema visual (fuentes, tokens de color) | ✅ Hecho |
-| Paso 4 — frontend: estado y contexto de sesión (rol/sede/período) | ⏳ Pendiente, sin empezar |
+| Paso 4 — frontend: estado y contexto de sesión (rol/sede/período) | ✅ Hecho |
 | Paso 5 — frontend: shell (sidebar/header con los datos y filtros reales) | ⏳ Pendiente, sin empezar |
 | Paso 6 — frontend: primitivas de gráficos | ⏳ Pendiente, sin empezar |
 | Paso 7 — frontend: los 3 tableros | ⏳ Pendiente, sin empezar |
 
-**Hallazgo nuevo (no estaba en la versión anterior de este documento):** el Paso 1 se completó del lado del contrato (`analytics.entity.ts` en el front ya tiene los tipos nuevos: `kpis`, `Delta`, `subjectApprovalRates[].series`, `facultyTrends`, etc.), pero **nada más del frontend se migró a ese contrato**. Como consecuencia, ahora mismo el frontend está roto contra su propio dominio:
+**Hallazgo del Paso 3 (ya resuelto por el Paso 4):** el Paso 1 se había completado solo del lado del contrato (`analytics.entity.ts` con los tipos nuevos), pero nada más del frontend lo consumía. El Paso 4 migró el cliente HTTP, el repositorio, los use cases y el hook de datos a ese contrato, y agregó la Pantalla 0 (selector de rol) y el contexto de sesión. Lo que **sigue** roto, y es explícitamente trabajo del Paso 7 (no de un paso anterior sin hacer):
 
-- `academic-dashboard.component.tsx`, `financial-dashboard.component.tsx` y `events-dashboard.component.tsx` siguen leyendo campos que ya no existen (`stats.activeSubjectsCount`, `stats.overallApprovalRateTrend`, `row.subjectName` en vez de `row.name`, `stats.approvalRateHistory`, etc.).
-- `analytics.client.ts` sigue llamando a los 3 endpoints originales **sin los query params** (`?sede=&cuatrimestre=`/`?sede=&periodo=`) y tipa `getEventsStats` como `EventStats[]`, pero el backend ahora devuelve un **objeto agregado único** (`EventStats`), no un array.
-- `use-institutional-analytics.hook.ts` no conoce sede/período ni refetchea ante cambios de filtro.
-- No hay `role-selector.page.tsx`, `session.context.tsx` ni `presentation/components/charts/`: la Pantalla 0 y las primitivas de gráficos del Paso 6 todavía no existen como archivos.
-
-Es decir: **el trabajo pendiente es exactamente el Paso 3 al 7 tal como estaban planeados**, más la migración de `analytics.client.ts` y `use-institutional-analytics.hook.ts` al nuevo contrato (que en rigor es parte del Paso 4, punto 4, pero conviene remarcarlo porque hoy el build de `frontend` no compila contra los tipos actuales).
+- `academic-dashboard.component.tsx`, `financial-dashboard.component.tsx` y `events-dashboard.component.tsx` siguen leyendo campos que ya no existen en `AcademicStats`/`FinancialStats`/`EventStats` (`stats.activeSubjectsCount`, `row.subjectName`, `stats.eventName`, `stats.institutionalBalances`, etc.) — son exactamente los 3 componentes que rehace el Paso 7.
+- `institutional-analytics.page.tsx` pasa el nuevo `eventsStats` (objeto único) a `<EventsDashboard stats={eventsStats}>`, que todavía espera `EventStats[]` — mismo motivo, se resuelve cuando se reescriba ese componente.
+- Confirmado con `cd frontend && npm install && npm run build`: los únicos errores de tipos que quedan están en esos 3 archivos (13 errores, todos dentro de los componentes de tablero o en el único call-site que los usa). Nada del código nuevo del Paso 4 genera error.
 
 El resto de este documento (secciones 1 y 2) se dejó tal cual se escribió originalmente, como registro de la auditoría inicial contra el diseño; los pendientes que describe ahí ya están resueltos en el backend salvo que se indique lo contrario en la tabla de arriba.
 
@@ -229,12 +226,14 @@ Reescribir las entidades del backend y espejarlas en el front. Es el paso que de
    - Falta `npm install` en `frontend/` para que el lockfile refleje la baja de `@fontsource-variable/geist` (no se pudo correr en este entorno: no hay `node_modules` instalado).
    - Los componentes (`sidebar.component.tsx`, etc.) todavía tienen colores hardcodeados (`bg-[#12131a]`, `indigo-500`) sin migrar a estos tokens — eso es específicamente el Paso 5, no este paso.
 
-### Paso 4 — Frontend: estructura y estado ⏳ Pendiente
-1. `frontend/src/presentation/context/session.context.tsx` — rol activo + `sede` + `cuatrimestre` + `mes`, persistido en `localStorage`. Sin router: el diseño usa una sola pantalla con estado (`screen: login|dash`), replicarlo tal cual.
-2. `role-selector.page.tsx` — pantalla 0 completa (split navy/blanco, chips de módulos desde `GET /sources`, roles desde `GET /roles`).
-3. `App.tsx` — renderizar `RoleSelectorPage` o `InstitutionalAnalyticsPage` según haya rol.
-4. `use-institutional-analytics.hook.ts` — **cambio importante**: hoy hace un `Promise.all` único en el mount sin parámetros. Pasar a refetchear cuando cambian sede/período, con `AbortController` para descartar respuestas fuera de orden. Agregar `use-filters.hook.ts`.
-5. `analytics.client.ts` — agregar query params y los 3 endpoints nuevos.
+### Paso 4 — Frontend: estructura y estado ✅ Hecho
+1. `frontend/src/presentation/context/session.context.tsx` — rol activo + `siteName` + `quarter` + `month`, persistido en `localStorage` (`uadenet.session`). Sin router: `App.tsx` alterna entre pantalla según haya rol, tal como el diseño.
+2. `role-selector.page.tsx` — pantalla 0 (split navy/blanco): logo + `<h1>` "Analítica / Institucional" + chips de módulos desde `GET /sources`, y panel derecho con los roles desde `GET /roles` (avatar con iniciales, descripción, chip "Disponible") y el footer de última ingesta calculado a partir de los datos de `/sources` (no hardcodeado).
+3. `App.tsx` — `SessionProvider` + `AppShell` que renderiza `RoleSelectorPage` o `InstitutionalAnalyticsPage` según `session.role`.
+4. `use-institutional-analytics.hook.ts` — reescrito: recibe `{ siteName, quarter, month }`, refetchea los 3 tableros en cada cambio con `AbortController`, y descarta la respuesta si el signal ya fue abortado. Se agregó `use-filters.hook.ts` (pide `GET /filters` una vez).
+5. `analytics.client.ts` — los 3 endpoints existentes ahora arman el query string (`sede`, `cuatrimestre`/`periodo`) y aceptan `AbortSignal`; se agregaron `getFilters`, `getRoles`, `getEventSources`. Se extendieron en cadena `AnalyticsRepository` → `AnalyticsRepositoryImpl` → los use cases (`GetAcademicDashboardUseCase`, `GetFinancialDashboardUseCase`, `GetEventsStatsUseCase` ahora piden filtros; nuevos `GetFiltersUseCase`, `GetRolesUseCase`, `GetEventSourcesUseCase`).
+
+   Nota: la copia de la bajada del panel izquierdo de la Pantalla 0 (el subtítulo debajo del `<h1>`) no estaba transcripta en la auditoría original; se redactó una equivalente en espíritu al diseño, a falta del texto exacto del `.dc.html`. Ajustar si se detecta diferencia contra el prototipo, igual que con los `GASTO_COLORS` del Paso 3.
 
 ### Paso 5 — Frontend: shell ⏳ Pendiente
 1. `sidebar.component.tsx` — navy `#1A2B48`, 232px, los 5 ítems del diseño (con "Eventos académicos" como sub-ítem que hace scroll a `#eventos`, y los 2 inactivos), card "INGESTA" al pie. Filtrar ítems según el rol activo.
@@ -275,7 +274,7 @@ Crear en `presentation/components/charts/`:
 
 ## Riesgos y notas
 
-- **El frontend no compila contra el contrato nuevo.** Ver «Estado actual» arriba: los componentes de los 3 tableros, el `analytics.client.ts` y el hook usan campos del modelo viejo que el backend ya no expone. Hasta que se ejecute el Paso 4 (punto 4-5) y el Paso 7, `cd frontend && npm run build` va a fallar por tipos. No es una regresión del diseño: es consecuencia esperada de haber implementado el contrato del backend antes que su consumidor.
+- **El frontend no compila todavía**, pero el alcance del error se redujo al Paso 7. Con los Pasos 3 y 4 hechos, `cd frontend && npm run build` da 13 errores de tipos, todos dentro de `academic-dashboard.component.tsx`, `financial-dashboard.component.tsx`, `events-dashboard.component.tsx` (leen campos del modelo viejo) y el único call-site que pasa datos a `EventsDashboard`. Se resuelve completo al ejecutar el Paso 7.
 - **Los PDFs del diseño (`TPO - DEA II 2Q 2026.pdf`, manual de marca) no los pude leer** — son binarios y el MCP solo devuelve texto. Si tienen requisitos que no están en el `.dc.html`, este plan no los cubre.
 - **El diseño se autodescribe como "Prototipo · datos de ejemplo · sin backend"**; el timestamp "26/08 04:12" y "9 módulos conectados" son literales del prototipo. Los voy a servir desde `GET /sources` como datos mock, no como estado real de ingesta.
 - El diseño tiene `hint-placeholder-count="3"` en el `<sc-for>` de roles pero `ROLES` define solo 2. **Implemento 2**, que es lo que el dato manda.

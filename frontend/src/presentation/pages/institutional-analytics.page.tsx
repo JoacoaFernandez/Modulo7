@@ -1,5 +1,6 @@
 // Pages: top-level views assembled from components, wired to hooks and use cases.
 import { useState } from "react";
+import { useSession } from "../context/session.context";
 import { useInstitutionalAnalytics } from "../hooks/use-institutional-analytics.hook";
 import { AcademicDashboard } from "../components/academic-dashboard.component";
 import { FinancialDashboard } from "../components/financial-dashboard.component";
@@ -15,7 +16,14 @@ const sectionMeta: Record<AnalyticsSection, { eyebrow: string; title: string }> 
 
 export function InstitutionalAnalyticsPage() {
   const [activeSection, setActiveSection] = useState<AnalyticsSection>("academic");
-  const { academicStats, financialStats, eventsStats, isLoading, error } = useInstitutionalAnalytics();
+  const { siteName, quarter, month } = useSession();
+  // Los filtros del header (SiteFilter/QuarterFilter) siguen decorativos hasta el Paso 5:
+  // por ahora los 3 tableros se piden con sede/período de la sesión (defaults del diseño).
+  const { academicStats, financialStats, eventsStats, isLoading, error } = useInstitutionalAnalytics({
+    siteName,
+    quarter,
+    month,
+  });
   const { eyebrow, title } = sectionMeta[activeSection];
 
   return (
