@@ -98,7 +98,7 @@ export function AcademicDashboard({ stats }: AcademicDashboardProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {stats.kpis.map((kpi) => (
           <StatCard
             key={kpi.id}
@@ -111,7 +111,7 @@ export function AcademicDashboard({ stats }: AcademicDashboardProps) {
         ))}
       </div>
 
-      <div className="grid grid-cols-[1.32fr_1fr] items-start gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1.32fr_1fr]">
         <SectionCard className="px-5 pt-[18px] pb-3.5">
           <SectionHeader
             title="Tasa de aprobación por materia"
@@ -126,7 +126,7 @@ export function AcademicDashboard({ stats }: AcademicDashboardProps) {
               />
             }
           />
-          <GroupedBarChart seriesColors={SUBJECT_BAR_COLORS} categories={subjectCategories} />
+          <GroupedBarChart seriesColors={SUBJECT_BAR_COLORS} categories={subjectCategories} minColumnPx={72} />
         </SectionCard>
 
         <SectionCard className="px-5 pt-[18px] pb-3.5">

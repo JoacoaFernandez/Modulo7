@@ -19,6 +19,7 @@ const sectionMeta: Record<AnalyticsSection, { eyebrow: string; title: string }> 
 
 export function InstitutionalAnalyticsPage() {
   const [activeSection, setActiveSection] = useState<AnalyticsSection>("academic");
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const { siteName, quarter, month, setSiteName, setQuarter, setMonth, changeRole } = useSession();
   const { options: filterOptions } = useFilters();
   const { academicStats, financialStats, eventsStats, isLoading, error } = useInstitutionalAnalytics({
@@ -39,9 +40,14 @@ export function InstitutionalAnalyticsPage() {
 
   return (
     <div className="flex min-h-screen w-full bg-[var(--app-bg)]">
-      <Sidebar activeSection={activeSection} onSelectSection={setActiveSection} />
+      <Sidebar
+        activeSection={activeSection}
+        onSelectSection={setActiveSection}
+        isOpen={isSidebarOpen}
+        onClose={() => setIsSidebarOpen(false)}
+      />
 
-      <div className="flex flex-1 flex-col overflow-x-auto">
+      <div className="flex min-w-0 flex-1 flex-col">
         <DashboardHeader
           eyebrow={eyebrow}
           title={title}
@@ -53,9 +59,10 @@ export function InstitutionalAnalyticsPage() {
           periodOptions={periodOptions}
           onPeriodChange={isAcademicSection ? setQuarter : setMonth}
           onChangeRole={changeRole}
+          onOpenMenu={() => setIsSidebarOpen(true)}
         />
 
-        <main className="min-w-[1180px] flex-1 p-8">
+        <main className="flex-1 overflow-x-auto p-4 sm:p-6 lg:p-8">
           {isLoading && <p className="text-sm text-muted-foreground">Cargando estadísticas...</p>}
           {error && <p className="text-sm text-destructive">Error al cargar las estadísticas: {error}</p>}
 

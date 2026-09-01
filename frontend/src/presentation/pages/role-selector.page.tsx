@@ -58,9 +58,9 @@ export function RoleSelectorPage() {
   const lastIngestionAt = sources.length > 0 ? formatLastIngestion(sources[0].lastIngestionAt) : null;
 
   return (
-    <div className="grid min-h-screen w-full min-w-[1180px] grid-cols-[minmax(360px,0.85fr)_1.15fr]">
+    <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[minmax(360px,0.85fr)_1.15fr]">
       {/* Panel izquierdo: identidad de la plataforma y las 9 fuentes de eventos */}
-      <div className="flex flex-col justify-between gap-10 bg-[var(--navy)] px-14 py-16 text-white">
+      <div className="flex flex-col justify-between gap-10 bg-[var(--navy)] px-6 py-10 text-white sm:px-10 lg:px-14 lg:py-16">
         <div className="flex items-center gap-2.5">
           <div className="flex size-9 items-center justify-center rounded-lg bg-[var(--blue)] text-sm font-bold">
             U
@@ -69,7 +69,7 @@ export function RoleSelectorPage() {
         </div>
 
         <div className="flex flex-col gap-5">
-          <h1 className="font-heading text-[44px] leading-[1.05] font-normal">
+          <h1 className="font-heading text-[32px] leading-[1.05] font-normal sm:text-[38px] lg:text-[44px]">
             Analítica
             <br />
             Institucional
@@ -98,7 +98,7 @@ export function RoleSelectorPage() {
       </div>
 
       {/* Panel derecho: selector de rol simulado */}
-      <div className="flex flex-col justify-between gap-10 bg-white px-16 py-16">
+      <div className="flex flex-col justify-between gap-10 bg-white px-6 py-10 sm:px-10 lg:px-16 lg:py-16">
         <div className="flex flex-col gap-8">
           <div className="flex flex-col gap-2">
             <p className="text-xs font-medium tracking-wide text-[var(--blue)]">ACCESO SIMULADO</p>

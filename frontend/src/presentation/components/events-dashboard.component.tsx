@@ -84,7 +84,7 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
         <p className="text-[12.5px] text-[#647188]">Frecuencia, concurrencia y tasa de presentismo · {stats.month}</p>
       </div>
 
-      <div className="grid grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Eventos realizados" value={formatCount(stats.totalEvents)} unit="eventos" caption={stats.month} />
         <StatCard
           label="Concurrencia total"
@@ -104,7 +104,7 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
         />
       </div>
 
-      <div className="grid grid-cols-[1.32fr_1fr] items-start gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1.32fr_1fr]">
         <SectionCard className="px-5 pt-[18px] pb-3.5">
           <SectionHeader
             title="Frecuencia y concurrencia por mes"
@@ -159,14 +159,14 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
       </div>
 
       <SectionCard className="px-5 pt-[18px] pb-5">
-        <div className="mb-[18px] flex items-start justify-between gap-6">
+        <div className="mb-[18px] flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
           <div className="flex flex-col gap-1">
             <h2 className="font-heading text-[17px] leading-[1.25] text-[#16243C]">Eventos académicos</h2>
             <p className="text-xs leading-[1.4] text-[#647188]">
               Frecuencia, concurrencia y presentismo sobre inscriptos · {stats.month}
             </p>
           </div>
-          <div className="flex shrink-0 gap-7">
+          <div className="flex flex-wrap gap-5 sm:gap-7">
             <div className="flex flex-col items-end gap-[3px]">
               <span className="text-[10.5px] text-[#6E7A90]">Eventos realizados</span>
               <span className="text-xl font-semibold text-[#16243C]">{formatCount(stats.totalEvents)}</span>
@@ -182,8 +182,12 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
           </div>
         </div>
 
+        {/* overflow-x-auto + min-width: cada fila tiene 2 barras de progreso con su propia
+            etiqueta; en columnas `fr` esas barras se aplastan sin un piso, así que en mobile
+            scrollea en vez de perder legibilidad. */}
+        <div className="overflow-x-auto">
         <div
-          className="grid gap-3 border-b border-[#E7EAEF] pb-2"
+          className="grid min-w-[560px] gap-3 border-b border-[#E7EAEF] pb-2"
           style={{ gridTemplateColumns: "1.6fr 1.2fr 0.9fr 1.4fr" }}
         >
           <span className="text-[10px] font-medium tracking-[0.1em] text-[#6E7A90] uppercase">Tipo de evento</span>
@@ -192,7 +196,7 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
           <span className="text-[10px] font-medium tracking-[0.1em] text-[#6E7A90] uppercase">Presentismo</span>
         </div>
 
-        <div className="flex flex-col">
+        <div className="flex min-w-[560px] flex-col">
           {stats.eventTypes.map((event) => (
             <div
               key={event.eventType}
@@ -221,6 +225,7 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
               </div>
             </div>
           ))}
+        </div>
         </div>
       </SectionCard>
 

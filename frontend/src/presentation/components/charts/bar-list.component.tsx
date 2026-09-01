@@ -88,6 +88,12 @@ export function BarList({ rows, variant = "inline", columns = "160px 1fr 46px 52
     </div>
   ));
 
+  // Clase en vez de `style` para poder colapsar a 1 columna en mobile con un breakpoint de
+  // Tailwind (un inline style no admite variantes responsive).
+  if (wrapColumns === 2) {
+    return <div className="grid grid-cols-1 gap-x-10 md:grid-cols-2">{items}</div>;
+  }
+
   if (wrapColumns && wrapColumns > 1) {
     return (
       <div className="grid gap-x-10" style={{ gridTemplateColumns: `repeat(${wrapColumns}, 1fr)` }}>

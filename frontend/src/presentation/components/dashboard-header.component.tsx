@@ -1,6 +1,8 @@
 // Presentation components: app-specific components composed from shadcn/ui primitives (components/ui).
 // Estructura y colores porteados 1:1 del <header> del prototipo (Analitica Institucional.dc.html):
 // selects nativos en pill, no el <Select> de shadcn (el diseño no usa dropdown con popover).
+// Debajo de `lg` el header envuelve en dos filas y suma el botón de menú del Sidebar.
+import { Menu } from "lucide-react";
 
 interface FilterSelectProps {
   label: string;
@@ -41,6 +43,8 @@ interface DashboardHeaderProps {
   onPeriodChange: (value: string) => void;
   // "Cambiar rol": vuelve al selector de rol (conserva sede/período elegidos).
   onChangeRole: () => void;
+  // Abre el drawer del Sidebar; el botón que lo dispara solo se ve en <lg.
+  onOpenMenu: () => void;
 }
 
 export function DashboardHeader({
@@ -54,15 +58,26 @@ export function DashboardHeader({
   periodOptions,
   onPeriodChange,
   onChangeRole,
+  onOpenMenu,
 }: DashboardHeaderProps) {
   return (
-    <header className="flex min-w-[1180px] items-center justify-between gap-6 border-b border-[var(--app-border)] bg-white px-7 py-[18px]">
-      <div className="flex flex-col gap-[3px]">
-        <p className="text-[11.5px] text-[#6E7A90]">{eyebrow}</p>
-        <h1 className="font-heading text-[21px] leading-[1.2] tracking-[-0.01em] text-[#16243C]">{title}</h1>
+    <header className="flex flex-col gap-3 border-b border-[var(--app-border)] bg-white px-4 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:px-7 lg:py-[18px]">
+      <div className="flex items-center gap-3">
+        <button
+          type="button"
+          onClick={onOpenMenu}
+          aria-label="Abrir menú"
+          className="-ml-1 shrink-0 cursor-pointer rounded-md p-1.5 text-[#41506B] hover:bg-[var(--app-bg)] lg:hidden"
+        >
+          <Menu className="size-5" />
+        </button>
+        <div className="flex flex-col gap-[3px]">
+          <p className="text-[11.5px] text-[#6E7A90]">{eyebrow}</p>
+          <h1 className="font-heading text-[19px] leading-[1.2] tracking-[-0.01em] text-[#16243C] sm:text-[21px]">{title}</h1>
+        </div>
       </div>
 
-      <div className="flex items-center gap-2.5">
+      <div className="flex flex-wrap items-center gap-2.5">
         <FilterSelect label="Sede" value={siteName} options={siteOptions} onChange={onSiteChange} />
         <FilterSelect label={periodLabel} value={periodValue} options={periodOptions} onChange={onPeriodChange} />
         <button

@@ -25,6 +25,10 @@ interface GroupedBarChartProps {
   columnPadding?: string;
   barGap?: string;
   gridLines?: number;
+  // Ancho mínimo por columna: si el contenedor queda más angosto que
+  // `categories.length * minColumnPx`, el gráfico scrollea en vez de aplastar cada barra y su
+  // footer hasta volverlos ilegibles (pasa en mobile con muchas categorías, p. ej. 8 materias).
+  minColumnPx?: number;
 }
 
 export function GroupedBarChart({
@@ -35,12 +39,14 @@ export function GroupedBarChart({
   columnPadding = "0 6%",
   barGap = "4px",
   gridLines = 4,
+  minColumnPx,
 }: GroupedBarChartProps) {
   const [hoveredKey, setHoveredKey] = useState<string | null>(null);
+  const minWidth = minColumnPx ? categories.length * minColumnPx : undefined;
 
   return (
-    <div className="flex flex-col">
-      <div className="relative border-b border-[#DCE1E8]" style={{ height: heightPx }}>
+    <div className="flex flex-col overflow-x-auto">
+      <div className="relative border-b border-[#DCE1E8]" style={{ height: heightPx, minWidth }}>
         <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
           {Array.from({ length: gridLines }, (_, index) => (
             <div key={index} className="border-t border-dashed border-[#DCE1E8]" />
@@ -95,7 +101,7 @@ export function GroupedBarChart({
 
       <div
         className="grid pt-[9px]"
-        style={{ gridTemplateColumns: `repeat(${categories.length}, 1fr)`, gap: columnGap }}
+        style={{ gridTemplateColumns: `repeat(${categories.length}, 1fr)`, gap: columnGap, minWidth }}
       >
         {categories.map((category) => (
           <div key={category.key} className="flex flex-col items-center gap-1 text-center">

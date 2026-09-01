@@ -17,7 +17,7 @@ interface ChartLegendProps {
 
 export function ChartLegend({ items }: ChartLegendProps) {
   return (
-    <div className="flex shrink-0 gap-3">
+    <div className="flex flex-wrap gap-x-3 gap-y-1.5">
       {items.map((item) => (
         <span key={item.key} className="flex items-center gap-[5px] text-[11px] text-[#52607A]">
           {item.shape === "line" ? (

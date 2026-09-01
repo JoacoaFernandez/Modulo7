@@ -87,7 +87,7 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="grid grid-cols-4 gap-3.5">
+      <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {stats.kpis.map((kpi) => (
           <StatCard
             key={kpi.id}
@@ -101,7 +101,7 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
         ))}
       </div>
 
-      <div className="grid grid-cols-[1.32fr_1fr] items-start gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 xl:grid-cols-[1.32fr_1fr]">
         <SectionCard className="px-5 pt-[18px] pb-3.5">
           <SectionHeader
             title="Balance de saldo"
@@ -151,7 +151,7 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
         </SectionCard>
       </div>
 
-      <div className="grid grid-cols-2 items-start gap-4">
+      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <SectionCard className="px-5 py-[18px]">
           <SectionHeader title="Productos más vendidos · Tienda del Campus" description={`Por facturación en ${stats.month}`} />
           <BarList rows={productRows} columns="180px 1fr 92px" />
@@ -163,55 +163,62 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
             description={`${stats.month} · ticket promedio y variación mensual`}
           />
 
-          <div className="relative border-b border-[#DCE1E8]" style={{ height: 132 }}>
-            <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
-              <div className="border-t border-dashed border-[#DCE1E8]" />
-              <div className="border-t border-dashed border-[#DCE1E8]" />
-              <div className="border-t border-dashed border-[#DCE1E8]" />
-            </div>
-            <div
-              className="relative grid items-end"
-              style={{ gridTemplateColumns: `repeat(${stats.diningRevenues.length}, 1fr)`, gap: 16, height: 132 }}
-            >
-              {stats.diningRevenues.map((dining) => (
-                <div
-                  key={dining.siteName}
-                  className="flex items-end justify-center"
-                  style={{ height: 132, padding: "0 18%", opacity: dining.isSelected ? 1 : 0.55 }}
-                >
-                  <div
-                    className="w-full rounded-t"
-                    style={{
-                      background: dining.isSelected ? "#2D5DA1" : "#C6D5EA",
-                      height: `${(dining.revenue / maxDining) * 100}%`,
-                    }}
-                  />
+          {/* overflow-x-auto + minWidth compartido: en mobile, con ~5 sedes y bastante texto por
+              columna (nombre, monto, tickets, ticket promedio, delta), scrollea en vez de aplastar
+              cada columna hasta volverla ilegible. */}
+          <div className="overflow-x-auto">
+            <div style={{ minWidth: stats.diningRevenues.length * 84 }}>
+              <div className="relative border-b border-[#DCE1E8]" style={{ height: 132 }}>
+                <div className="pointer-events-none absolute inset-0 flex flex-col justify-between">
+                  <div className="border-t border-dashed border-[#DCE1E8]" />
+                  <div className="border-t border-dashed border-[#DCE1E8]" />
+                  <div className="border-t border-dashed border-[#DCE1E8]" />
                 </div>
-              ))}
-            </div>
-          </div>
-
-          <div
-            className="grid pt-2.5"
-            style={{ gridTemplateColumns: `repeat(${stats.diningRevenues.length}, 1fr)`, gap: 16 }}
-          >
-            {stats.diningRevenues.map((dining) => (
-              <div
-                key={dining.siteName}
-                className="flex flex-col items-center gap-[3px] text-center"
-                style={{ opacity: dining.isSelected ? 1 : 0.55 }}
-              >
-                <span className="text-[11px] font-medium text-[#2A3A57]">{dining.siteName}</span>
-                <span className="text-[12.5px] font-semibold whitespace-nowrap text-[#16243C]">{dining.formattedRevenue}</span>
-                <span className="text-[10.5px] text-[#7A8598]">
-                  {dining.hasService ? `${formatCount(dining.ticketsCount)} tickets` : dining.note}
-                </span>
-                <span className="text-[10.5px] text-[#6E7A90]">ticket {dining.formattedAverageTicket}</span>
-                {dining.hasService && (
-                  <DeltaLabel label={dining.delta.formatted} tone={dining.delta.tone} className="text-[11px] font-medium" />
-                )}
+                <div
+                  className="relative grid items-end"
+                  style={{ gridTemplateColumns: `repeat(${stats.diningRevenues.length}, 1fr)`, gap: 16, height: 132 }}
+                >
+                  {stats.diningRevenues.map((dining) => (
+                    <div
+                      key={dining.siteName}
+                      className="flex items-end justify-center"
+                      style={{ height: 132, padding: "0 18%", opacity: dining.isSelected ? 1 : 0.55 }}
+                    >
+                      <div
+                        className="w-full rounded-t"
+                        style={{
+                          background: dining.isSelected ? "#2D5DA1" : "#C6D5EA",
+                          height: `${(dining.revenue / maxDining) * 100}%`,
+                        }}
+                      />
+                    </div>
+                  ))}
+                </div>
               </div>
-            ))}
+
+              <div
+                className="grid pt-2.5"
+                style={{ gridTemplateColumns: `repeat(${stats.diningRevenues.length}, 1fr)`, gap: 16 }}
+              >
+                {stats.diningRevenues.map((dining) => (
+                  <div
+                    key={dining.siteName}
+                    className="flex flex-col items-center gap-[3px] text-center"
+                    style={{ opacity: dining.isSelected ? 1 : 0.55 }}
+                  >
+                    <span className="text-[11px] font-medium text-[#2A3A57]">{dining.siteName}</span>
+                    <span className="text-[12.5px] font-semibold whitespace-nowrap text-[#16243C]">{dining.formattedRevenue}</span>
+                    <span className="text-[10.5px] text-[#7A8598]">
+                      {dining.hasService ? `${formatCount(dining.ticketsCount)} tickets` : dining.note}
+                    </span>
+                    <span className="text-[10.5px] text-[#6E7A90]">ticket {dining.formattedAverageTicket}</span>
+                    {dining.hasService && (
+                      <DeltaLabel label={dining.delta.formatted} tone={dining.delta.tone} className="text-[11px] font-medium" />
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         </SectionCard>
       </div>
