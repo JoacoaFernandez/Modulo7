@@ -66,7 +66,7 @@ export function Sidebar({ activeSection, onSelectSection, isOpen, onClose }: Sid
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex h-screen w-[232px] shrink-0 flex-col gap-[26px] bg-[var(--navy)] px-4 py-[22px] transition-transform duration-200 ease-out lg:static lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex h-screen w-[232px] shrink-0 flex-col gap-[26px] bg-[var(--navy)] px-4 py-[22px] transition-transform duration-200 ease-out lg:static lg:h-auto lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >
