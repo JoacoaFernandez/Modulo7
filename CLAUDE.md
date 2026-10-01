@@ -82,8 +82,8 @@ El contrato de ingesta está documentado en **`backend/EVENTOS.md`** — leerlo 
 tocar cualquier cosa relacionada a eventos. Resumen:
 
 - `POST /api/analytics/events` — envelope común: `eventId`, `sourceModule` (enum de 9
-  módulos: `academica, inscripciones, evaluaciones, docencia, finanzas, biblioteca, campus,
-  soporte, identidad`), `eventType` (`sustantivo.verbo`), `occurredAt` (ISO 8601), `payload`
+  módulos: `portal-estudiante, portal-docente, biblioteca, comedor, tienda, eventos,
+  backoffice, gestion-academica, core`), `eventType` (`sustantivo.verbo`), `occurredAt` (ISO 8601), `payload`
   libre.
 - El contrato **está abierto a cambios** — todavía no se acordó formalmente entre los
   equipos de los 10 módulos. No asumir que es definitivo.

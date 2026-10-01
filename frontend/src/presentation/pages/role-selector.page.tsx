@@ -75,8 +75,8 @@ export function RoleSelectorPage() {
             Institucional
           </h1>
           <p className="max-w-md text-sm leading-relaxed text-white/70">
-            Un mismo tablero para los eventos que emiten los 9 módulos de UADEnet: académica,
-            finanzas, biblioteca, campus y el resto de la operación.
+            Un mismo tablero para los eventos que emiten los 9 módulos de UADEnet: portales,
+            comedor, tienda, eventos, biblioteca y el resto de la operación.
           </p>
         </div>
 

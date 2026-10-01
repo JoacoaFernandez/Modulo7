@@ -71,15 +71,15 @@ const MONTHS: Period[] = ["Mar 2026", "Abr 2026", "May 2026", "Jun 2026", "Jul 2
 );
 
 const MODULE_LABELS: Record<(typeof SOURCE_MODULES)[number], string> = {
-  academica: "académica",
-  inscripciones: "inscripciones",
-  evaluaciones: "evaluaciones",
-  docencia: "docencia",
-  finanzas: "finanzas",
+  "portal-estudiante": "portal estudiante",
+  "portal-docente": "portal docente",
   biblioteca: "biblioteca",
-  campus: "campus",
-  soporte: "soporte",
-  identidad: "identidad",
+  comedor: "comedor",
+  tienda: "tienda",
+  eventos: "eventos",
+  backoffice: "backoffice",
+  "gestion-academica": "gestión académica",
+  core: "core",
 };
 
 const EVENT_SOURCES: EventSource[] = SOURCE_MODULES.map((module) => ({
@@ -207,7 +207,7 @@ export const ANALYTICS_DATASET: AnalyticsDataset = {
   },
 
   lastIngestionAt: LAST_INGESTION_AT,
-  academicSourceModules: ["academica", "docencia", "evaluaciones"],
-  financialSourceModules: ["finanzas", "campus"],
-  eventsSourceModules: ["academica", "campus"],
+  academicSourceModules: ["gestion-academica", "portal-docente", "portal-estudiante"],
+  financialSourceModules: ["core", "tienda", "comedor", "backoffice"],
+  eventsSourceModules: ["eventos"],
 };

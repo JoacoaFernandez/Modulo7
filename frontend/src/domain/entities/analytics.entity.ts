@@ -94,23 +94,23 @@ export interface Role {
 
 // --- Eventos de origen ---
 
-// Los 9 módulos de UADEnet que emiten eventos hacia Analítica Institucional.
+// Los 9 módulos de UADEnet (todos menos Analítica, que es el 7) que emiten eventos.
 export type SourceModule =
-  | "academica"
-  | "inscripciones"
-  | "evaluaciones"
-  | "docencia"
-  | "finanzas"
+  | "portal-estudiante"
+  | "portal-docente"
   | "biblioteca"
-  | "campus"
-  | "soporte"
-  | "identidad";
+  | "comedor"
+  | "tienda"
+  | "eventos"
+  | "backoffice"
+  | "gestion-academica"
+  | "core";
 
 export type EventSourceStatus = "connected" | "degraded" | "disconnected";
 
 export interface EventSource {
   module: SourceModule;
-  // Etiqueta visible, con acentos: "académica".
+  // Etiqueta visible, con acentos: "gestión académica".
   label: string;
   status: EventSourceStatus;
   lastIngestionAt: string;
