@@ -37,11 +37,12 @@ Analítica agrega dos campos propios al guardarlo: `id` (UUID interno) y `receiv
 
 ### Módulos admitidos
 
-`academica` · `inscripciones` · `evaluaciones` · `docencia` · `finanzas` · `biblioteca` ·
-`campus` · `soporte` · `identidad`
+`portal-estudiante` (1) · `portal-docente` (2) · `biblioteca` (3) · `comedor` (4) ·
+`tienda` (5) · `eventos` (6) · `backoffice` (8) · `gestion-academica` (9) · `core` (10)
 
-Son los 9 módulos que la UI muestra como "fuentes de eventos". Cualquier otro valor
-devuelve `400`.
+Son los 9 módulos de UADEnet que nos mandan eventos (el 7 es Analítica). Cualquier otro valor
+devuelve `400`. El detalle de qué datos le pedimos a cada uno está en
+[`../DATOS-POR-MODULO.md`](../DATOS-POR-MODULO.md).
 
 ### Respuestas
 
@@ -57,11 +58,11 @@ devuelve `400`.
 curl -X POST http://localhost:3000/api/analytics/events \
   -H "Content-Type: application/json" \
   -d '{
-    "eventId": "insc-2026-000123",
-    "sourceModule": "inscripciones",
+    "eventId": "est-insc-alumno-456-curso-42",
+    "sourceModule": "portal-estudiante",
     "eventType": "inscripcion.confirmada",
-    "occurredAt": "2026-08-27T10:00:00.000-03:00",
-    "payload": { "legajo": "1234", "materia": "BDD-310", "comision": "B1", "sede": "Sede Centro" }
+    "occurredAt": "2026-08-02T10:00:00.000-03:00",
+    "payload": { "alumnoId": "alumno-456", "cursoId": "curso-42", "materia": "BDD-310", "sedeId": "montserrat", "cuatrimestre": "2026-2C" }
   }'
 ```
 
@@ -75,35 +76,48 @@ curl http://localhost:3000/api/analytics/events
 
 ## Qué evento alimenta qué tablero
 
-Propuesta de catálogo. Cada tablero necesita que el `payload` traiga **sede** y **fecha**
-para poder filtrar, porque los dos filtros de la UI (sede y período) se resuelven acá.
+Resumen del catálogo. Los payloads completos, con ejemplos, están en
+[`../DATOS-POR-MODULO.md`](../DATOS-POR-MODULO.md). Todo payload lleva `sedeId` (id del
+catálogo de sedes de Backoffice) y los IDs (`alumnoId`, `cursoId`, `docenteId`) van como
+string. Los eventos de anulación o corrección restan o reemplazan lo que contó el evento
+original.
 
 ### Tablero académico
 
-| Módulo | `eventType` | Campos clave del payload | Alimenta |
-|---|---|---|---|
-| `academica` | `materia.cursada.iniciada` | `materia`, `comision`, `sede`, `cuatrimestre` | Materias en curso · Comisiones activas |
-| `inscripciones` | `inscripcion.confirmada` | `legajo`, `materia`, `sede`, `cuatrimestre` | Estudiantes con cursada activa |
-| `evaluaciones` | `evaluacion.registrada` | `materia`, `legajo`, `aprobado` (bool), `sede` | Tasa de aprobación general · por materia · tendencia por facultad |
-| `docencia` | `docente.asignado` | `docente`, `materia`, `comision`, `sede` | Aprobación por docente |
+| Módulo | `eventType` | Alimenta |
+|---|---|---|
+| `gestion-academica` | `resultado.publicado` · `resultado.modificado` | Tasa de aprobación general · por materia · por cuatrimestre · por docente |
+| `gestion-academica` | `curso.abierto` · `curso.cerrado` | Materias en curso · Comisiones activas · Tendencia por facultad |
+| `gestion-academica` | `cuatrimestre.definido` | Qué es "en curso" y "cuatrimestre anterior" |
+| `portal-estudiante` | `inscripcion.confirmada` · `inscripcion.cancelada` | Estudiantes con cursada activa |
+| `portal-docente` | `curso.creado` · `acta.cerrada` (opcionales) | Respaldo del cruce curso → docente y de la aprobación |
+| `backoffice` | `docente.alta` | Nombre del docente |
 
 ### Tablero financiero
 
-| Módulo | `eventType` | Campos clave del payload | Alimenta |
-|---|---|---|---|
-| `finanzas` | `movimiento.registrado` | `tipo` (`ingreso`/`egreso`), `monto`, `categoria`, `sede`, `fecha` | Saldo acumulado · Ingresos · Egresos · Resultado · Gastos administrativos |
-| `campus` | `venta.registrada` | `producto`, `categoria`, `unidades`, `monto`, `sede` | Productos más vendidos |
-| `campus` | `ticket.comedor.emitido` | `monto`, `sede` | Comedores por sede (facturación, tickets, ticket promedio) |
+| Módulo | `eventType` | Alimenta |
+|---|---|---|
+| `core` | `saldo.movimiento` | Saldo acumulado · Ingresos · Egresos · Resultado |
+| `backoffice` | `sueldos.liquidados` · `gasto.registrado` | Gastos administrativos |
+| `tienda` | `compra.realizada` · `compra.devuelta` | Productos más vendidos |
+| `comedor` | `reserva.confirmada` · `reserva.asistida` · `reserva.cancelada` | Comedores por sede (facturación, tickets, ticket promedio) |
 
 ### Estadísticas de eventos
 
-| Módulo | `eventType` | Campos clave del payload | Alimenta |
-|---|---|---|---|
-| `academica` | `evento.realizado` | `tipoEvento`, `cupo`, `inscriptos`, `sede`, `fecha` | Eventos realizados · Frecuencia por mes · Ocupación de cupo |
-| `campus` | `evento.asistencia.registrada` | `tipoEvento`, `asistentes`, `sede`, `fecha` | Concurrencia · Presentismo por tipo |
+| Módulo | `eventType` | Alimenta |
+|---|---|---|
+| `eventos` | `evento.realizado` · `evento.cancelado` | Eventos realizados · Frecuencia por mes · Ocupación de cupo |
+| `eventos` | `inscripcion.confirmada` · `inscripcion.cancelada` | Inscriptos · Ingresos por inscripción paga |
+| `eventos` | `asistencia.registrada` | Concurrencia · Presentismo por tipo |
 
-`biblioteca`, `soporte` e `identidad` están habilitados como emisores pero hoy ningún
-tablero consume sus eventos.
+### Datos maestros
+
+| Módulo | `eventType` | Para qué |
+|---|---|---|
+| `backoffice` | `sede.definida` | Catálogo de sedes (`sedeId` → nombre) |
+
+`biblioteca` está habilitado como emisor (`prestamo.realizado` · `prestamo.devuelto`), pero
+hoy ningún tablero consume sus eventos.
 
 ---
 

@@ -1,27 +1,25 @@
-// Domain entities: core business objects, independent of frameworks and infrastructure.
 
-// Los 9 módulos de UADEnet que emiten eventos hacia Analítica Institucional.
 export type SourceModule =
-  | "academica"
-  | "inscripciones"
-  | "evaluaciones"
-  | "docencia"
-  | "finanzas"
+  | "portal-estudiante"
+  | "portal-docente"
   | "biblioteca"
-  | "campus"
-  | "soporte"
-  | "identidad";
+  | "comedor"
+  | "tienda"
+  | "eventos"
+  | "backoffice"
+  | "gestion-academica"
+  | "core";
 
 export const SOURCE_MODULES: readonly SourceModule[] = [
-  "academica",
-  "inscripciones",
-  "evaluaciones",
-  "docencia",
-  "finanzas",
+  "portal-estudiante",
+  "portal-docente",
   "biblioteca",
-  "campus",
-  "soporte",
-  "identidad",
+  "comedor",
+  "tienda",
+  "eventos",
+  "backoffice",
+  "gestion-academica",
+  "core",
 ];
 
 export function isSourceModule(value: unknown): value is SourceModule {
