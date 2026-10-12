@@ -5,11 +5,14 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // El diseño no tiene una tercera sección "eventos": esa vista vive *dentro* del tablero
-// financiero, en un <section id="eventos"> (mismo rol "financiera", ver Paso 7). Por eso acá
-// solo hay 2 secciones — "Eventos académicos" no navega a otra, solo hace scroll.
-export type AnalyticsSection = "academic" | "financial";
+// financiero, en un <section id="eventos"> (mismo rol "financiera", ver Paso 7). Por eso
+// "Eventos académicos" no navega a otra sección, solo hace scroll. "Fuentes de datos" es la
+// única sección que no depende del rol: la ven todos los usuarios.
+export type AnalyticsSection = "academic" | "financial" | "sources";
 
 interface SidebarProps {
+  // Tableros que los roles del usuario pueden ver (la dirección académica no ve el financiero).
+  availableSections: AnalyticsSection[];
   activeSection: AnalyticsSection;
   onSelectSection: (section: AnalyticsSection) => void;
   // Controla el drawer en mobile/tablet (<lg); en desktop el aside queda siempre visible.
@@ -33,30 +36,38 @@ interface NavItem {
   onClick?: () => void;
 }
 
-export function Sidebar({ activeSection, onSelectSection, isOpen, onClose }: SidebarProps) {
+export function Sidebar({ availableSections, activeSection, onSelectSection, isOpen, onClose }: SidebarProps) {
   const goTo = (section: AnalyticsSection) => () => {
     onSelectSection(section);
     onClose();
   };
 
-  // Los 5 ítems del diseño, en su orden. Solo "Académica" y "Financiera" se marcan activos;
-  // "Eventos académicos" es un atajo con scroll que el prototipo nunca resalta; "Fuentes de
-  // datos" y "Permisos por rol" son placeholders del diseño, sin pantalla propia todavía.
+  // Ítems del diseño, en su orden. "Eventos académicos" es un atajo con scroll que el
+  // prototipo nunca resalta. "Permisos por rol" no está: los permisos los administra
+  // Backoffice (módulo 8), no Analítica.
+  const hasAcademic = availableSections.includes("academic");
+  const hasFinancial = availableSections.includes("financial");
+
   const navItems: NavItem[] = [
-    { label: "Académica", isActive: activeSection === "academic", onClick: goTo("academic") },
-    { label: "Financiera", isActive: activeSection === "financial", onClick: goTo("financial") },
-    {
-      label: "Eventos académicos",
-      sub: true,
-      isActive: false,
-      onClick: () => {
-        onSelectSection("financial");
-        scrollToEventsAnchor();
-        onClose();
-      },
-    },
-    { label: "Fuentes de datos", hint: "9", isActive: false },
-    { label: "Permisos por rol", isActive: false },
+    ...(hasAcademic
+      ? [{ label: "Académica", isActive: activeSection === "academic", onClick: goTo("academic") }]
+      : []),
+    ...(hasFinancial
+      ? [
+          { label: "Financiera", isActive: activeSection === "financial", onClick: goTo("financial") },
+          {
+            label: "Eventos académicos",
+            sub: true,
+            isActive: false,
+            onClick: () => {
+              onSelectSection("financial");
+              scrollToEventsAnchor();
+              onClose();
+            },
+          },
+        ]
+      : []),
+    { label: "Fuentes de datos", hint: "9", isActive: activeSection === "sources", onClick: goTo("sources") },
   ];
 
   return (

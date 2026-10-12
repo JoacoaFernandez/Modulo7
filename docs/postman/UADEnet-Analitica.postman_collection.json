@@ -1,0 +1,1182 @@
+{
+  "info": {
+    "name": "UADEnet · Analítica Institucional (Módulo 7)",
+    "description": "API del módulo de Analítica. Primero correr un Login (guarda el token solo); los tableros exigen sesión y el rol correcto. La ingesta de eventos es pública: la llaman los otros módulos. Generada con `npm run docs:postman`.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000"
+    },
+    {
+      "key": "token",
+      "value": ""
+    },
+    {
+      "key": "demoPassword",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Auth (mock de CORE)",
+      "item": [
+        {
+          "name": "Login · Dirección Académica",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"direccion.academica@uade.edu.ar\",\n  \"password\": \"{{demoPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login · Dirección Financiera",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"direccion.financiera@uade.edu.ar\",\n  \"password\": \"{{demoPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Login · Dirección General (ambos roles)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const body = pm.response.json();",
+                  "if (pm.response.code === 200) { pm.collectionVariables.set('token', body.token); }"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"direccion.general@uade.edu.ar\",\n  \"password\": \"{{demoPassword}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Usuario actual",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Tableros (requieren token)",
+      "item": [
+        {
+          "name": "Filtros (sedes de Backoffice, cuatrimestres, meses)",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/filters",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "filters"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Tablero académico · rol académico",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/dashboard/academic?sedeId=todas-las-sedes&cuatrimestre=2026-1C",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "dashboard",
+                "academic"
+              ],
+              "query": [
+                {
+                  "key": "sedeId",
+                  "value": "todas-las-sedes"
+                },
+                {
+                  "key": "cuatrimestre",
+                  "value": "2026-1C"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Tablero financiero · rol financiero",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/dashboard/financial?sedeId=todas-las-sedes&periodo=Ago 2026",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "dashboard",
+                "financial"
+              ],
+              "query": [
+                {
+                  "key": "sedeId",
+                  "value": "todas-las-sedes"
+                },
+                {
+                  "key": "periodo",
+                  "value": "Ago 2026"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Estadísticas de eventos · rol financiero",
+          "request": {
+            "method": "GET",
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/events/stats?sedeId=todas-las-sedes&periodo=Ago 2026",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "events",
+                "stats"
+              ],
+              "query": [
+                {
+                  "key": "sedeId",
+                  "value": "todas-las-sedes"
+                },
+                {
+                  "key": "periodo",
+                  "value": "Ago 2026"
+                }
+              ]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Públicos",
+      "item": [
+        {
+          "name": "Fuentes de eventos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/sources",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "sources"
+              ],
+              "query": []
+            }
+          }
+        },
+        {
+          "name": "Eventos ingeridos (solo desarrollo)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "events"
+              ],
+              "query": []
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Formato real de Gestión Académica (se normaliza)",
+      "item": [
+        {
+          "name": "resultado publicado · formato con `tipo`",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/analytics/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "analytics",
+                "events"
+              ],
+              "query": []
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tipo\": \"academica.resultado.publicado\",\n  \"ocurridoEn\": \"2026-09-30T14:30:00Z\",\n  \"alumnoId\": \"alumno-456\",\n  \"cursoId\": 42,\n  \"notaFinal\": 8,\n  \"estado\": \"APROBADO\",\n  \"fechaResultado\": \"2026-09-30\",\n  \"enlace\": \"/alumnos/cursos/42\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ingesta de eventos (los 9 módulos)",
+      "item": [
+        {
+          "name": "portal-estudiante",
+          "item": [
+            {
+              "name": "inscripcion.confirmada",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"portal-estudiante-inscripcion.confirmada-001\",\n  \"sourceModule\": \"portal-estudiante\",\n  \"eventType\": \"inscripcion.confirmada\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"alumnoId\": \"alumnoId-ejemplo\",\n    \"cursoId\": \"cursoId-ejemplo\",\n    \"materia\": \"materia-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"cuatrimestre\": \"2026-2C\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "inscripcion.cancelada",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"portal-estudiante-inscripcion.cancelada-001\",\n  \"sourceModule\": \"portal-estudiante\",\n  \"eventType\": \"inscripcion.cancelada\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"alumnoId\": \"alumnoId-ejemplo\",\n    \"cursoId\": \"cursoId-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"cuatrimestre\": \"2026-2C\",\n    \"motivo\": \"motivo-ejemplo\"\n  }\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "portal-docente",
+          "item": [
+            {
+              "name": "curso.creado",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"portal-docente-curso.creado-001\",\n  \"sourceModule\": \"portal-docente\",\n  \"eventType\": \"curso.creado\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"cursoId\": \"cursoId-ejemplo\",\n    \"docenteId\": \"docenteId-ejemplo\",\n    \"materia\": \"materia-ejemplo\",\n    \"comision\": \"comision-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"cuatrimestre\": \"2026-2C\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "acta.cerrada",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"portal-docente-acta.cerrada-001\",\n  \"sourceModule\": \"portal-docente\",\n  \"eventType\": \"acta.cerrada\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"cursoId\": \"cursoId-ejemplo\",\n    \"alumnoId\": \"alumnoId-ejemplo\",\n    \"nota\": 1000,\n    \"aprobado\": true\n  }\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "biblioteca",
+          "item": [
+            {
+              "name": "prestamo.realizado",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"biblioteca-prestamo.realizado-001\",\n  \"sourceModule\": \"biblioteca\",\n  \"eventType\": \"prestamo.realizado\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"prestamoId\": \"prestamoId-ejemplo\",\n    \"alumnoId\": \"alumnoId-ejemplo\",\n    \"materialId\": \"materialId-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"fechaVencimiento\": \"2026-08-20\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "prestamo.devuelto",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"biblioteca-prestamo.devuelto-001\",\n  \"sourceModule\": \"biblioteca\",\n  \"eventType\": \"prestamo.devuelto\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"prestamoId\": \"prestamoId-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"conDemora\": true\n  }\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "comedor",
+          "item": [
+            {
+              "name": "reserva.confirmada",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"comedor-reserva.confirmada-001\",\n  \"sourceModule\": \"comedor\",\n  \"eventType\": \"reserva.confirmada\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"reservaId\": \"reservaId-ejemplo\",\n    \"monto\": 1000,\n    \"sedeId\": \"sede-centro\",\n    \"turno\": \"turno-ejemplo\",\n    \"fecha\": \"2026-08-20\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "reserva.asistida",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"comedor-reserva.asistida-001\",\n  \"sourceModule\": \"comedor\",\n  \"eventType\": \"reserva.asistida\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"reservaId\": \"reservaId-ejemplo\",\n    \"montoRestituido\": 1000,\n    \"sedeId\": \"sede-centro\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "reserva.cancelada",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"comedor-reserva.cancelada-001\",\n  \"sourceModule\": \"comedor\",\n  \"eventType\": \"reserva.cancelada\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"reservaId\": \"reservaId-ejemplo\",\n    \"montoDevuelto\": 1000,\n    \"sedeId\": \"sede-centro\"\n  }\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "tienda",
+          "item": [
+            {
+              "name": "compra.realizada",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"tienda-compra.realizada-001\",\n  \"sourceModule\": \"tienda\",\n  \"eventType\": \"compra.realizada\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"compraId\": \"compraId-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"fecha\": \"2026-08-20\",\n    \"total\": 1000,\n    \"items\": [\n      {\n        \"producto\": \"producto-ejemplo\",\n        \"categoria\": \"categoria-ejemplo\",\n        \"unidades\": 1000,\n        \"monto\": 1000\n      }\n    ]\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "compra.devuelta",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"tienda-compra.devuelta-001\",\n  \"sourceModule\": \"tienda\",\n  \"eventType\": \"compra.devuelta\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"compraId\": \"compraId-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"fecha\": \"2026-08-20\",\n    \"items\": [\n      {\n        \"producto\": \"producto-ejemplo\",\n        \"categoria\": \"categoria-ejemplo\",\n        \"unidades\": 1000,\n        \"monto\": 1000\n      }\n    ]\n  }\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "eventos",
+          "item": [
+            {
+              "name": "evento.realizado",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"eventos-evento.realizado-001\",\n  \"sourceModule\": \"eventos\",\n  \"eventType\": \"evento.realizado\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"eventoId\": \"eventoId-ejemplo\",\n    \"tipoEvento\": \"tipoEvento-ejemplo\",\n    \"locacion\": \"locacion-ejemplo\",\n    \"cupo\": 1000,\n    \"sedeId\": \"sede-centro\",\n    \"fecha\": \"2026-08-20\",\n    \"costo\": 1000\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "inscripcion.confirmada",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"eventos-inscripcion.confirmada-001\",\n  \"sourceModule\": \"eventos\",\n  \"eventType\": \"inscripcion.confirmada\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"eventoId\": \"eventoId-ejemplo\",\n    \"personaId\": \"personaId-ejemplo\",\n    \"monto\": 1000\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "asistencia.registrada",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"eventos-asistencia.registrada-001\",\n  \"sourceModule\": \"eventos\",\n  \"eventType\": \"asistencia.registrada\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"eventoId\": \"eventoId-ejemplo\",\n    \"personaId\": \"personaId-ejemplo\",\n    \"presente\": true\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "evento.cancelado",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"eventos-evento.cancelado-001\",\n  \"sourceModule\": \"eventos\",\n  \"eventType\": \"evento.cancelado\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"eventoId\": \"eventoId-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"motivo\": \"motivo-ejemplo\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "inscripcion.cancelada",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"eventos-inscripcion.cancelada-001\",\n  \"sourceModule\": \"eventos\",\n  \"eventType\": \"inscripcion.cancelada\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"eventoId\": \"eventoId-ejemplo\",\n    \"personaId\": \"personaId-ejemplo\",\n    \"montoDevuelto\": 1000\n  }\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "backoffice",
+          "item": [
+            {
+              "name": "sueldos.liquidados",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"backoffice-sueldos.liquidados-001\",\n  \"sourceModule\": \"backoffice\",\n  \"eventType\": \"sueldos.liquidados\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"periodo\": \"2026-08\",\n    \"sedeId\": \"sede-centro\",\n    \"monto\": 1000,\n    \"desglose\": {\n      \"docentes\": 1000,\n      \"administrativos\": 1000\n    }\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "gasto.registrado",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"backoffice-gasto.registrado-001\",\n  \"sourceModule\": \"backoffice\",\n  \"eventType\": \"gasto.registrado\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"categoria\": \"categoria-ejemplo\",\n    \"monto\": 1000,\n    \"sedeId\": \"sede-centro\",\n    \"fecha\": \"2026-08-20\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "docente.alta",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"backoffice-docente.alta-001\",\n  \"sourceModule\": \"backoffice\",\n  \"eventType\": \"docente.alta\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"docenteId\": \"docenteId-ejemplo\",\n    \"nombre\": \"nombre-ejemplo\",\n    \"facultad\": \"facultad-ejemplo\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "sede.definida",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"backoffice-sede.definida-001\",\n  \"sourceModule\": \"backoffice\",\n  \"eventType\": \"sede.definida\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"sedeId\": \"sede-centro\",\n    \"nombre\": \"nombre-ejemplo\"\n  }\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "gestion-academica",
+          "item": [
+            {
+              "name": "resultado.publicado",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"gestion-academica-resultado.publicado-001\",\n  \"sourceModule\": \"gestion-academica\",\n  \"eventType\": \"resultado.publicado\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"alumnoId\": \"alumnoId-ejemplo\",\n    \"cursoId\": \"cursoId-ejemplo\",\n    \"materia\": \"materia-ejemplo\",\n    \"comision\": \"comision-ejemplo\",\n    \"docenteId\": \"docenteId-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"cuatrimestre\": \"2026-2C\",\n    \"notaFinal\": 1000,\n    \"estado\": \"estado-ejemplo\",\n    \"aprobado\": true,\n    \"fechaResultado\": \"2026-08-20\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "resultado.modificado",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"gestion-academica-resultado.modificado-001\",\n  \"sourceModule\": \"gestion-academica\",\n  \"eventType\": \"resultado.modificado\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"alumnoId\": \"alumnoId-ejemplo\",\n    \"cursoId\": \"cursoId-ejemplo\",\n    \"notaFinal\": 1000,\n    \"estado\": \"estado-ejemplo\",\n    \"aprobado\": true,\n    \"motivo\": \"motivo-ejemplo\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "curso.abierto",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"gestion-academica-curso.abierto-001\",\n  \"sourceModule\": \"gestion-academica\",\n  \"eventType\": \"curso.abierto\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"cursoId\": \"cursoId-ejemplo\",\n    \"materia\": \"materia-ejemplo\",\n    \"nombreMateria\": \"nombreMateria-ejemplo\",\n    \"facultad\": \"facultad-ejemplo\",\n    \"comision\": \"comision-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"cuatrimestre\": \"2026-2C\",\n    \"cupo\": 1000\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "curso.cerrado",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"gestion-academica-curso.cerrado-001\",\n  \"sourceModule\": \"gestion-academica\",\n  \"eventType\": \"curso.cerrado\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"cursoId\": \"cursoId-ejemplo\",\n    \"sedeId\": \"sede-centro\",\n    \"cuatrimestre\": \"2026-2C\"\n  }\n}"
+                }
+              }
+            },
+            {
+              "name": "cuatrimestre.definido",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"gestion-academica-cuatrimestre.definido-001\",\n  \"sourceModule\": \"gestion-academica\",\n  \"eventType\": \"cuatrimestre.definido\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"cuatrimestre\": \"2026-2C\",\n    \"inicio\": \"2026-08-20\",\n    \"fin\": \"2026-08-20\"\n  }\n}"
+                }
+              }
+            }
+          ]
+        },
+        {
+          "name": "core",
+          "item": [
+            {
+              "name": "saldo.movimiento",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ],
+                  "query": []
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"eventId\": \"core-saldo.movimiento-001\",\n  \"sourceModule\": \"core\",\n  \"eventType\": \"saldo.movimiento\",\n  \"occurredAt\": \"2026-08-20T13:20:00-03:00\",\n  \"payload\": {\n    \"cuentaId\": \"cuentaId-ejemplo\",\n    \"tipo\": \"carga\",\n    \"monto\": 1000,\n    \"origen\": \"comedor\",\n    \"sedeId\": \"sede-centro\",\n    \"fecha\": \"2026-08-20\",\n    \"saldoPosterior\": 1000\n  }\n}"
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

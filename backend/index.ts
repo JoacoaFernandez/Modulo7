@@ -1,4 +1,5 @@
 import express, { NextFunction, Request, Response } from "express";
+import { authRoutes } from "./src/interfaces/http/routes/auth.routes";
 import { analyticsRoutes } from "./src/interfaces/http/routes/analytics.routes";
 import { ValidationError } from "./src/shared/validation-error";
 
@@ -26,6 +27,7 @@ app.get("/", (_req, res) => {
   res.send("ok");
 });
 
+app.use("/api/auth", authRoutes);
 app.use("/api/analytics", analyticsRoutes);
 
 app.use((_req, res) => {

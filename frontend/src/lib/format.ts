@@ -3,7 +3,7 @@
 // etc.); estos helpers cubren los pocos casos que quedan del lado del frontend: los 4 KPIs de
 // `EventStats` (sin `Delta` ni formato en la entidad — el diseño tampoco les pone chip de delta),
 // labels de eje de gráfico (valores sintéticos de grilla, no datos reales), y el timestamp de
-// última ingesta que ya usaba `role-selector.page.tsx`.
+// última ingesta que ya usaba `login.page.tsx`.
 
 export function formatCount(value: number): string {
   return value.toLocaleString("es-AR");

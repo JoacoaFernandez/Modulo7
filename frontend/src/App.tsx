@@ -1,10 +1,11 @@
-import { SessionProvider, useSession } from "./presentation/context/session.context";
-import { RoleSelectorPage } from "./presentation/pages/role-selector.page";
+import { SessionProvider } from "./presentation/context/session.context";
+import { useSession } from "./presentation/hooks/use-session.hook";
+import { LoginPage } from "./presentation/pages/login.page";
 import { InstitutionalAnalyticsPage } from "./presentation/pages/institutional-analytics.page";
 
 function AppShell() {
-  const { role } = useSession();
-  return role ? <InstitutionalAnalyticsPage /> : <RoleSelectorPage />;
+  const { user } = useSession();
+  return user ? <InstitutionalAnalyticsPage user={user} /> : <LoginPage />;
 }
 
 function App() {

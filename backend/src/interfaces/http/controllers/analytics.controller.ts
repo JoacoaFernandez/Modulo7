@@ -8,6 +8,8 @@ import { GetFinancialDashboardUseCase } from "../../../application/use-cases/get
 import { GetRolesUseCase } from "../../../application/use-cases/get-roles.use-case";
 import { ListEventsUseCase } from "../../../application/use-cases/list-events.use-case";
 import { RecordEventUseCase } from "../../../application/use-cases/record-event.use-case";
+import { normalizeIncomingEvent } from "../../../application/services/event-normalizer.service";
+import { backofficeSitesGateway } from "../../../infrastructure/integrations/gateways";
 import { AnalyticsRepositoryMock } from "../../../infrastructure/repositories/analytics.repository.mock";
 import {
   parseAcademicFilters,
@@ -63,8 +65,14 @@ export class AnalyticsController {
   }
 
   async recordEvent(req: Request, res: Response) {
-    const event = parseRecordEventDto(req.body);
-    await recordEventUseCase.execute(event);
-    res.status(201).json({ eventId: event.eventId, status: "accepted" });
+    // Primero se absorben los formatos viejos de los emisores, después se valida el contrato.
+    const normalized = normalizeIncomingEvent(req.body, await backofficeSitesGateway.listSites());
+    const { dto, warnings: validationWarnings } = parseRecordEventDto(normalized.body, {
+      isLegacyFormat: normalized.isLegacyFormat,
+    });
+    await recordEventUseCase.execute(dto);
+
+    const warnings = [...normalized.warnings, ...validationWarnings];
+    res.status(201).json({ eventId: dto.eventId, status: "accepted", ...(warnings.length > 0 && { warnings }) });
   }
 }
