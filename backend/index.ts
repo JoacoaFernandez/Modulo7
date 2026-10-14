@@ -6,13 +6,13 @@ import { ValidationError } from "./src/shared/validation-error";
 const app = express();
 const port = process.env.PORT ?? 3000;
 
-app.use(express.json());
-
 app.use((req, res, next) => {
   res.header("Access-Control-Allow-Origin", "*");
   res.header("Access-Control-Allow-Methods", "GET,POST,OPTIONS");
   res.header("Access-Control-Allow-Headers", "Content-Type,Authorization");
   res.header("Access-Control-Max-Age", "600");
+  // Chrome bloquea pedidos de un sitio público a localhost/red privada sin este header.
+  res.header("Access-Control-Allow-Private-Network", "true");
 
   // Preflight: se responde acá, sin llegar a las rutas.
   if (req.method === "OPTIONS") {
@@ -22,6 +22,8 @@ app.use((req, res, next) => {
 
   next();
 });
+
+app.use(express.json());
 
 app.get("/", (_req, res) => {
   res.send("ok");

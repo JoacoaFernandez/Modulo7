@@ -127,11 +127,6 @@ export function LoginPage() {
               {isSubmitting ? "Ingresando…" : "Ingresar"}
             </button>
           </div>
-
-          <p className="text-xs leading-relaxed text-muted-foreground">
-            El acceso lo valida CORE y tu rol define el tablero: Dirección Académica o Dirección
-            Financiera. Solo personal administrativo de esas direcciones.
-          </p>
         </form>
 
         <div className="flex items-center gap-2 text-xs text-muted-foreground">

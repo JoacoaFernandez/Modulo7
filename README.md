@@ -84,7 +84,7 @@ El frontend apunta a `http://localhost:3000/api`; se cambia con `VITE_API_BASE_U
 | `direccion.financiera@uade.edu.ar` | Dirección Financiera | Tablero financiero y estadísticas de eventos |
 | `direccion.general@uade.edu.ar` | Ambos roles | Los dos tableros (un usuario puede tener varios roles) |
 
-La contraseña de las dos es la constante `DEMO_PASSWORD` de
+La contraseña de las tres es la constante `uadenet2026` de
 `backend/src/infrastructure/integrations/core-auth.gateway.mock.ts`.
 
 ## API
