@@ -51,7 +51,7 @@ Alimenta tasa de aprobación general, por materia, por cuatrimestre y por docent
     "materia": "BDD-310",
     "comision": "B1",
     "docenteId": "docente-12",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "cuatrimestre": "2026-2C",
     "notaFinal": 8.0,
     "estado": "APROBADO",
@@ -80,7 +80,7 @@ Pendiente de confirmar con Académica:
     "nombreMateria": "Bases de Datos",
     "facultad": "Ingeniería y Tecnología",
     "comision": "B1",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "cuatrimestre": "2026-2C",
     "cupo": 40
   }
@@ -126,7 +126,7 @@ Dato maestro adicional: fechas de inicio y fin de cada cuatrimestre (define qué
   "sourceModule": "gestion-academica",
   "eventType": "curso.cerrado",
   "occurredAt": "2026-12-04T18:00:00Z",
-  "payload": { "cursoId": "curso-42", "sedeId": "sede-centro", "cuatrimestre": "2026-2C" }
+  "payload": { "cursoId": "curso-42", "sedeId": "montserrat", "cuatrimestre": "2026-2C" }
 }
 ```
 
@@ -147,7 +147,7 @@ Dato maestro adicional: fechas de inicio y fin de cada cuatrimestre (define qué
     "docenteId": "docente-12",
     "materia": "BDD-310",
     "comision": "B1",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "cuatrimestre": "2026-2C"
   }
 }
@@ -181,7 +181,7 @@ Dato maestro adicional: fechas de inicio y fin de cada cuatrimestre (define qué
     "alumnoId": "alumno-456",
     "cursoId": "curso-42",
     "materia": "BDD-310",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "cuatrimestre": "2026-2C"
   }
 }
@@ -198,7 +198,7 @@ Dato maestro adicional: fechas de inicio y fin de cada cuatrimestre (define qué
   "payload": {
     "alumnoId": "alumno-456",
     "cursoId": "curso-42",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "cuatrimestre": "2026-2C",
     "motivo": "baja-voluntaria"
   }
@@ -223,7 +223,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
     "prestamoId": "7001",
     "alumnoId": "alumno-456",
     "materialId": "isbn-9789875841234",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "fechaVencimiento": "2026-09-08"
   }
 }
@@ -235,7 +235,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
   "sourceModule": "biblioteca",
   "eventType": "prestamo.devuelto",
   "occurredAt": "2026-09-10T15:00:00Z",
-  "payload": { "prestamoId": "7001", "sedeId": "sede-centro", "conDemora": true }
+  "payload": { "prestamoId": "7001", "sedeId": "montserrat", "conDemora": true }
 }
 ```
 
@@ -258,7 +258,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
     "tipoEvento": "Clases magistrales abiertas",
     "locacion": "Auditorio 1",
     "cupo": 120,
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "fecha": "2026-09-15",
     "costo": 0
   }
@@ -297,7 +297,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
   "sourceModule": "eventos",
   "eventType": "evento.cancelado",
   "occurredAt": "2026-09-14T09:00:00Z",
-  "payload": { "eventoId": "evt-123", "sedeId": "sede-centro", "motivo": "Disertante ausente" }
+  "payload": { "eventoId": "evt-123", "sedeId": "montserrat", "motivo": "Disertante ausente" }
 }
 ```
 
@@ -327,7 +327,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
   "occurredAt": "2026-08-20T13:20:00Z",
   "payload": {
     "compraId": "9001",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "fecha": "2026-08-20",
     "total": 18500,
     "items": [
@@ -348,7 +348,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
   "occurredAt": "2026-08-23T10:00:00Z",
   "payload": {
     "compraId": "9001",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "fecha": "2026-08-23",
     "items": [
       { "producto": "Buzo con logo", "categoria": "Indumentaria", "unidades": 1, "monto": 10500 }
@@ -374,7 +374,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
   "payload": {
     "reservaId": "5501",
     "monto": 3500,
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "turno": "12:30",
     "fecha": "2026-08-22"
   }
@@ -389,7 +389,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
   "sourceModule": "comedor",
   "eventType": "reserva.asistida",
   "occurredAt": "2026-08-22T12:35:00Z",
-  "payload": { "reservaId": "5501", "montoRestituido": 3500, "sedeId": "sede-centro" }
+  "payload": { "reservaId": "5501", "montoRestituido": 3500, "sedeId": "montserrat" }
 }
 ```
 
@@ -401,7 +401,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
   "sourceModule": "comedor",
   "eventType": "reserva.cancelada",
   "occurredAt": "2026-08-21T19:00:00Z",
-  "payload": { "reservaId": "5501", "montoDevuelto": 3500, "sedeId": "sede-centro" }
+  "payload": { "reservaId": "5501", "montoDevuelto": 3500, "sedeId": "montserrat" }
 }
 ```
 
@@ -413,13 +413,13 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
 
 ```json
 {
-  "eventId": "back-sueldos-2026-08-sede-centro",
+  "eventId": "back-sueldos-2026-08-montserrat",
   "sourceModule": "backoffice",
   "eventType": "sueldos.liquidados",
   "occurredAt": "2026-08-31T20:00:00Z",
   "payload": {
     "periodo": "2026-08",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "monto": 145000000,
     "desglose": { "docentes": 98000000, "administrativos": 47000000 }
   }
@@ -434,7 +434,7 @@ Hoy ningún tablero muestra uso de biblioteca. Las multas ya llegan por CORE (`o
   "sourceModule": "backoffice",
   "eventType": "gasto.registrado",
   "occurredAt": "2026-08-15T10:00:00Z",
-  "payload": { "categoria": "Mantenimiento", "monto": 2300000, "sedeId": "sede-centro", "fecha": "2026-08-15" }
+  "payload": { "categoria": "Mantenimiento", "monto": 2300000, "sedeId": "montserrat", "fecha": "2026-08-15" }
 }
 ```
 
@@ -454,11 +454,11 @@ Dato maestro: catálogo de sedes.
 
 ```json
 {
-  "eventId": "back-sede-sede-centro",
+  "eventId": "back-sede-montserrat",
   "sourceModule": "backoffice",
   "eventType": "sede.definida",
   "occurredAt": "2026-01-10T09:00:00Z",
-  "payload": { "sedeId": "sede-centro", "nombre": "Sede Montserrat" }
+  "payload": { "sedeId": "montserrat", "nombre": "Sede Montserrat" }
 }
 ```
 
@@ -481,7 +481,7 @@ Dato maestro: catálogo de sedes.
     "tipo": "cobro",
     "monto": 18500,
     "origen": "tienda",
-    "sedeId": "sede-centro",
+    "sedeId": "montserrat",
     "fecha": "2026-08-20",
     "saldoPosterior": 41500
   }

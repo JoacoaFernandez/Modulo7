@@ -35,7 +35,6 @@ export interface Period {
   index: number;
 }
 
-// Filtros que viajan al backend: la sede va por id (catálogo de Backoffice), no por nombre.
 export interface AcademicFilters {
   siteId: string;
   quarter: string;
@@ -71,9 +70,6 @@ export interface Role {
   availableDashboards: DashboardId[];
 }
 
-// --- Eventos de origen ---
-
-// Los 9 módulos de UADEnet (todos menos Analítica, que es el 7) que emiten eventos.
 export type SourceModule =
   | "portal-estudiante"
   | "portal-docente"
@@ -89,7 +85,6 @@ export type EventSourceStatus = "connected" | "degraded" | "disconnected";
 
 export interface EventSource {
   module: SourceModule;
-  // Etiqueta visible, con acentos: "gestión académica".
   label: string;
   status: EventSourceStatus;
   lastIngestionAt: string;

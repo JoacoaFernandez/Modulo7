@@ -63,7 +63,7 @@ curl -X POST http://localhost:3000/api/analytics/events \
     "sourceModule": "portal-estudiante",
     "eventType": "inscripcion.confirmada",
     "occurredAt": "2026-08-02T10:00:00.000-03:00",
-    "payload": { "alumnoId": "alumno-456", "cursoId": "curso-42", "materia": "BDD-310", "sedeId": "sede-centro", "cuatrimestre": "2026-2C" }
+    "payload": { "alumnoId": "alumno-456", "cursoId": "curso-42", "materia": "BDD-310", "sedeId": "montserrat", "cuatrimestre": "2026-2C" }
   }'
 ```
 

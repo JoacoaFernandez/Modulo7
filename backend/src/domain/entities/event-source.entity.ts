@@ -1,5 +1,4 @@
 
-// Los 9 módulos de UADEnet (todos menos Analítica, que es el 7) que emiten eventos.
 export type SourceModule =
   | "portal-estudiante"
   | "portal-docente"
