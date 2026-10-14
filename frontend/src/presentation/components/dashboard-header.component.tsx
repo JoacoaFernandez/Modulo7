@@ -4,10 +4,15 @@
 // Debajo de `lg` el header envuelve en dos filas y suma el botón de menú del Sidebar.
 import { Menu } from "lucide-react";
 
+export interface FilterOption {
+  value: string;
+  label: string;
+}
+
 interface FilterSelectProps {
   label: string;
   value: string;
-  options: string[];
+  options: FilterOption[];
   onChange: (value: string) => void;
 }
 
@@ -21,8 +26,8 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
         className="cursor-pointer border-0 bg-transparent text-[13px] font-medium text-[var(--navy)] outline-none"
       >
         {options.map((option) => (
-          <option key={option} value={option}>
-            {option}
+          <option key={option.value} value={option.value}>
+            {option.label}
           </option>
         ))}
       </select>
@@ -33,16 +38,20 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
 interface DashboardHeaderProps {
   eyebrow: string;
   title: string;
-  siteName: string;
-  siteOptions: string[];
+  // Los filtros de sede y período no aplican a "Fuentes de datos": ahí se ocultan.
+  showFilters: boolean;
+  siteId: string;
+  siteOptions: FilterOption[];
   onSiteChange: (value: string) => void;
   // "Cuatrimestre" en el tablero académico, "Período" en el resto.
   periodLabel: string;
   periodValue: string;
-  periodOptions: string[];
+  periodOptions: FilterOption[];
   onPeriodChange: (value: string) => void;
-  // "Cambiar rol": vuelve al selector de rol (conserva sede/período elegidos).
-  onChangeRole: () => void;
+  // Nombre del usuario que inició sesión en CORE.
+  userName: string;
+  // Cierra la sesión y vuelve al login (conserva sede/período elegidos).
+  onLogout: () => void;
   // Abre el drawer del Sidebar; el botón que lo dispara solo se ve en <lg.
   onOpenMenu: () => void;
 }
@@ -50,14 +59,16 @@ interface DashboardHeaderProps {
 export function DashboardHeader({
   eyebrow,
   title,
-  siteName,
+  showFilters,
+  siteId,
   siteOptions,
   onSiteChange,
   periodLabel,
   periodValue,
   periodOptions,
   onPeriodChange,
-  onChangeRole,
+  userName,
+  onLogout,
   onOpenMenu,
 }: DashboardHeaderProps) {
   return (
@@ -78,14 +89,19 @@ export function DashboardHeader({
       </div>
 
       <div className="flex flex-wrap items-center gap-2.5">
-        <FilterSelect label="Sede" value={siteName} options={siteOptions} onChange={onSiteChange} />
-        <FilterSelect label={periodLabel} value={periodValue} options={periodOptions} onChange={onPeriodChange} />
+        {showFilters && (
+          <>
+            <FilterSelect label="Sede" value={siteId} options={siteOptions} onChange={onSiteChange} />
+            <FilterSelect label={periodLabel} value={periodValue} options={periodOptions} onChange={onPeriodChange} />
+          </>
+        )}
+        <span className="hidden text-[12.5px] text-[#6E7A90] xl:inline">{userName}</span>
         <button
           type="button"
-          onClick={onChangeRole}
+          onClick={onLogout}
           className="cursor-pointer rounded-[7px] border border-[#DCE1E8] bg-white px-3 py-2 text-[12.5px] font-medium text-[#41506B] transition-colors hover:border-[var(--blue)] hover:text-[var(--navy)]"
         >
-          Cambiar rol
+          Cerrar sesión
         </button>
       </div>
     </header>

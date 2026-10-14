@@ -36,12 +36,12 @@ export interface Period {
 }
 
 export interface AcademicFilters {
-  siteName: string;
+  siteId: string;
   quarter: string;
 }
 
 export interface FinancialFilters {
-  siteName: string;
+  siteId: string;
   month: string;
 }
 

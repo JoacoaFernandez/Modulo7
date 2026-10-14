@@ -11,12 +11,16 @@ import { Period } from "../../domain/entities/period.entity";
 import { Role } from "../../domain/entities/role.entity";
 import { Site } from "../../domain/entities/site.entity";
 import { AnalyticsCalculatorService } from "../../domain/services/analytics-calculator.service";
+import { BackofficeSitesGateway } from "../../domain/gateways/backoffice-sites.gateway";
 import { ANALYTICS_DATASET } from "../data/analytics.dataset";
+import { backofficeSitesGateway } from "../integrations/gateways";
 
 export class AnalyticsRepositoryMock implements AnalyticsRepository {
   private readonly calculator = new AnalyticsCalculatorService(ANALYTICS_DATASET);
   // Los eventos ingeridos se acumulan en memoria; todavía ningún tablero los lee.
   private readonly events: InstitutionalEvent[] = [];
+
+  constructor(private readonly sitesGateway: BackofficeSitesGateway = backofficeSitesGateway) {}
 
   async getAcademicStats(filters: AcademicFilters): Promise<AcademicStats> {
     return this.calculator.calculateAcademicStats(filters);
@@ -30,8 +34,17 @@ export class AnalyticsRepositoryMock implements AnalyticsRepository {
     return this.calculator.calculateEventStats(filters);
   }
 
+  // El catálogo de sedes (id y nombre) es de Backoffice; de acá salen solo las métricas de
+  // cada sede. Una sede que Backoffice no define no aparece, y la "agregada" siempre va primero.
   async getSites(): Promise<Site[]> {
-    return ANALYTICS_DATASET.sites;
+    const catalog = await this.sitesGateway.listSites();
+    const aggregate = ANALYTICS_DATASET.sites.filter((site) => site.isAggregate);
+    const sites = catalog.flatMap(({ sedeId, nombre }) => {
+      const metrics = ANALYTICS_DATASET.sites.find((site) => site.id === sedeId);
+      return metrics ? [{ ...metrics, name: nombre }] : [];
+    });
+
+    return [...aggregate, ...sites];
   }
 
   async getQuarters(): Promise<Period[]> {

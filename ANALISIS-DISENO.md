@@ -1,5 +1,13 @@
 # Auditoría: proyecto actual vs. diseño «UADEnet Analítica Institucional»
 
+> **Nota (posterior a esta auditoría):** el selector de rol ("Acceso simulado") fue
+> reemplazado por un login con mail `@uade.edu.ar` contra un mock de CORE
+> (`login.page.tsx`), "Cambiar rol" pasó a "Cerrar sesión", cada rol ve solo su tablero y la
+> sede viaja como `sedeId` (`?sedeId=`) en lugar del nombre. Las referencias de abajo a
+> `role-selector.page.tsx`, `changeRole()` y `?sede=` describen el estado anterior. "Fuentes de datos" pasó
+> a ser una pantalla real y "Permisos por rol" se quitó del menú (los permisos son de Backoffice). Estado
+> vigente: [README.md](README.md) y [CLAUDE.md](CLAUDE.md).
+
 ## Contexto
 
 El proyecto (Módulo 7 — Analítica Institucional, React + Vite + shadcn en `frontend/`, Node/Express 5 + TypeScript en `backend/`, ambos con arquitectura por capas) fue armado antes de que existiera el diseño. El diseño ya está cerrado en Claude Design (`765c19da-4ce2-463d-a247-6b5a76ceb465`) y define 4 pantallas, un sistema visual propio (paleta UADE navy/azul, tipografías serif + grotesk) y — sobre todo — un **modelo de datos mucho más rico** que el que hoy expone el backend: series por período, deltas contra el período anterior, filtro de sede que reescala todos los números, y desagregaciones (por materia × 3 cuatrimestres, por facultad, por tipo de evento, por mes) que las entidades actuales no pueden representar.

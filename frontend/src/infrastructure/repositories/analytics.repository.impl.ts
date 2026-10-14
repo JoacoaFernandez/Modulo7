@@ -8,7 +8,6 @@ import type {
   FilterOptions,
   FinancialFilters,
   FinancialStats,
-  Role,
 } from "../../domain/entities/analytics.entity";
 import { analyticsClient } from "../api/analytics.client";
 
@@ -27,10 +26,6 @@ export class AnalyticsRepositoryImpl implements AnalyticsRepository {
 
   getFilters(signal?: AbortSignal): Promise<FilterOptions> {
     return analyticsClient.getFilters(signal);
-  }
-
-  getRoles(signal?: AbortSignal): Promise<Role[]> {
-    return analyticsClient.getRoles(signal);
   }
 
   getEventSources(signal?: AbortSignal): Promise<EventSource[]> {

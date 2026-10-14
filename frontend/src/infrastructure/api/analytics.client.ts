@@ -1,4 +1,5 @@
 // API clients: HTTP setup and calls to the backend, isolated from the rest of the app.
+import { authTokenStore } from "./auth-token.store";
 import type {
   AcademicFilters,
   AcademicStats,
@@ -7,13 +8,22 @@ import type {
   FilterOptions,
   FinancialFilters,
   FinancialStats,
-  Role,
 } from "../../domain/entities/analytics.entity";
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api";
 
 async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const response = await fetch(`${API_BASE_URL}${path}`, { signal });
+  const token = authTokenStore.get();
+  const response = await fetch(`${API_BASE_URL}${path}`, {
+    signal,
+    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+  });
+
+  // CORE rechazó el token (vencido o inválido): la sesión se cierra y vuelve el login.
+  if (response.status === 401) {
+    authTokenStore.notifyUnauthorized();
+  }
+
   if (!response.ok) {
     throw new Error(`Request to ${path} failed with status ${response.status}`);
   }
@@ -34,25 +44,23 @@ function toQueryString(params: Record<string, string | undefined>): string {
 export const analyticsClient = {
   getAcademicStats: (filters: AcademicFilters, signal?: AbortSignal) =>
     getJson<AcademicStats>(
-      `/analytics/dashboard/academic${toQueryString({ sede: filters.siteName, cuatrimestre: filters.quarter })}`,
+      `/analytics/dashboard/academic${toQueryString({ sedeId: filters.siteId, cuatrimestre: filters.quarter })}`,
       signal,
     ),
 
   getFinancialStats: (filters: FinancialFilters, signal?: AbortSignal) =>
     getJson<FinancialStats>(
-      `/analytics/dashboard/financial${toQueryString({ sede: filters.siteName, periodo: filters.month })}`,
+      `/analytics/dashboard/financial${toQueryString({ sedeId: filters.siteId, periodo: filters.month })}`,
       signal,
     ),
 
   getEventsStats: (filters: FinancialFilters, signal?: AbortSignal) =>
     getJson<EventStats>(
-      `/analytics/events/stats${toQueryString({ sede: filters.siteName, periodo: filters.month })}`,
+      `/analytics/events/stats${toQueryString({ sedeId: filters.siteId, periodo: filters.month })}`,
       signal,
     ),
 
   getFilters: (signal?: AbortSignal) => getJson<FilterOptions>("/analytics/filters", signal),
-
-  getRoles: (signal?: AbortSignal) => getJson<Role[]>("/analytics/roles", signal),
 
   getEventSources: (signal?: AbortSignal) => getJson<EventSource[]>("/analytics/sources", signal),
 };
