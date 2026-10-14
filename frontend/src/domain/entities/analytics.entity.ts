@@ -81,12 +81,9 @@ export type SourceModule =
   | "gestion-academica"
   | "core";
 
-export type EventSourceStatus = "connected" | "degraded" | "disconnected";
-
 export interface EventSource {
   module: SourceModule;
   label: string;
-  status: EventSourceStatus;
   lastIngestionAt: string;
 }
 

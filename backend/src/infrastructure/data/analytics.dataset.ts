@@ -85,7 +85,6 @@ const MODULE_LABELS: Record<(typeof SOURCE_MODULES)[number], string> = {
 const EVENT_SOURCES: EventSource[] = SOURCE_MODULES.map((module) => ({
   module,
   label: MODULE_LABELS[module],
-  status: "connected",
   lastIngestionAt: LAST_INGESTION_AT,
 }));
 

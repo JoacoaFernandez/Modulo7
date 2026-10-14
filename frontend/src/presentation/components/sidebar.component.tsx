@@ -1,6 +1,7 @@
 // Presentation components: app-specific components composed from shadcn/ui primitives (components/ui).
 // Colores, espaciados y textos porteados 1:1 del <aside> del prototipo (Analitica Institucional.dc.html).
 // Debajo de `lg` pasa a ser un drawer off-canvas (no está en el prototipo, que es solo desktop).
+// En desktop queda fijo (sticky, alto de pantalla) y solo scrollea el contenido de la derecha.
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -77,7 +78,7 @@ export function Sidebar({ availableSections, activeSection, onSelectSection, isO
 
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-40 flex h-screen w-[232px] shrink-0 flex-col gap-[26px] bg-[var(--navy)] px-4 py-[22px] transition-transform duration-200 ease-out lg:static lg:h-auto lg:translate-x-0",
+          "fixed inset-y-0 left-0 z-40 flex h-screen w-[232px] shrink-0 flex-col gap-[26px] bg-[var(--navy)] px-4 py-[22px] transition-transform duration-200 ease-out lg:sticky lg:top-0 lg:translate-x-0",
           isOpen ? "translate-x-0" : "-translate-x-full",
         )}
       >

@@ -1,8 +1,8 @@
 // Presentation components: app-specific components composed from shadcn/ui primitives (components/ui).
-// Pantalla "Fuentes de datos": los 9 módulos que emiten eventos, su estado y qué tablero alimentan.
-import type { EventSource, EventSourceStatus, SourceModule } from "@/domain/entities/analytics.entity";
+// Pantalla "Fuentes de datos": los 9 módulos que emiten eventos, su última ingesta y qué tablero alimentan.
+// No hay columna de estado: la ingesta es batch (POST por evento), no una conexión abierta.
+import type { EventSource, SourceModule } from "@/domain/entities/analytics.entity";
 import { formatLastIngestion } from "@/lib/format";
-import { cn } from "@/lib/utils";
 import { SectionCard } from "./dashboard/section-card.component";
 import { SectionHeader } from "./dashboard/section-header.component";
 
@@ -17,12 +17,6 @@ const FEEDS: Record<SourceModule, string> = {
   comedor: "Financiero",
   eventos: "Estadísticas de eventos",
   biblioteca: "Ninguno todavía",
-};
-
-const STATUS: Record<EventSourceStatus, { label: string; className: string }> = {
-  connected: { label: "Conectado", className: "bg-[var(--green)]/10 text-[var(--green)]" },
-  degraded: { label: "Con demoras", className: "bg-amber-100 text-amber-700" },
-  disconnected: { label: "Sin conexión", className: "bg-red-100 text-red-700" },
 };
 
 interface DataSourcesProps {
@@ -48,7 +42,6 @@ export function DataSources({ sources, isLoading, error }: DataSourcesProps) {
             <thead>
               <tr className="border-b border-[var(--app-border)] text-[11px] font-medium tracking-[0.08em] text-[#647188] uppercase">
                 <th className="py-2.5 pr-4 font-medium">Módulo</th>
-                <th className="py-2.5 pr-4 font-medium">Estado</th>
                 <th className="py-2.5 pr-4 font-medium">Última ingesta</th>
                 <th className="py-2.5 font-medium">Alimenta</th>
               </tr>
@@ -57,16 +50,6 @@ export function DataSources({ sources, isLoading, error }: DataSourcesProps) {
               {sources.map((source) => (
                 <tr key={source.module} className="border-b border-[var(--app-border)] last:border-0">
                   <td className="py-3 pr-4 font-medium text-[var(--navy)] capitalize">{source.label}</td>
-                  <td className="py-3 pr-4">
-                    <span
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-xs font-medium",
-                        STATUS[source.status].className,
-                      )}
-                    >
-                      {STATUS[source.status].label}
-                    </span>
-                  </td>
                   <td className="py-3 pr-4 text-[#41506B]">{formatLastIngestion(source.lastIngestionAt)}</td>
                   <td className="py-3 text-[#41506B]">{FEEDS[source.module]}</td>
                 </tr>
