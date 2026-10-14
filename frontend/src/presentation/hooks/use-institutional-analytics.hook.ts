@@ -12,55 +12,73 @@ const getFinancialDashboardUseCase = new GetFinancialDashboardUseCase(analyticsR
 const getEventsStatsUseCase = new GetEventsStatsUseCase(analyticsRepository);
 
 export interface InstitutionalAnalyticsFilters {
-  siteName: string;
+  // Tablero que se está viendo: "financial" incluye las estadísticas de eventos.
+  // "sources" no es un tablero: no pide nada.
+  section: "academic" | "financial" | "sources";
+  siteId: string;
   quarter: string;
   month: string;
 }
 
-interface InstitutionalAnalyticsState {
+interface Loaded {
+  // Filtros con los que se pidió este resultado: si no coinciden con los actuales, está viejo.
+  key: string;
   academicStats: AcademicStats | null;
   financialStats: FinancialStats | null;
   eventsStats: EventStats | null;
-  isLoading: boolean;
   error: string | null;
 }
 
-const initialState: InstitutionalAnalyticsState = {
-  academicStats: null,
-  financialStats: null,
-  eventsStats: null,
-  isLoading: true,
-  error: null,
-};
-
-// Refetchea los 3 tableros cada vez que cambia sede/cuatrimestre/mes. Cada cambio de filtro
+// Refetchea el tablero visible cada vez que cambia sección/sede/cuatrimestre/mes. Cada cambio
 // cancela el pedido anterior con AbortController, para no pisar el estado con una respuesta
-// que llegó tarde y ya no corresponde a los filtros actuales.
+// que llegó tarde y ya no corresponde a los filtros actuales. Se pide solo lo de la sección
+// activa (académico, o financiero + eventos): el backend responde 403 si el usuario no tiene
+// ese rol.
 export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters) {
-  const [state, setState] = useState<InstitutionalAnalyticsState>(initialState);
+  const [loaded, setLoaded] = useState<Loaded | null>(null);
+  const { section, siteId, quarter, month } = filters;
+  const key = `${section}|${siteId}|${quarter}|${month}`;
 
   useEffect(() => {
+    if (section === "sources") return;
+
     const controller = new AbortController();
     const { signal } = controller;
 
-    setState((prev) => ({ ...prev, isLoading: true, error: null }));
+    const request =
+      section === "academic"
+        ? getAcademicDashboardUseCase
+            .execute({ siteId, quarter }, signal)
+            .then((academicStats) => ({ academicStats, financialStats: null, eventsStats: null }))
+        : Promise.all([
+            getFinancialDashboardUseCase.execute({ siteId, month }, signal),
+            getEventsStatsUseCase.execute({ siteId, month }, signal),
+          ]).then(([financialStats, eventsStats]) => ({ academicStats: null, financialStats, eventsStats }));
 
-    Promise.all([
-      getAcademicDashboardUseCase.execute({ siteName: filters.siteName, quarter: filters.quarter }, signal),
-      getFinancialDashboardUseCase.execute({ siteName: filters.siteName, month: filters.month }, signal),
-      getEventsStatsUseCase.execute({ siteName: filters.siteName, month: filters.month }, signal),
-    ])
-      .then(([academicStats, financialStats, eventsStats]) => {
+    request
+      .then((stats) => {
         if (signal.aborted) return;
-        setState({ academicStats, financialStats, eventsStats, isLoading: false, error: null });
+        setLoaded({ key, ...stats, error: null });
       })
       .catch((error: Error) => {
         if (signal.aborted) return;
-        setState((prev) => ({ ...prev, isLoading: false, error: error.message }));
+        setLoaded({ key, academicStats: null, financialStats: null, eventsStats: null, error: error.message });
       });
 
     return () => controller.abort();
-  }, [filters.siteName, filters.quarter, filters.month]);
+  }, [key, section, siteId, quarter, month]);
 
-  return state;
+  if (section === "sources") {
+    return { academicStats: null, financialStats: null, eventsStats: null, isLoading: false, error: null };
+  }
+
+  const current = loaded?.key === key ? loaded : null;
+
+  return {
+    academicStats: current?.academicStats ?? null,
+    financialStats: current?.financialStats ?? null,
+    eventsStats: current?.eventsStats ?? null,
+    isLoading: current === null,
+    error: current?.error ?? null,
+  };
 }

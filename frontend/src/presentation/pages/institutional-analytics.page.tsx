@@ -1,12 +1,15 @@
 // Pages: top-level views assembled from components, wired to hooks and use cases.
 import { useState } from "react";
-import { useSession } from "../context/session.context";
+import type { AuthUser } from "@/domain/entities/auth.entity";
+import { useSession } from "../hooks/use-session.hook";
 import { useInstitutionalAnalytics } from "../hooks/use-institutional-analytics.hook";
+import { useEventSources } from "../hooks/use-event-sources.hook";
 import { useFilters } from "../hooks/use-filters.hook";
 import { AcademicDashboard } from "../components/academic-dashboard.component";
 import { FinancialDashboard } from "../components/financial-dashboard.component";
 import { EventsDashboard } from "../components/events-dashboard.component";
 import { Sidebar, type AnalyticsSection } from "../components/sidebar.component";
+import { DataSources } from "../components/data-sources.component";
 import { DashboardHeader } from "../components/dashboard-header.component";
 
 // Eyebrow y título literales del prototipo (rolActual / tituloVista). No hay un tercero para
@@ -15,15 +18,26 @@ import { DashboardHeader } from "../components/dashboard-header.component";
 const sectionMeta: Record<AnalyticsSection, { eyebrow: string; title: string }> = {
   academic: { eyebrow: "Dirección Académica", title: "Rendimiento académico" },
   financial: { eyebrow: "Dirección Financiera", title: "Situación económica y financiera" },
+  sources: { eyebrow: "Analítica Institucional", title: "Fuentes de datos" },
 };
 
-export function InstitutionalAnalyticsPage() {
-  const [activeSection, setActiveSection] = useState<AnalyticsSection>("academic");
+// Cada rol habilita su tablero; los eventos académicos viven dentro del financiero. Un usuario
+// con varios roles ve todos los tableros que le corresponden.
+const sectionByRole: Record<AuthUser["roles"][number], AnalyticsSection> = {
+  academica: "academic",
+  financiera: "financial",
+};
+
+export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
+  const availableSections = user.roles.map((role) => sectionByRole[role]);
+  const [activeSection, setActiveSection] = useState<AnalyticsSection>(availableSections[0]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { siteName, quarter, month, setSiteName, setQuarter, setMonth, changeRole } = useSession();
+  const { siteId, quarter, month, setSiteId, setQuarter, setMonth, logout } = useSession();
   const { options: filterOptions } = useFilters();
+  const eventSources = useEventSources();
   const { academicStats, financialStats, eventsStats, isLoading, error } = useInstitutionalAnalytics({
-    siteName,
+    section: activeSection,
+    siteId,
     quarter,
     month,
   });
@@ -31,16 +45,20 @@ export function InstitutionalAnalyticsPage() {
 
   // El académico filtra por cuatrimestre; financiero y eventos, por mes (mismo criterio que
   // el backend). Mientras GET /filters no responda, se usa el valor de sesión como única
-  // opción para que el <select> no quede vacío.
+  // opción para que el <select> no quede vacío. La sede se identifica por el id de Backoffice.
   const isAcademicSection = activeSection === "academic";
-  const siteOptions = filterOptions?.sites.map((site) => site.name) ?? [siteName];
+  const siteOptions = filterOptions?.sites.map((site) => ({ value: site.id, label: site.name })) ?? [
+    { value: siteId, label: siteId },
+  ];
+  const currentPeriod = isAcademicSection ? quarter : month;
   const periodOptions = (isAcademicSection ? filterOptions?.quarters : filterOptions?.months)?.map(
-    (period) => period.id,
-  ) ?? [isAcademicSection ? quarter : month];
+    (period) => ({ value: period.id, label: period.label }),
+  ) ?? [{ value: currentPeriod, label: currentPeriod }];
 
   return (
     <div className="flex min-h-screen w-full bg-[var(--app-bg)]">
       <Sidebar
+        availableSections={availableSections}
         activeSection={activeSection}
         onSelectSection={setActiveSection}
         isOpen={isSidebarOpen}
@@ -51,14 +69,16 @@ export function InstitutionalAnalyticsPage() {
         <DashboardHeader
           eyebrow={eyebrow}
           title={title}
-          siteName={siteName}
+          showFilters={activeSection !== "sources"}
+          siteId={siteId}
           siteOptions={siteOptions}
-          onSiteChange={setSiteName}
+          onSiteChange={setSiteId}
           periodLabel={isAcademicSection ? "Cuatrimestre" : "Período"}
-          periodValue={isAcademicSection ? quarter : month}
+          periodValue={currentPeriod}
           periodOptions={periodOptions}
           onPeriodChange={isAcademicSection ? setQuarter : setMonth}
-          onChangeRole={changeRole}
+          userName={user.name}
+          onLogout={logout}
           onOpenMenu={() => setIsSidebarOpen(true)}
         />
 
@@ -68,6 +88,7 @@ export function InstitutionalAnalyticsPage() {
 
           {!isLoading && !error && (
             <>
+              {activeSection === "sources" && <DataSources {...eventSources} />}
               {activeSection === "academic" && academicStats && <AcademicDashboard stats={academicStats} />}
               {activeSection === "financial" && financialStats && (
                 <div className="flex flex-col gap-8">

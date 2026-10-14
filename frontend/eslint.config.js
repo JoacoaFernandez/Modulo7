@@ -6,7 +6,8 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  // components/ui es código generado por la CLI de shadcn: no se edita a mano ni se lintea.
+  globalIgnores(['dist', 'src/components/ui']),
   {
     files: ['**/*.{ts,tsx}'],
     extends: [

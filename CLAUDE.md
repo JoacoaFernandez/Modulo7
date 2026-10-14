@@ -12,7 +12,11 @@ dirección académica, dirección financiera y estadísticas de eventos.
 - La ingesta de eventos (`POST /api/analytics/events`) funciona y guarda en memoria, pero
   **ningún dashboard lee esos eventos todavía** — los dashboards salen del mock. Conectar
   ingesta real con dashboards es el trabajo pendiente cuando exista DB.
-- Auth/roles: simulados en el frontend (selector de rol), sin backend de auth.
+- Auth: login con mail `@uade.edu.ar` contra un **mock de CORE** (`/api/auth`, gateway en
+  `backend/src/infrastructure/integrations/`). El token viaja como Bearer y el rol (académica /
+  financiera) lo define CORE; los tableros exigen sesión y el rol correcto.
+- Sedes: el catálogo sale de un mock de Backoffice y toda sede viaja como `sedeId`
+  (`?sedeId=sede-centro`), nunca como nombre.
 - Antes de asumir que algo falta o está desactualizado, releer `ANALISIS-DISENO.md` — es
   la auditoría viva del proyecto y puede tener notas más recientes que esta guía.
 
@@ -82,12 +86,14 @@ El contrato de ingesta está documentado en **`backend/EVENTOS.md`** — leerlo 
 tocar cualquier cosa relacionada a eventos. Resumen:
 
 - `POST /api/analytics/events` — envelope común: `eventId`, `sourceModule` (enum de 9
-  módulos: `academica, inscripciones, evaluaciones, docencia, finanzas, biblioteca, campus,
-  soporte, identidad`), `eventType` (`sustantivo.verbo`), `occurredAt` (ISO 8601), `payload`
-  libre.
+  módulos: `portal-estudiante, portal-docente, biblioteca, comedor, tienda, eventos,
+  backoffice, gestion-academica, core`), `eventType` (`sustantivo.verbo`), `occurredAt` (ISO 8601), `payload`
+  validado por tipo de evento contra `backend/src/domain/entities/event-schemas.ts`. Ese
+  archivo es la fuente de verdad: la tabla de tipos de `EVENTOS.md` y la colección de
+  Postman se generan de ahí con `npm run docs` (en `backend/`), no se editan a mano.
 - El contrato **está abierto a cambios** — todavía no se acordó formalmente entre los
   equipos de los 10 módulos. No asumir que es definitivo.
-- Sin autenticación entre módulos, sin idempotencia real (falta cuando haya DB), sin envío
+- Sin autenticación entre módulos (la ingesta es pública), sin idempotencia real (falta cuando haya DB), sin envío
   por lotes.
 
 ## Convenciones de código

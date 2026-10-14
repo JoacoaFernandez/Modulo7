@@ -7,7 +7,10 @@
     "dev": "tsx watch index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "docs:payloads": "tsx scripts/generate-payload-docs.ts",
+    "docs:postman": "tsx scripts/generate-postman.ts",
+    "docs": "npm run docs:payloads && npm run docs:postman"
   },
   "keywords": [],
   "author": "",
