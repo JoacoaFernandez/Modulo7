@@ -47,13 +47,13 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
 
     const request =
       section === "academic"
-        ? getAcademicDashboardUseCase
-            .execute({ siteId, quarter }, signal)
-            .then((academicStats) => ({ academicStats, financialStats: null, eventsStats: null }))
-        : Promise.all([
-            getFinancialDashboardUseCase.execute({ siteId, month }, signal),
+        ? Promise.all([
+            getAcademicDashboardUseCase.execute({ siteId, quarter }, signal),
             getEventsStatsUseCase.execute({ siteId, month }, signal),
-          ]).then(([financialStats, eventsStats]) => ({ academicStats: null, financialStats, eventsStats }));
+          ]).then(([academicStats, eventsStats]) => ({ academicStats, financialStats: null, eventsStats }))
+        : getFinancialDashboardUseCase
+            .execute({ siteId, month }, signal)
+            .then((financialStats) => ({ academicStats: null, financialStats, eventsStats: null }));
 
     request
       .then((stats) => {

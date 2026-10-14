@@ -12,7 +12,7 @@ const controller = new AnalyticsController();
 
 router.get("/dashboard/academic", requireAuth, requireRole("academica"), (req, res) => controller.getAcademicDashboard(req, res));
 router.get("/dashboard/financial", requireAuth, requireRole("financiera"), (req, res) => controller.getFinancialDashboard(req, res));
-router.get("/events/stats", requireAuth, requireRole("financiera"), (req, res) => controller.getEventsStats(req, res));
+router.get("/events/stats", requireAuth, requireRole("academica"), (req, res) => controller.getEventsStats(req, res));
 router.get("/filters", requireAuth, (req, res) => controller.getFilters(req, res));
 router.get("/roles", (req, res) => controller.getRoles(req, res));
 router.get("/sources", (req, res) => controller.getEventSources(req, res));

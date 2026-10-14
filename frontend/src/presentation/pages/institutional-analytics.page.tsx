@@ -89,10 +89,9 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
           {!isLoading && !error && (
             <>
               {activeSection === "sources" && <DataSources {...eventSources} />}
-              {activeSection === "academic" && academicStats && <AcademicDashboard stats={academicStats} />}
-              {activeSection === "financial" && financialStats && (
+              {activeSection === "academic" && academicStats && (
                 <div className="flex flex-col gap-8">
-                  <FinancialDashboard stats={financialStats} />
+                  <AcademicDashboard stats={academicStats} />
                   {eventsStats && (
                     <section id="eventos">
                       <EventsDashboard stats={eventsStats} />
@@ -100,6 +99,7 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
                   )}
                 </div>
               )}
+              {activeSection === "financial" && financialStats && <FinancialDashboard stats={financialStats} />}
             </>
           )}
         </main>

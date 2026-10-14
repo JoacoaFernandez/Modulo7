@@ -5,7 +5,7 @@ import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // El diseño no tiene una tercera sección "eventos": esa vista vive *dentro* del tablero
-// financiero, en un <section id="eventos"> (mismo rol "financiera", ver Paso 7). Por eso
+// académico, en un <section id="eventos"> (mismo rol "academica"). Por eso
 // "Eventos académicos" no navega a otra sección, solo hace scroll. "Fuentes de datos" es la
 // única sección que no depende del rol: la ven todos los usuarios.
 export type AnalyticsSection = "academic" | "financial" | "sources";
@@ -50,22 +50,22 @@ export function Sidebar({ availableSections, activeSection, onSelectSection, isO
 
   const navItems: NavItem[] = [
     ...(hasAcademic
-      ? [{ label: "Académica", isActive: activeSection === "academic", onClick: goTo("academic") }]
-      : []),
-    ...(hasFinancial
       ? [
-          { label: "Financiera", isActive: activeSection === "financial", onClick: goTo("financial") },
+          { label: "Académica", isActive: activeSection === "academic", onClick: goTo("academic") },
           {
             label: "Eventos académicos",
             sub: true,
             isActive: false,
             onClick: () => {
-              onSelectSection("financial");
+              onSelectSection("academic");
               scrollToEventsAnchor();
               onClose();
             },
           },
         ]
+      : []),
+    ...(hasFinancial
+      ? [{ label: "Financiera", isActive: activeSection === "financial", onClick: goTo("financial") }]
       : []),
     { label: "Fuentes de datos", hint: "9", isActive: activeSection === "sources", onClick: goTo("sources") },
   ];
