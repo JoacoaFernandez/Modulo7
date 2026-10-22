@@ -1,18 +1,23 @@
 // Domain entities: core business objects, independent of frameworks and infrastructure.
 import { RoleId } from "./role.entity";
 
-// Usuario autenticado por CORE (módulo 10). Analítica no guarda usuarios: los recibe de CORE.
+// Identidad que viaja en el access token de CORE (claims sub, email, roles, permissions).
+// Analítica no guarda usuarios: valida el token y lee los claims.
 export interface AuthenticatedUser {
+  userId: string;
   email: string;
-  name: string;
-  // Un usuario puede tener varios roles; ve el tablero de cada uno.
-  roles: RoleId[];
+  // Roles de CORE: STUDENT, TEACHER, ADMIN_IT, ADMIN_STAFF.
+  roles: string[];
+  // Permisos {modulo}:{recurso}:{acción}; los de Analítica son analytics:*.
+  permissions: string[];
 }
 
-// Respuesta de login de CORE: token opaco que el frontend manda como Bearer.
-export interface AuthSession {
-  token: string;
-  // ISO 8601.
-  expiresAt: string;
-  user: AuthenticatedUser;
+// Usuario del portal de Analítica (GET /api/v1/me): la identidad de CORE más el nombre que
+// sale de la ficha de Backoffice y los tableros que habilitan sus permisos.
+export interface SessionUser {
+  userId: string;
+  email: string;
+  displayName: string;
+  roles: RoleId[];
+  permissions: string[];
 }

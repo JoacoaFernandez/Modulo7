@@ -13,7 +13,7 @@ import { AreaLineChart } from "./charts/area-line-chart.component";
 import { StackedBar } from "./charts/stacked-bar.component";
 import { BarList, type BarListRow } from "./charts/bar-list.component";
 import { createScale, buildPolylinePoints, buildAreaPoints, buildDots, buildGridRows } from "@/lib/chart-scale";
-import { formatCount, formatMillions, formatPercent } from "@/lib/format";
+import { formatCount, formatMillions, formatPercent, monthLabel } from "@/lib/format";
 
 interface FinancialDashboardProps {
   stats: FinancialStats;
@@ -24,10 +24,10 @@ const EXPENSE_COLOR = "#A51C30";
 const BALANCE_COLOR = "#127453";
 
 export function FinancialDashboard({ stats }: FinancialDashboardProps) {
-  const maxIncome = Math.max(...stats.monthlyBalance.map((m) => m.income));
+  const maxIncome = Math.max(...stats.monthlyBalance.map((m) => Number(m.income)));
   const balanceCategories: GroupedBarCategory[] = stats.monthlyBalance.map((month) => {
-    const incomeHeight = `${(month.income / maxIncome) * 100}%`;
-    const expenseHeight = `${(month.expense / maxIncome) * 100}%`;
+    const incomeHeight = `${(Number(month.income) / maxIncome) * 100}%`;
+    const expenseHeight = `${(Number(month.expense) / maxIncome) * 100}%`;
     return {
       key: month.month,
       barHeights: [incomeHeight, expenseHeight],
@@ -46,7 +46,7 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
     };
   });
 
-  const balanceValues = stats.monthlyBalance.map((m) => m.balance);
+  const balanceValues = stats.monthlyBalance.map((m) => Number(m.balance));
   const balanceLo = Math.min(...balanceValues) * 0.94;
   const balanceHi = Math.max(...balanceValues) * 1.03;
   const balanceScale = createScale({
@@ -62,12 +62,12 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
   const balanceGrid = buildGridRows(
     balanceGridValues,
     { domainMin: balanceLo, domainMax: balanceHi, marginTop: 14, plotHeight: 128 },
-    (value) => formatMillions(value),
+    (value) => formatMillions(value / 1_000_000),
   );
   const selectedBalance = stats.monthlyBalance.find((m) => m.isSelected);
 
-  const maxDining = Math.max(...stats.diningRevenues.map((d) => d.revenue));
-  const maxProductRevenue = Math.max(...stats.topSellingProducts.map((p) => p.revenue));
+  const maxDining = Math.max(...stats.diningRevenues.map((d) => Number(d.revenue)));
+  const maxProductRevenue = Math.max(...stats.topSellingProducts.map((p) => Number(p.revenue)));
 
   const expenseRows: BarListRow[] = stats.administrativeExpenses.map((expense) => ({
     key: expense.category,
@@ -81,7 +81,7 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
     key: product.productName,
     primaryLabel: product.productName,
     secondaryLabel: `${product.category} · ${formatCount(product.unitsSold)} u`,
-    bar: { color: "#2D5DA1", widthPercent: (product.revenue / maxProductRevenue) * 100 },
+    bar: { color: "#2D5DA1", widthPercent: (Number(product.revenue) / maxProductRevenue) * 100 },
     valueLabel: product.formattedRevenue,
   }));
 
@@ -95,7 +95,7 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
             value={kpi.formattedValue}
             unit={kpi.unit || undefined}
             delta={kpi.delta}
-            comparisonLabel={`vs. ${stats.previousMonth}`}
+            comparisonLabel={`vs. ${monthLabel(stats.previousMonth)}`}
             size="compact"
           />
         ))}
@@ -138,7 +138,7 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
         <SectionCard className="px-5 py-[18px]">
           <SectionHeader
             title="Gastos administrativos"
-            description={`Composición de egresos de ${stats.month}, salarios incluidos`}
+            description={`Composición de egresos de ${monthLabel(stats.month)}, salarios incluidos`}
           />
           <StackedBar
             segments={stats.administrativeExpenses.map((expense) => ({
@@ -153,14 +153,14 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <SectionCard className="px-5 py-[18px]">
-          <SectionHeader title="Productos más vendidos · Tienda del Campus" description={`Por facturación en ${stats.month}`} />
+          <SectionHeader title="Productos más vendidos · Tienda del Campus" description={`Por facturación en ${monthLabel(stats.month)}`} />
           <BarList rows={productRows} columns="180px 1fr 92px" />
         </SectionCard>
 
         <SectionCard className="px-5 py-[18px]">
           <SectionHeader
             title="Facturación de comedores por sede"
-            description={`${stats.month} · ticket promedio y variación mensual`}
+            description={`${monthLabel(stats.month)} · ticket promedio y variación mensual`}
           />
 
           {/* overflow-x-auto + minWidth compartido: en mobile, con ~5 sedes y bastante texto por
@@ -188,7 +188,7 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
                         className="w-full rounded-t"
                         style={{
                           background: dining.isSelected ? "#2D5DA1" : "#C6D5EA",
-                          height: `${(dining.revenue / maxDining) * 100}%`,
+                          height: `${(Number(dining.revenue) / maxDining) * 100}%`,
                         }}
                       />
                     </div>

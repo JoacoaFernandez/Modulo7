@@ -1,8 +1,9 @@
 // Domain entities: core business objects, independent of frameworks and infrastructure.
 import { SourceModule } from "./event-source.entity";
 
-// Tipos de dato que puede llevar un campo del payload. `date` es AAAA-MM-DD (sin hora).
-export type FieldType = "string" | "number" | "boolean" | "date" | "object" | "array";
+// Tipos de dato que puede llevar un campo de `data`. `date` es AAAA-MM-DD, `datetime` es
+// ISO 8601 y `decimal` es dinero como string con dos decimales ("1500.00").
+export type FieldType = "string" | "number" | "boolean" | "date" | "datetime" | "decimal" | "object" | "array";
 
 export interface FieldSpec {
   name: string;
@@ -16,7 +17,11 @@ export interface FieldSpec {
 }
 
 export interface EventSchema {
-  sourceModule: SourceModule;
+  // eventType del catálogo de CORE: único en todo UADEnet.
   eventType: string;
+  // Módulo que lo publica; coincide con el prefijo del eventType.
+  source: SourceModule;
+  // Qué tablero o métrica alimenta.
+  usage: string;
   fields: readonly FieldSpec[];
 }

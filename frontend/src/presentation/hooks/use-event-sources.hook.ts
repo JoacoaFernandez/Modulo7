@@ -12,7 +12,7 @@ interface EventSourcesState {
   error: string | null;
 }
 
-// Los 9 módulos emisores con su estado y última ingesta: GET /api/analytics/sources (público).
+// Los módulos emisores con su última ingesta: GET /api/v1/sources (público).
 export function useEventSources(): EventSourcesState {
   const [state, setState] = useState<EventSourcesState>({ sources: [], isLoading: true, error: null });
 

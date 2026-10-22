@@ -1,5 +1,5 @@
 // Presentation components: app-specific components composed from shadcn/ui primitives (components/ui).
-// Pantalla "Fuentes de datos": los 9 módulos que emiten eventos, su última ingesta y qué tablero alimentan.
+// Pantalla "Fuentes de datos": los módulos que emiten eventos, su última ingesta y qué tablero alimentan.
 // No hay columna de estado: la ingesta es batch (POST por evento), no una conexión abierta.
 import type { EventSource, SourceModule } from "@/domain/entities/analytics.entity";
 import { formatLastIngestion } from "@/lib/format";
@@ -8,15 +8,14 @@ import { SectionHeader } from "./dashboard/section-header.component";
 
 // Qué tableros se calculan con los eventos de cada módulo (ver backend/EVENTOS.md).
 const FEEDS: Record<SourceModule, string> = {
-  "gestion-academica": "Académico",
-  "portal-estudiante": "Académico",
-  "portal-docente": "Académico",
+  academic: "Académico",
+  teacher: "Académico",
   backoffice: "Académico y financiero",
   core: "Financiero",
-  tienda: "Financiero",
-  comedor: "Financiero",
-  eventos: "Estadísticas de eventos",
-  biblioteca: "Ninguno todavía",
+  store: "Financiero",
+  dining: "Financiero",
+  events: "Estadísticas de eventos",
+  library: "Ninguno todavía",
 };
 
 interface DataSourcesProps {
@@ -30,7 +29,7 @@ export function DataSources({ sources, isLoading, error }: DataSourcesProps) {
     <SectionCard className="p-5 sm:p-6">
       <SectionHeader
         title="Fuentes de eventos"
-        description="Módulos de UADEnet que le mandan eventos a Analítica Institucional por POST /api/analytics/events"
+        description="Módulos de UADEnet que publican eventos en CORE, que los entrega a Analítica Institucional"
       />
 
       {isLoading && <p className="text-sm text-muted-foreground">Cargando fuentes…</p>}

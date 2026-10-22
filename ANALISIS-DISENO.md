@@ -1,5 +1,19 @@
 # Auditoría: proyecto actual vs. diseño «UADEnet Analítica Institucional»
 
+> **Nota (21/10/2026), alineación con CORE v1:** el contrato del módulo pasó al de CORE.
+> - **Ingesta:** ya no existe `POST /api/analytics/events` ni la normalización de formatos
+>   viejos. Consumimos el sobre de CORE por la cola `analytics.all-events.v1`, simulada con
+>   `/api/v1/dev/events`.
+> - **Auth y rutas:** JWT RS256 validado con JWKS y autorización por permisos `analytics:*`.
+>   Rutas bajo `/api/v1`.
+> - **Sedes y períodos:** sedes como `siteId` UUID, cuatrimestres como `termId` y meses como
+>   `AAAA-MM`.
+> - **Formatos:** montos como string decimal y errores `problem+json`.
+>
+> Cualquier mención de abajo a `sedeId`, `cuatrimestre`, `periodo`, `sourceModule` o
+> `/api/analytics` describe el estado anterior. Detalle en `backend/EVENTOS.md` y
+> `docs/PREGUNTAS-A-GRUPOS.md`.
+
 > **Nota (posterior a esta auditoría):** el selector de rol ("Acceso simulado") fue
 > reemplazado por un login con mail `@uade.edu.ar` contra un mock de CORE
 > (`login.page.tsx`), "Cambiar rol" pasó a "Cerrar sesión", cada rol ve solo su tablero y la

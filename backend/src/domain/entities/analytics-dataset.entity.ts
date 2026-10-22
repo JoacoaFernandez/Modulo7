@@ -49,7 +49,8 @@ export interface ProductSeed {
 }
 
 export interface DiningSeed {
-  siteName: string;
+  // siteId del catálogo de Backoffice.
+  siteId: string;
   revenue: number;
   ticketsCount: number;
   averageTicket: number;
@@ -78,7 +79,7 @@ export interface AnalyticsDataset {
   // Alumnos de "Todas las sedes": denominador del factor de escala por sede.
   baselineStudentsCount: number;
   sites: Site[];
-  quarters: Period[];
+  // Los cuatrimestres no van acá: salen de Gestión Académica (las series de tasas siguen su orden).
   months: Period[];
   subjects: SubjectSeed[];
   teachers: TeacherSeed[];

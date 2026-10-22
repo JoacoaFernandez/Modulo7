@@ -12,7 +12,7 @@ import { GroupedBarChart, type GroupedBarCategory } from "./charts/grouped-bar-c
 import { AreaLineChart } from "./charts/area-line-chart.component";
 import { BarList, type BarListRow } from "./charts/bar-list.component";
 import { createScale, buildPolylinePoints, buildAreaPoints, buildDots, buildGridRows } from "@/lib/chart-scale";
-import { formatCount, formatPercent } from "@/lib/format";
+import { formatCount, formatPercent, monthLabel } from "@/lib/format";
 
 interface EventsDashboardProps {
   stats: EventStats;
@@ -81,11 +81,11 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1 pt-2">
         <h2 className="font-heading text-[21px] leading-[1.2] text-[#16243C]">Estadísticas de eventos académicos</h2>
-        <p className="text-[12.5px] text-[#647188]">Frecuencia, concurrencia y tasa de presentismo · {stats.month}</p>
+        <p className="text-[12.5px] text-[#647188]">Frecuencia, concurrencia y tasa de presentismo · {monthLabel(stats.month)}</p>
       </div>
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Eventos realizados" value={formatCount(stats.totalEvents)} unit="eventos" caption={stats.month} />
+        <StatCard label="Eventos realizados" value={formatCount(stats.totalEvents)} unit="eventos" caption={monthLabel(stats.month)} />
         <StatCard
           label="Concurrencia total"
           value={formatCount(stats.totalAttendees)}
@@ -139,7 +139,7 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
         </SectionCard>
 
         <SectionCard className="px-5 py-[18px]">
-          <SectionHeader title="Presentismo por tipo" description={`Asistentes verificados sobre inscriptos · ${stats.month}`} />
+          <SectionHeader title="Presentismo por tipo" description={`Asistentes verificados sobre inscriptos · ${monthLabel(stats.month)}`} />
           <BarList rows={attendanceRows} variant="stacked" />
           <div className="mt-4 flex flex-col gap-1.5 border-t border-[#E7EAEF] pt-3">
             <div className="flex items-baseline justify-between gap-2.5">
@@ -163,7 +163,7 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
           <div className="flex flex-col gap-1">
             <h2 className="font-heading text-[17px] leading-[1.25] text-[#16243C]">Eventos académicos</h2>
             <p className="text-xs leading-[1.4] text-[#647188]">
-              Frecuencia, concurrencia y presentismo sobre inscriptos · {stats.month}
+              Frecuencia, concurrencia y presentismo sobre inscriptos · {monthLabel(stats.month)}
             </p>
           </div>
           <div className="flex flex-wrap gap-5 sm:gap-7">

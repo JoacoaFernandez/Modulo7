@@ -1,71 +1,26 @@
-// Mock de CORE (módulo 10) para login y validación de tokens, hasta que exista el real.
-import { randomUUID } from "node:crypto";
-import { AuthenticatedUser, AuthSession } from "../../domain/entities/user.entity";
+// Gateway hacia CORE (módulo 10) para validar access tokens. Toma el JWKS del mock de CORE;
+// el gateway real lo descargaría de GET /.well-known/jwks.json, lo cachearía y sólo lo
+// refrescaría ante un kid desconocido. La verificación (jwt.ts) es la misma en los dos casos.
+import { AuthenticatedUser } from "../../domain/entities/user.entity";
 import { CoreAuthGateway } from "../../domain/gateways/core-auth.gateway";
-
-const TOKEN_TTL_MS = 8 * 60 * 60 * 1000;
-
-// Contraseña de las cuentas de demo. Es un mock local: en producción la valida CORE.
-const DEMO_PASSWORD = "uadenet2026";
-
-interface DirectoryEntry extends AuthenticatedUser {
-  password: string;
-}
-
-// Personal administrativo con acceso a Analítica. Cada mail determina los roles (y por lo
-// tanto qué tableros se ven), igual que los roles que CORE asigna desde Backoffice.
-const DIRECTORY: DirectoryEntry[] = [
-  {
-    email: "direccion.academica@uade.edu.ar",
-    name: "Dirección Académica",
-    roles: ["academica"],
-    password: DEMO_PASSWORD,
-  },
-  {
-    email: "direccion.financiera@uade.edu.ar",
-    name: "Dirección Financiera",
-    roles: ["financiera"],
-    password: DEMO_PASSWORD,
-  },
-  {
-    email: "direccion.general@uade.edu.ar",
-    name: "Dirección General",
-    roles: ["academica", "financiera"],
-    password: DEMO_PASSWORD,
-  },
-];
-
-interface StoredSession {
-  user: AuthenticatedUser;
-  expiresAt: number;
-}
+import { CORE_AUDIENCE, CORE_ISSUER, coreMock } from "./core.mock";
+import { verifyRs256 } from "./jwt";
 
 export class CoreAuthGatewayMock implements CoreAuthGateway {
-  private readonly sessions = new Map<string, StoredSession>();
+  async verifyAccessToken(token: string): Promise<AuthenticatedUser | null> {
+    const claims = verifyRs256(token, coreMock.jwks(), { issuer: CORE_ISSUER, audience: CORE_AUDIENCE });
+    // Un token de servicio (sub service:*) no representa a una persona: no abre los tableros.
+    if (!claims || typeof claims.sub !== "string" || claims.sub.startsWith("service:")) return null;
 
-  async login(email: string, password: string): Promise<AuthSession | null> {
-    const entry = DIRECTORY.find(
-      (candidate) => candidate.email === email.trim().toLowerCase() && candidate.password === password,
-    );
-    if (!entry) return null;
-
-    const user: AuthenticatedUser = { email: entry.email, name: entry.name, roles: entry.roles };
-    const token = randomUUID();
-    const expiresAt = Date.now() + TOKEN_TTL_MS;
-    this.sessions.set(token, { user, expiresAt });
-
-    return { token, expiresAt: new Date(expiresAt).toISOString(), user };
+    return {
+      userId: claims.sub,
+      email: typeof claims.email === "string" ? claims.email : "",
+      roles: stringList(claims.roles),
+      permissions: stringList(claims.permissions),
+    };
   }
+}
 
-  async validateToken(token: string): Promise<AuthenticatedUser | null> {
-    const session = this.sessions.get(token);
-    if (!session) return null;
-
-    if (session.expiresAt <= Date.now()) {
-      this.sessions.delete(token);
-      return null;
-    }
-
-    return session.user;
-  }
+function stringList(value: unknown): string[] {
+  return Array.isArray(value) ? value.filter((item): item is string => typeof item === "string") : [];
 }

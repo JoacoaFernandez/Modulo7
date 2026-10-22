@@ -1,264 +1,246 @@
-// Catálogo de payloads por (sourceModule, eventType). Es la fuente de verdad del contrato:
-// el validador de ingesta lo aplica y la tabla de tipos de EVENTOS.md se genera de acá
-// (npm run docs:payloads).
+// Catálogo de los eventos que consume Analítica, con el `data` del catálogo de CORE v1 (§11).
+// Es la fuente de verdad del consumer: el validador lo aplica y la tabla de EVENTOS.md se
+// genera de acá (npm run docs:payloads). Un eventType que no está acá se confirma y se descarta.
 import { EventSchema, FieldSpec } from "./event-schema.entity";
-import { SourceModule } from "./event-source.entity";
 
-const str = (name: string, description: string, required = true): FieldSpec => ({
-  name,
-  type: "string",
-  required,
-  description,
-});
-const num = (name: string, description: string, required = true): FieldSpec => ({
-  name,
-  type: "number",
-  required,
-  description,
-});
-const bool = (name: string, description: string, required = true): FieldSpec => ({
-  name,
-  type: "boolean",
-  required,
-  description,
-});
-const date = (name: string, description: string, required = true): FieldSpec => ({
-  name,
-  type: "date",
-  required,
-  description,
-});
+const field =
+  (type: FieldSpec["type"]) =>
+  (name: string, description: string, required = true): FieldSpec => ({ name, type, required, description });
 
-const sedeId = str("sedeId", "Id de la sede en el catálogo de Backoffice.");
-const alumnoId = str("alumnoId", "Id del alumno.");
-const cursoId = str("cursoId", "Id del curso (string).");
-const docenteId = str("docenteId", "Id del docente (el mismo de `docente.alta`).");
-const cuatrimestre = str("cuatrimestre", "Formato AAAA-NC, por ejemplo `2026-2C`.");
-
-const purchaseItems: FieldSpec = {
-  name: "items",
+const str = field("string");
+const num = field("number");
+const bool = field("boolean");
+const date = field("date");
+const datetime = field("datetime");
+const decimal = field("decimal");
+const strList = (name: string, description: string): FieldSpec => ({
+  name,
   type: "array",
   required: true,
-  description: "Ítems de la compra.",
-  fields: [
-    str("producto", "Nombre del producto."),
-    str("categoria", "Categoría del producto.", false),
-    num("unidades", "Unidades."),
-    num("monto", "Monto en ARS."),
-  ],
-};
+  description,
+});
+
+const userId = str("userId", "UUID de la persona (lo genera Backoffice).");
+const amount = decimal("amount", "Monto en ARS, string con dos decimales.");
+const currency = str("currency", "Moneda: ARS.");
+const reservationId = str("reservationId", "UUID de la reserva.");
+
+const WALLET_CONCEPTS = [
+  "TOP_UP",
+  "PAYROLL",
+  "SCHOLARSHIP",
+  "ADJUSTMENT",
+  "LIBRARY_FINE",
+  "DINING_RESERVATION",
+  "STORE_PURCHASE",
+  "EVENT_REGISTRATION",
+  "REFUND",
+];
+const concept: FieldSpec = { ...str("concept", "Por qué se movió la plata."), oneOf: WALLET_CONCEPTS };
+const transactionType: FieldSpec = { ...str("type", "Tipo de movimiento."), oneOf: ["CREDIT", "DEBIT", "REVERSAL"] };
 
 export const EVENT_SCHEMAS: readonly EventSchema[] = [
+  // --- Backoffice (8) ---
+  {
+    eventType: "backoffice.user.upserted.v1",
+    source: "backoffice",
+    usage: "Aviso de alta o cambio de una persona: invalida el cache de nombres. No se copian datos; el nombre se consulta a Backoffice.",
+    fields: [
+      userId,
+      str("email", "Mail institucional. No se persiste."),
+      { ...str("status", "Estado de la identidad."), oneOf: ["PENDING_ACTIVATION", "ACTIVE", "SUSPENDED", "DISABLED"] },
+      strList("roles", "Roles: STUDENT, TEACHER, ADMIN_IT, ADMIN_STAFF."),
+      { ...strList("permissions", "Permisos {modulo}:{recurso}:{acción}."), required: false },
+    ],
+  },
+  {
+    eventType: "backoffice.user.disabled.v1",
+    source: "backoffice",
+    usage: "Marca al docente como inactivo; sigue en el histórico.",
+    fields: [userId, str("reason", "Motivo de la baja.")],
+  },
+  {
+    eventType: "backoffice.location.upserted.v1",
+    source: "backoffice",
+    usage: "Sede de cada locación: los eventos académicos traen locationId, no siteId.",
+    fields: [
+      str("locationId", "UUID del espacio."),
+      str("siteId", "UUID de la sede."),
+      str("name", "Nombre del espacio."),
+      num("capacity", "Capacidad física."),
+      { ...str("status", "Estado del espacio."), oneOf: ["ACTIVE", "INACTIVE", "MAINTENANCE"] },
+    ],
+  },
+
+  // --- Portal del Docente (2) ---
+  {
+    eventType: "teacher.exam-result.published.v1",
+    source: "teacher",
+    usage: "Tasa de aprobación por materia, por cuatrimestre y por docente.",
+    fields: [
+      str("studentId", "UUID del estudiante."),
+      str("courseId", "UUID del curso."),
+      str("subjectId", "UUID de la asignatura (catálogo de Gestión Académica)."),
+      str("examId", "UUID del examen."),
+      num("grade", "Nota."),
+      str("result", "Resultado del examen (valores a confirmar con Portal Docente)."),
+      datetime("publishedAt", "Cuándo se publicó la nota."),
+      str("teacherId", "UUID del docente. Propuesto, opcional: sin él no hay tasa por docente.", false),
+      str("termId", "UUID del cuatrimestre. Propuesto, opcional: sin él se infiere por fecha.", false),
+    ],
+  },
+  {
+    eventType: "teacher.attendance.recorded.v1",
+    source: "teacher",
+    usage: "Cursos con actividad en el cuatrimestre vigente (materias en curso).",
+    fields: [
+      str("studentId", "UUID del estudiante."),
+      str("courseId", "UUID del curso."),
+      date("classDate", "Fecha de la clase."),
+      bool("present", "Si estuvo presente."),
+    ],
+  },
+
   // --- Gestión Académica (9) ---
   {
-    sourceModule: "gestion-academica",
-    eventType: "resultado.publicado",
-    fields: [
-      alumnoId,
-      cursoId,
-      str("materia", "Código de la materia."),
-      str("comision", "Comisión.", false),
-      docenteId,
-      sedeId,
-      cuatrimestre,
-      num("notaFinal", "Nota final.", false),
-      str("estado", "Situación de la materia (`APROBADO`, `DESAPROBADO`, ...).", false),
-      bool("aprobado", "Si aprobó la cursada."),
-      date("fechaResultado", "Fecha del resultado, hora de Argentina.", false),
-    ],
-  },
-  {
-    sourceModule: "gestion-academica",
-    eventType: "resultado.modificado",
-    fields: [
-      alumnoId,
-      cursoId,
-      num("notaFinal", "Nota corregida.", false),
-      str("estado", "Situación corregida.", false),
-      bool("aprobado", "Si aprobó, con la corrección."),
-      str("motivo", "Motivo de la corrección.", false),
-    ],
-  },
-  {
-    sourceModule: "gestion-academica",
-    eventType: "curso.abierto",
-    fields: [
-      cursoId,
-      str("materia", "Código de la materia."),
-      str("nombreMateria", "Nombre de la materia.", false),
-      str("facultad", "Facultad.", false),
-      str("comision", "Comisión.", false),
-      sedeId,
-      cuatrimestre,
-      num("cupo", "Cupo máximo.", false),
-    ],
-  },
-  { sourceModule: "gestion-academica", eventType: "curso.cerrado", fields: [cursoId, sedeId, cuatrimestre] },
-  {
-    sourceModule: "gestion-academica",
-    eventType: "cuatrimestre.definido",
-    fields: [cuatrimestre, date("inicio", "Primer día del cuatrimestre."), date("fin", "Último día del cuatrimestre.")],
-  },
-
-  // --- Portal Docente (2) ---
-  {
-    sourceModule: "portal-docente",
-    eventType: "curso.creado",
-    fields: [cursoId, docenteId, str("materia", "Código de la materia."), str("comision", "Comisión.", false), sedeId, cuatrimestre],
-  },
-  {
-    sourceModule: "portal-docente",
-    eventType: "acta.cerrada",
-    fields: [cursoId, alumnoId, num("nota", "Nota.", false), bool("aprobado", "Si aprobó.")],
-  },
-
-  // --- Portal Estudiante (1) ---
-  {
-    sourceModule: "portal-estudiante",
-    eventType: "inscripcion.confirmada",
-    fields: [alumnoId, cursoId, str("materia", "Código de la materia."), sedeId, cuatrimestre],
-  },
-  {
-    sourceModule: "portal-estudiante",
-    eventType: "inscripcion.cancelada",
-    fields: [alumnoId, cursoId, sedeId, cuatrimestre, str("motivo", "Motivo de la baja.", false)],
+    eventType: "academic.term-defined.v1",
+    source: "academic",
+    usage: "Cuatrimestre vigente y anteriores (filtro del tablero académico).",
+    fields: [str("termId", "UUID del cuatrimestre."), date("startDate", "Primer día."), date("endDate", "Último día.")],
   },
 
   // --- Biblioteca (3) ---
   {
-    sourceModule: "biblioteca",
-    eventType: "prestamo.realizado",
-    fields: [
-      str("prestamoId", "Id del préstamo."),
-      alumnoId,
-      str("materialId", "Id del material (ISBN)."),
-      sedeId,
-      date("fechaVencimiento", "Fecha límite de devolución.", false),
-    ],
-  },
-  {
-    sourceModule: "biblioteca",
-    eventType: "prestamo.devuelto",
-    fields: [str("prestamoId", "Id del préstamo."), sedeId, bool("conDemora", "Si se devolvió después del vencimiento.", false)],
-  },
-
-  // --- Eventos Académicos (6) ---
-  {
-    sourceModule: "eventos",
-    eventType: "evento.realizado",
-    fields: [
-      str("eventoId", "Id del evento."),
-      str("tipoEvento", "Tipo (charla, taller, ...)."),
-      str("locacion", "Locación.", false),
-      num("cupo", "Cupo máximo."),
-      sedeId,
-      date("fecha", "Fecha del evento."),
-      num("costo", "Costo de inscripción en ARS (0 si es gratis).", false),
-    ],
-  },
-  {
-    sourceModule: "eventos",
-    eventType: "inscripcion.confirmada",
-    fields: [str("eventoId", "Id del evento."), str("personaId", "Id de la persona."), num("monto", "Monto pagado en ARS (0 si es gratis).")],
-  },
-  {
-    sourceModule: "eventos",
-    eventType: "asistencia.registrada",
-    fields: [str("eventoId", "Id del evento."), str("personaId", "Id de la persona."), bool("presente", "Si asistió.")],
-  },
-  {
-    sourceModule: "eventos",
-    eventType: "evento.cancelado",
-    fields: [str("eventoId", "Id del evento."), sedeId, str("motivo", "Motivo.", false)],
-  },
-  {
-    sourceModule: "eventos",
-    eventType: "inscripcion.cancelada",
-    fields: [str("eventoId", "Id del evento."), str("personaId", "Id de la persona."), num("montoDevuelto", "Monto devuelto en ARS.", false)],
-  },
-
-  // --- Tienda (5) ---
-  {
-    sourceModule: "tienda",
-    eventType: "compra.realizada",
-    fields: [str("compraId", "Id de la compra."), sedeId, date("fecha", "Fecha de la compra."), num("total", "Total en ARS."), purchaseItems],
-  },
-  {
-    sourceModule: "tienda",
-    eventType: "compra.devuelta",
-    fields: [str("compraId", "Id de la compra original."), sedeId, date("fecha", "Fecha de la devolución."), purchaseItems],
+    eventType: "library.penalty.applied.v1",
+    source: "library",
+    usage: "Multas aplicadas por mes.",
+    fields: [userId, str("loanId", "UUID del préstamo."), num("daysLate", "Días de atraso."), amount, currency],
   },
 
   // --- Comedor (4) ---
   {
-    sourceModule: "comedor",
-    eventType: "reserva.confirmada",
-    fields: [str("reservaId", "Id de la reserva."), num("monto", "Costo cobrado en ARS."), sedeId, str("turno", "Horario del turno.", false), date("fecha", "Fecha del turno.")],
+    eventType: "dining.reservation.created.v1",
+    source: "dining",
+    usage: "Facturación de comedores por sede, tickets y ticket promedio.",
+    fields: [reservationId, userId, str("siteId", "UUID de la sede."), datetime("slotAt", "Turno reservado."), amount, currency],
   },
   {
-    sourceModule: "comedor",
-    eventType: "reserva.asistida",
-    fields: [str("reservaId", "Id de la reserva."), num("montoRestituido", "Monto restituido en ARS."), sedeId],
+    eventType: "dining.reservation.cancelled.v1",
+    source: "dining",
+    usage: "Descuenta la reserva de la facturación (sede y monto por reservationId).",
+    fields: [reservationId, userId, datetime("slotAt", "Turno reservado."), datetime("cancelledAt", "Cuándo se canceló.")],
   },
   {
-    sourceModule: "comedor",
-    eventType: "reserva.cancelada",
-    fields: [str("reservaId", "Id de la reserva."), num("montoDevuelto", "Monto devuelto en ARS."), sedeId],
+    eventType: "dining.attendance.recorded.v1",
+    source: "dining",
+    usage: "Asistencia a la reserva; la restitución sale de core.wallet.transaction-reversed.v1.",
+    fields: [reservationId, userId, datetime("attendedAt", "Cuándo se presentó.")],
   },
 
-  // --- Backoffice (8) ---
+  // --- Tienda (5) ---
   {
-    sourceModule: "backoffice",
-    eventType: "sueldos.liquidados",
+    eventType: "store.purchase.completed.v1",
+    source: "store",
+    usage: "Productos más vendidos (unidades y facturación por producto).",
     fields: [
-      str("periodo", "Mes liquidado, formato AAAA-MM."),
-      sedeId,
-      num("monto", "Total liquidado en ARS."),
+      str("purchaseId", "UUID de la compra."),
+      { ...userId, description: "UUID de quien compró. No se persiste." },
+      decimal("total", "Total en ARS."),
+      currency,
       {
-        name: "desglose",
-        type: "object",
-        required: false,
-        description: "Desglose del total.",
-        fields: [num("docentes", "Sueldos docentes en ARS.", false), num("administrativos", "Sueldos administrativos en ARS.", false)],
+        name: "items",
+        type: "array",
+        required: true,
+        description: "Ítems de la compra (campos a confirmar con Tienda).",
+        fields: [
+          str("productId", "UUID del producto."),
+          str("productName", "Nombre al momento de la compra."),
+          str("category", "Categoría.", false),
+          num("quantity", "Unidades."),
+          decimal("unitPrice", "Precio unitario en ARS.", false),
+          decimal("subtotal", "Subtotal en ARS."),
+        ],
       },
+      str("siteId", "UUID de la sede. Opcional.", false),
+    ],
+  },
+
+  // --- Eventos Académicos (6) ---
+  {
+    eventType: "events.event.created.v1",
+    source: "events",
+    usage: "Frecuencia por mes y ocupación de cupo; sede por locationId.",
+    fields: [
+      str("eventId", "UUID del evento."),
+      str("title", "Título."),
+      str("locationId", "UUID de la locación (Backoffice)."),
+      datetime("startAt", "Inicio."),
+      datetime("endAt", "Fin."),
+      num("capacity", "Cupo máximo."),
+      decimal("price", "Precio de inscripción en ARS; null si es gratuito.", false),
+      currency,
     ],
   },
   {
-    sourceModule: "backoffice",
-    eventType: "gasto.registrado",
-    fields: [str("categoria", "Categoría del gasto."), num("monto", "Monto en ARS."), sedeId, date("fecha", "Fecha del gasto.")],
+    eventType: "events.registration.completed.v1",
+    source: "events",
+    usage: "Inscriptos por evento e ingresos por inscripción paga.",
+    fields: [str("eventId", "UUID del evento."), str("registrationId", "UUID de la inscripción."), userId, amount, currency],
   },
   {
-    sourceModule: "backoffice",
-    eventType: "docente.alta",
-    fields: [docenteId, str("nombre", "Nombre completo."), str("facultad", "Facultad.", false)],
-  },
-  {
-    sourceModule: "backoffice",
-    eventType: "sede.definida",
-    fields: [sedeId, str("nombre", "Nombre de la sede.")],
+    eventType: "events.attendance.recorded.v1",
+    source: "events",
+    usage: "Concurrencia y tasa de presentismo.",
+    fields: [str("eventId", "UUID del evento."), userId, bool("present", "Si asistió."), datetime("checkedAt", "Cuándo se registró.")],
   },
 
   // --- CORE (10) ---
   {
-    sourceModule: "core",
-    eventType: "saldo.movimiento",
+    eventType: "core.wallet.transaction-posted.v1",
+    source: "core",
+    usage: "Movimientos del mes por concepto (los totales salen de wallets/aggregates).",
     fields: [
-      str("cuentaId", "Id de la cuenta institucional."),
-      { name: "tipo", type: "string", required: true, description: "Tipo de movimiento.", oneOf: ["carga", "cobro", "acreditacion", "multa", "restitucion"] },
-      num("monto", "Monto en ARS."),
-      { name: "origen", type: "string", required: true, description: "Módulo que originó el movimiento.", oneOf: ["comedor", "tienda", "evento", "biblioteca"] },
-      sedeId,
-      date("fecha", "Fecha del movimiento."),
-      num("saldoPosterior", "Saldo de la cuenta después del movimiento.", false),
+      str("transactionId", "UUID de la transacción."),
+      userId,
+      transactionType,
+      concept,
+      amount,
+      currency,
+      str("sourceModule", "Módulo que originó el movimiento."),
+      str("externalReference", "Referencia estable del módulo originante."),
+      str("status", "Estado: POSTED."),
+    ],
+  },
+  {
+    eventType: "core.wallet.transaction-rejected.v1",
+    source: "core",
+    usage: "Cobros rechazados por concepto (informativo).",
+    fields: [
+      userId,
+      transactionType,
+      concept,
+      amount,
+      currency,
+      str("sourceModule", "Módulo que originó el movimiento."),
+      str("externalReference", "Referencia estable del módulo originante."),
+      str("reasonCode", "Motivo, por ejemplo WALLET_INSUFFICIENT_FUNDS."),
+    ],
+  },
+  {
+    eventType: "core.wallet.transaction-reversed.v1",
+    source: "core",
+    usage: "Reintegros: comedor asistido y reversas de Tienda y Eventos.",
+    fields: [
+      str("transactionId", "UUID de la reversa."),
+      str("originalTransactionId", "UUID de la transacción revertida."),
+      userId,
+      concept,
+      amount,
+      currency,
     ],
   },
 ];
 
-export function findEventSchema(sourceModule: SourceModule, eventType: string): EventSchema | undefined {
-  return EVENT_SCHEMAS.find((schema) => schema.sourceModule === sourceModule && schema.eventType === eventType);
-}
-
-export function eventTypesOf(sourceModule: SourceModule): string[] {
-  return EVENT_SCHEMAS.filter((schema) => schema.sourceModule === sourceModule).map((schema) => schema.eventType);
+export function findEventSchema(eventType: string): EventSchema | undefined {
+  return EVENT_SCHEMAS.find((schema) => schema.eventType === eventType);
 }

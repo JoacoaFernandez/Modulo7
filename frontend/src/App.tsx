@@ -4,7 +4,9 @@ import { LoginPage } from "./presentation/pages/login.page";
 import { InstitutionalAnalyticsPage } from "./presentation/pages/institutional-analytics.page";
 
 function AppShell() {
-  const { user } = useSession();
+  const { user, isRestoring } = useSession();
+  // Mientras se reabre la sesión con la cookie de refresh no se muestra ni login ni tablero.
+  if (isRestoring) return null;
   return user ? <InstitutionalAnalyticsPage user={user} /> : <LoginPage />;
 }
 

@@ -35,3 +35,13 @@ export function formatLastIngestion(iso: string): string {
     .format(date)
     .replace(",", "");
 }
+
+const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
+
+// "2026-08" → "Ago 2026" (mismo criterio que monthLabel del backend). Si no tiene el formato
+// esperado, devuelve el valor tal cual.
+export function monthLabel(month: string): string {
+  const [year, monthNumber] = month.split("-").map(Number);
+  const name = MONTH_NAMES[monthNumber - 1];
+  return name ? `${name} ${year}` : month;
+}

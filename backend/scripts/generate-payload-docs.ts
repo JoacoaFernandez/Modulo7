@@ -1,10 +1,10 @@
-// Regenera la sección "Esquema de payloads" de EVENTOS.md a partir de EVENT_SCHEMAS.
+// Regenera la sección "Eventos que consumimos" de EVENTOS.md a partir de EVENT_SCHEMAS.
 // Uso: npm run docs:payloads
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { FieldSpec } from "../src/domain/entities/event-schema.entity";
 import { EVENT_SCHEMAS } from "../src/domain/entities/event-schemas";
-import { SOURCE_MODULES } from "../src/domain/entities/event-source.entity";
+import { SOURCE_MODULE_LABELS, SOURCE_MODULES } from "../src/domain/entities/event-source.entity";
 
 const START = "<!-- payloads:start -->";
 const END = "<!-- payloads:end -->";
@@ -12,6 +12,9 @@ const END = "<!-- payloads:end -->";
 function typeLabel(field: FieldSpec): string {
   if (field.oneOf) return `enum (${field.oneOf.map((value) => `\`${value}\``).join(", ")})`;
   if (field.type === "date") return "`string` AAAA-MM-DD";
+  if (field.type === "datetime") return "`string` ISO 8601 UTC";
+  if (field.type === "decimal") return '`string` decimal (`"1500.00"`)';
+  if (field.type === "array" && !field.fields) return "`array` de strings";
   if (field.type === "array") return "`array` de objetos";
   return `\`${field.type}\``;
 }
@@ -26,14 +29,14 @@ function rows(fields: readonly FieldSpec[], prefix = ""): string[] {
 }
 
 const sections = SOURCE_MODULES.flatMap((module) => {
-  const schemas = EVENT_SCHEMAS.filter((schema) => schema.sourceModule === module);
+  const schemas = EVENT_SCHEMAS.filter((schema) => schema.source === module);
   if (schemas.length === 0) return [];
 
   return [
-    `#### \`${module}\``,
+    `#### \`${module}\` (${SOURCE_MODULE_LABELS[module]})`,
     ...schemas.flatMap((schema) => [
       "",
-      `**\`${schema.eventType}\`**`,
+      `**\`${schema.eventType}\`** — ${schema.usage}`,
       "",
       "| Campo | Tipo | Obligatorio | Descripción |",
       "|---|---|---|---|",

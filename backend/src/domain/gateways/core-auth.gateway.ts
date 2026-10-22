@@ -1,11 +1,9 @@
 // Gateways: contratos hacia otros módulos de UADEnet. La implementación real habla HTTP con
 // ese módulo; hoy hay un mock en infrastructure/integrations.
-import { AuthenticatedUser, AuthSession } from "../entities/user.entity";
+import { AuthenticatedUser } from "../entities/user.entity";
 
-// CORE (módulo 10): emite y valida los tokens de autenticación.
+// CORE (módulo 10): emite los tokens. Analítica sólo los valida, localmente contra el JWKS.
 export interface CoreAuthGateway {
-  // null si las credenciales no son válidas.
-  login(email: string, password: string): Promise<AuthSession | null>;
-  // null si el token no existe o venció.
-  validateToken(token: string): Promise<AuthenticatedUser | null>;
+  // null si el token está mal firmado, no es para Analítica o venció.
+  verifyAccessToken(token: string): Promise<AuthenticatedUser | null>;
 }

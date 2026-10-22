@@ -119,7 +119,7 @@ export function Sidebar({ availableSections, activeSection, onSelectSection, isO
         <div className="mt-auto flex flex-col gap-1.5 rounded-lg border border-[#2A3A57] p-3">
           <p className="text-[10px] font-medium tracking-[0.12em] text-[#8494AB] uppercase">Ingesta</p>
           <p className="text-[11.5px] leading-[1.5] text-[#D3DAE4]">
-            Eventos recolectados de los 9 módulos de UADEnet.
+            Eventos recolectados de los módulos de UADEnet.
           </p>
         </div>
       </aside>

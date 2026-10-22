@@ -9,14 +9,26 @@ dirección académica, dirección financiera y estadísticas de eventos.
 
 - **Sin base de datos todavía** (no decidida). El backend sirve **datasets mock 1:1** con
   el diseño (`ANALISIS-DISENO.md`), con filtros de sede/período resueltos server-side.
-- La ingesta de eventos (`POST /api/analytics/events`) funciona y guarda en memoria, pero
-  **ningún dashboard lee esos eventos todavía** — los dashboards salen del mock. Conectar
-  ingesta real con dashboards es el trabajo pendiente cuando exista DB.
-- Auth: login con mail `@uade.edu.ar` contra un **mock de CORE** (`/api/auth`, gateway en
-  `backend/src/infrastructure/integrations/`). El token viaja como Bearer y el rol (académica /
-  financiera) lo define CORE; los tableros exigen sesión y el rol correcto.
-- Sedes: el catálogo sale de un mock de Backoffice y toda sede viaja como `sedeId`
-  (`?sedeId=sede-centro`), nunca como nombre.
+- Todo sigue el **contrato de integración CORE v1** (2026-08-05). El flujo de datos está en
+  `docs/Flujo_de_Datos_Modulo_7_Analitica.xlsx` y las dudas abiertas con otros grupos, con el
+  supuesto que tomamos en cada una, en `docs/PREGUNTAS-A-GRUPOS.md`.
+- Eventos: no hay ingesta propia. Consumimos el bus de CORE (cola `analytics.all-events.v1`,
+  binding `#`). Sin RabbitMQ todavía, se simula con `POST /api/v1/dev/events` (sólo fuera de
+  producción); el consumer deduplica por `eventId` en una inbox en memoria. **Ningún dashboard
+  lee esos eventos todavía**: los dashboards salen del mock. Conectarlos es el trabajo
+  pendiente cuando exista DB.
+- Auth: el portal hace login contra CORE (hoy un **mock** servido por el mismo backend en
+  `/api/v1/auth/*` y `/.well-known/jwks.json`). El access token es un JWT RS256 de 15 min que
+  el backend valida localmente contra el JWKS; el refresh viaja en cookie HttpOnly. Se
+  autoriza por **permiso** (`analytics:academic:read`, `analytics:finance:read`), no por rol de
+  CORE; los perfiles `academica`/`financiera` se derivan de esos permisos.
+- Backend a backend: con el **token de servicio** de CORE (`analytics-service`, secret en
+  `backend/.env`, nunca en Git). Backoffice se consulta directo a su backend, sin gateway, y las
+  personas no se copian: se piden cuando hacen falta. Cada gateway usa su mock salvo que su URL
+  esté configurada (ver `backend/.env.example` y `infrastructure/config.ts`).
+- Sedes: el catálogo sale de un mock de Backoffice y toda sede viaja como `siteId` UUID
+  (`?siteId=3e9b0a12-...`), nunca como nombre. Sin `siteId` = todas las sedes. Los
+  cuatrimestres salen de un mock de Gestión Académica (`termId`) y los meses viajan `AAAA-MM`.
 - Antes de asumir que algo falta o está desactualizado, releer `ANALISIS-DISENO.md` — es
   la auditoría viva del proyecto y puede tener notas más recientes que esta guía.
 
@@ -82,19 +94,24 @@ replicá el cambio ahí a mano.
 
 ## Integración con los otros módulos de UADEnet
 
-El contrato de ingesta está documentado en **`backend/EVENTOS.md`** — leerlo antes de
-tocar cualquier cosa relacionada a eventos. Resumen:
+Lo que consumimos está documentado en **`backend/EVENTOS.md`** — leerlo antes de tocar
+cualquier cosa relacionada a eventos. Resumen:
 
-- `POST /api/analytics/events` — envelope común: `eventId`, `sourceModule` (enum de 9
-  módulos: `portal-estudiante, portal-docente, biblioteca, comedor, tienda, eventos,
-  backoffice, gestion-academica, core`), `eventType` (`sustantivo.verbo`), `occurredAt` (ISO 8601), `payload`
-  validado por tipo de evento contra `backend/src/domain/entities/event-schemas.ts`. Ese
-  archivo es la fuente de verdad: la tabla de tipos de `EVENTOS.md` y la colección de
-  Postman se generan de ahí con `npm run docs` (en `backend/`), no se editan a mano.
-- El contrato **está abierto a cambios** — todavía no se acordó formalmente entre los
-  equipos de los 10 módulos. No asumir que es definitivo.
-- Sin autenticación entre módulos (la ingesta es pública), sin idempotencia real (falta cuando haya DB), sin envío
-  por lotes.
+- Sobre estándar de CORE: `specVersion, eventId (UUID), eventType, source, occurredAt,
+  subject, correlationId, causationId, actor, data`. `eventType` es el del catálogo de CORE
+  (`{source}.{entidad}.{acción}.v{n}`, por ejemplo `dining.reservation.created.v1`) y `source`
+  es uno de `backoffice, teacher, academic, library, dining, store, events, core`.
+- `data` se valida contra `backend/src/domain/entities/event-schemas.ts`. Ese archivo es la
+  fuente de verdad: la tabla de `EVENTOS.md` y la colección de Postman se generan de ahí con
+  `npm run docs` (en `backend/`), no se editan a mano. Un `eventType` que no está ahí se
+  confirma y se descarta (`IGNORED`).
+- Convenciones de CORE que hay que respetar en todo lo que exponemos o consumimos: JSON
+  camelCase, IDs UUID, fechas ISO 8601 UTC, dinero como string decimal (`"1500.00"`, nunca
+  number), errores `application/problem+json` con `code`, `X-Correlation-Id` propagado.
+- Rutas: el backend sirve `/api/v1/*`; por el gateway de CORE el portal las ve como
+  `/api/v1/analytics/*`. Health en `/health/live` y `/health/ready`.
+- El catálogo de CORE puede sumar campos opcionales dentro de v1; lo que todavía no está
+  acordado con otros grupos figura como supuesto en `docs/PREGUNTAS-A-GRUPOS.md`.
 
 ## Convenciones de código
 
@@ -110,17 +127,20 @@ tocar cualquier cosa relacionada a eventos. Resumen:
   — se regeneran con la CLI de shadcn. Componentes propios del dominio van en
   `presentation/components/`.
 - Backend: CORS y manejo de errores están centralizados en `index.ts` (middleware manual,
-  no hay librería de CORS). `ValidationError` es la única excepción que el error handler
-  traduce a 400; cualquier otra cae en 500.
+  no hay librería de CORS). Los errores esperados son `HttpError` (`shared/http-error.ts`,
+  con `status` y `code`) o su subclase `ValidationError` (400); el error handler los traduce a
+  problem+json. Cualquier otra excepción cae en 500 `INTERNAL_ERROR`.
 
 ## Al agregar funcionalidad
 
-- Nuevo endpoint: DTO en `application/dtos` → caso de uso en `application/use-cases` →
+- Nuevo endpoint: caso de uso en `application/use-cases` →
   controller + ruta en `interfaces/http` → si aplica, reflejar el contrato en
   `frontend/src/domain/entities` y el cliente en `frontend/src/infrastructure/api`.
 - Nuevo dato mock: agregarlo en `backend/src/infrastructure/data/analytics.dataset.ts`
   siguiendo el mismo shape que usa `analytics-calculator.service.ts`.
-- Cambios al contrato de eventos: actualizar `backend/EVENTOS.md` en el mismo commit —
-  es la referencia que van a leer los otros equipos de UADEnet.
+- Nuevo evento consumido: agregarlo a `event-schemas.ts` con el `data` del catálogo de CORE,
+  correr `npm run docs` y reflejarlo en el xlsx del flujo de datos en el mismo commit.
+- Nuevo módulo externo: interfaz en `domain/gateways`, mock en
+  `infrastructure/integrations/` e instancia en `infrastructure/integrations/gateways.ts`.
 
 <!-- Dudas: si algo de acá quedó desactualizado o falta contexto, preguntame antes de asumir. -->
