@@ -18,6 +18,7 @@ import {
 import { EventStats, EventTypeStats } from "../entities/event-stats.entity";
 import { AcademicFilters, FinancialFilters } from "../entities/filters.entity";
 import { KpiCard } from "../entities/kpi.value-object";
+import { millionsToDecimal, toDecimalString } from "../entities/money.value-object";
 import { Period } from "../entities/period.entity";
 import { Site } from "../entities/site.entity";
 
@@ -31,10 +32,11 @@ const CAPACITY_OVER_REGISTERED = 1.18;
 export class AnalyticsCalculatorService {
   constructor(private readonly dataset: AnalyticsDataset) {}
 
-  calculateAcademicStats(filters: AcademicFilters): AcademicStats {
-    const site = this.resolveSite(filters.siteName);
-    const quarters = this.dataset.quarters;
-    const current = this.resolvePeriod(quarters, filters.quarter, "cuatrimestre").index;
+  // `quarters` son los cuatrimestres de Gestión Académica, ordenados del más viejo al más nuevo:
+  // las series de tasas del dataset siguen ese orden.
+  calculateAcademicStats(filters: AcademicFilters, quarters: Period[]): AcademicStats {
+    const site = this.resolveSite(filters.siteId);
+    const current = this.resolvePeriod(quarters, filters.termId, "termId").index;
     const previous = Math.max(0, current - 1);
     const earlier = Math.max(0, current - 2);
 
@@ -51,9 +53,9 @@ export class AnalyticsCalculatorService {
           name: subject.name,
           approvalRate: rate,
           series: [
-            { quarter: quarters[earlier].id, approvalRate: rateAt(subject.approvalRates, earlier) },
-            { quarter: quarters[previous].id, approvalRate: previousRate },
-            { quarter: quarters[current].id, approvalRate: rate },
+            { quarter: quarters[earlier].label, approvalRate: rateAt(subject.approvalRates, earlier) },
+            { quarter: quarters[previous].label, approvalRate: previousRate },
+            { quarter: quarters[current].label, approvalRate: rate },
           ],
           delta: createDelta(rate - previousRate, { suffix: " pp" }),
         };
@@ -75,7 +77,7 @@ export class AnalyticsCalculatorService {
       {
         id: "active-subjects",
         label: "Materias en curso",
-        value: subjectsCount,
+        value: String(subjectsCount),
         formattedValue: count(subjectsCount),
         unit: "materias",
         delta: createDelta(Math.round(site.subjectsCount * 0.04), { integer: true }),
@@ -83,7 +85,7 @@ export class AnalyticsCalculatorService {
       {
         id: "overall-approval-rate",
         label: "Tasa de aprobación general",
-        value: overallRate,
+        value: overallRate.toFixed(1),
         formattedValue: `${overallRate.toFixed(1)}%`,
         unit: "",
         delta: createDelta(overallRate - overallPreviousRate, { suffix: " pp" }),
@@ -91,7 +93,7 @@ export class AnalyticsCalculatorService {
       {
         id: "active-commissions",
         label: "Comisiones activas",
-        value: commissionsCount,
+        value: String(commissionsCount),
         formattedValue: count(commissionsCount),
         unit: "comisiones",
         delta: createDelta(Math.round(site.commissionsCount * 0.02), { integer: true }),
@@ -99,7 +101,7 @@ export class AnalyticsCalculatorService {
       {
         id: "active-students",
         label: "Estudiantes con cursada activa",
-        value: studentsCount,
+        value: String(studentsCount),
         formattedValue: count(studentsCount),
         unit: "",
         delta: createDelta(1.8, { suffix: "%" }),
@@ -110,7 +112,7 @@ export class AnalyticsCalculatorService {
       facultyName: faculty.name,
       color: faculty.color,
       points: faculty.approvalRates.map((rate, index) => ({
-        quarter: quarters[index].id,
+        quarter: quarters[index].label,
         approvalRate: clamp(rate + site.rateAdjustment),
       })),
       latestApprovalRate: rateAt(faculty.approvalRates, current),
@@ -130,9 +132,10 @@ export class AnalyticsCalculatorService {
 
     return {
       siteName: site.name,
-      quarter: quarters[current].id,
-      previousQuarter: quarters[previous].id,
-      comparedQuarters: [quarters[earlier].id, quarters[previous].id, quarters[current].id],
+      termId: quarters[current].id,
+      quarter: quarters[current].label,
+      previousQuarter: quarters[previous].label,
+      comparedQuarters: [quarters[earlier].label, quarters[previous].label, quarters[current].label],
       kpis,
       subjectApprovalRates,
       facultyTrends,
@@ -144,9 +147,9 @@ export class AnalyticsCalculatorService {
   }
 
   calculateFinancialStats(filters: FinancialFilters): FinancialStats {
-    const site = this.resolveSite(filters.siteName);
+    const site = this.resolveSite(filters.siteId);
     const months = this.dataset.months;
-    const current = this.resolvePeriod(months, filters.month, "periodo").index;
+    const current = this.resolvePeriod(months, filters.month, "month").index;
     const previous = Math.max(0, current - 1);
     const factor = this.siteFactor(site);
 
@@ -163,7 +166,7 @@ export class AnalyticsCalculatorService {
       {
         id: "accumulated-balance",
         label: "Saldo acumulado",
-        value: balance[current],
+        value: millionsToDecimal(balance[current]),
         formattedValue: money(balance[current]),
         unit: "ARS",
         delta: createDelta(growth(balance[current], balance[previous]), { suffix: "%" }),
@@ -171,7 +174,7 @@ export class AnalyticsCalculatorService {
       {
         id: "period-income",
         label: "Ingresos del período",
-        value: income[current],
+        value: millionsToDecimal(income[current]),
         formattedValue: money(income[current]),
         unit: "ARS",
         delta: createDelta(growth(income[current], income[previous]), { suffix: "%" }),
@@ -179,7 +182,7 @@ export class AnalyticsCalculatorService {
       {
         id: "period-expenses",
         label: "Egresos del período",
-        value: expenses[current],
+        value: millionsToDecimal(expenses[current]),
         formattedValue: money(expenses[current]),
         unit: "ARS",
         // Que los egresos suban es malo: la semántica del chip va invertida.
@@ -191,7 +194,7 @@ export class AnalyticsCalculatorService {
       {
         id: "operating-result",
         label: "Resultado operativo",
-        value: margin,
+        value: margin.toFixed(1),
         formattedValue: `${margin.toFixed(1)}%`,
         unit: "",
         delta: createDelta(margin - previousMargin, { suffix: "%" }),
@@ -201,10 +204,10 @@ export class AnalyticsCalculatorService {
     const monthlyBalance: MonthlyBalancePoint[] = months.map((month, index) => ({
       month: month.id,
       shortMonth: shortLabel(month),
-      income: income[index],
-      expense: expenses[index],
-      result: income[index] - expenses[index],
-      balance: balance[index],
+      income: millionsToDecimal(income[index]),
+      expense: millionsToDecimal(expenses[index]),
+      result: millionsToDecimal(income[index] - expenses[index]),
+      balance: millionsToDecimal(balance[index]),
       formattedIncome: money(income[index]),
       formattedExpense: money(expenses[index]),
       formattedResult: money(income[index] - expenses[index]),
@@ -219,7 +222,7 @@ export class AnalyticsCalculatorService {
         return {
           category: expense.category,
           percentage: expense.percentage,
-          amount,
+          amount: millionsToDecimal(amount),
           formattedAmount: money(amount),
           color: expense.color,
         };
@@ -230,7 +233,7 @@ export class AnalyticsCalculatorService {
       productName: product.name,
       category: product.category,
       unitsSold: Math.round(product.unitsSold * factor),
-      revenue: product.revenue * factor,
+      revenue: millionsToDecimal(product.revenue * factor),
       formattedRevenue: money(product.revenue * factor),
     }));
 
@@ -239,16 +242,16 @@ export class AnalyticsCalculatorService {
       const hasService = dining.revenue > 0;
 
       return {
-        siteName: dining.siteName,
-        revenue: dining.revenue,
+        siteName: this.resolveSite(dining.siteId).name,
+        revenue: millionsToDecimal(dining.revenue),
         formattedRevenue: hasService ? money(dining.revenue) : "—",
         ticketsCount: dining.ticketsCount,
-        averageTicket: dining.averageTicket,
+        averageTicket: toDecimalString(dining.averageTicket),
         formattedAverageTicket: hasService ? `$ ${count(dining.averageTicket)}` : "—",
         delta: createDelta(dining.delta, { suffix: "%" }),
         hasService,
         note: dining.note ?? "",
-        isSelected: site.isAggregate || site.name === dining.siteName,
+        isSelected: site.isAggregate || site.id === dining.siteId,
       };
     });
 
@@ -267,9 +270,9 @@ export class AnalyticsCalculatorService {
   }
 
   calculateEventStats(filters: FinancialFilters): EventStats {
-    const site = this.resolveSite(filters.siteName);
+    const site = this.resolveSite(filters.siteId);
     const months = this.dataset.months;
-    const current = this.resolvePeriod(months, filters.month, "periodo").index;
+    const current = this.resolvePeriod(months, filters.month, "month").index;
     const factor = this.siteFactor(site);
 
     const eventTypes: EventTypeStats[] = this.dataset.eventTypes.map((event) => ({
@@ -312,7 +315,7 @@ export class AnalyticsCalculatorService {
       worstAttendance: { eventType: worst.eventType, attendanceRate: worst.attendanceRate },
       monthlySeries: this.dataset.eventMonths.map((month) => ({
         month: month.month,
-        shortMonth: month.month.slice(0, 3),
+        shortMonth: shortLabel(this.resolvePeriod(months, month.month, "month")),
         eventsCount: Math.round(month.eventsCount * factor),
         attendeesCount: Math.round(month.attendeesCount * factor),
         attendanceRate: month.attendanceRate,
@@ -328,9 +331,10 @@ export class AnalyticsCalculatorService {
     return site.studentsCount / this.dataset.baselineStudentsCount;
   }
 
-  private resolveSite(siteName: string): Site {
-    const site = this.dataset.sites.find((candidate) => candidate.name === siteName);
-    if (!site) throw new Error(`Sede desconocida: ${siteName}`);
+  // siteId null = "Todas las sedes".
+  private resolveSite(siteId: string | null): Site {
+    const site = this.dataset.sites.find((candidate) => candidate.id === siteId);
+    if (!site) throw new Error(`Sede desconocida: ${siteId}`);
 
     return site;
   }

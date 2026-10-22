@@ -13,7 +13,7 @@ interface FiltersState {
   error: string | null;
 }
 
-// Sedes, cuatrimestres, meses y defaults disponibles: GET /api/analytics/filters.
+// Sedes, cuatrimestres, meses y defaults disponibles: GET /api/v1/filters.
 // Es data prácticamente estática (no depende de sede/período), así que se pide una sola vez.
 export function useFilters() {
   const [state, setState] = useState<FiltersState>({ options: null, isLoading: true, error: null });

@@ -9,14 +9,17 @@ export interface Delta {
 export interface KpiCard {
   id: string;
   label: string;
-  value: number;
+  value: string;
   formattedValue: string;
   unit: string;
   delta: Delta;
 }
 
 export interface Site {
-  id: string;
+  // siteId (UUID) de Backoffice; null solo para "Todas las sedes".
+  id: string | null;
+  // Código legible ("CENTRO"); vacío para la agregada.
+  code: string;
   name: string;
   studentsCount: number;
   subjectsCount: number;
@@ -36,18 +39,20 @@ export interface Period {
 }
 
 export interface AcademicFilters {
-  siteId: string;
-  quarter: string;
+  // null = todas las sedes (no se manda el query param).
+  siteId: string | null;
+  termId: string;
 }
 
 export interface FinancialFilters {
-  siteId: string;
+  siteId: string | null;
+  // AAAA-MM.
   month: string;
 }
 
 export interface FilterDefaults {
-  siteName: string;
-  quarter: string;
+  siteId: string | null;
+  termId: string;
   month: string;
 }
 
@@ -70,39 +75,12 @@ export interface Role {
   availableDashboards: DashboardId[];
 }
 
-export type SourceModule =
-  | "portal-estudiante"
-  | "portal-docente"
-  | "biblioteca"
-  | "comedor"
-  | "tienda"
-  | "eventos"
-  | "backoffice"
-  | "gestion-academica"
-  | "core";
+export type SourceModule = "backoffice" | "teacher" | "academic" | "library" | "dining" | "store" | "events" | "core";
 
 export interface EventSource {
   module: SourceModule;
   label: string;
   lastIngestionAt: string;
-}
-
-export interface InstitutionalEvent {
-  id: string;
-  eventId: string;
-  sourceModule: SourceModule;
-  eventType: string;
-  payload: Record<string, unknown>;
-  occurredAt: string;
-  receivedAt: string;
-}
-
-export interface RecordEventPayload {
-  eventId: string;
-  sourceModule: SourceModule;
-  eventType: string;
-  occurredAt: string;
-  payload: Record<string, unknown>;
 }
 
 export interface SubjectApprovalPoint {
@@ -140,6 +118,7 @@ export interface TeacherApprovalRate {
 
 export interface AcademicStats {
   siteName: string;
+  termId: string;
   quarter: string;
   previousQuarter: string;
   comparedQuarters: string[];
@@ -155,10 +134,10 @@ export interface AcademicStats {
 export interface MonthlyBalancePoint {
   month: string;
   shortMonth: string;
-  income: number;
-  expense: number;
-  result: number;
-  balance: number;
+  income: string;
+  expense: string;
+  result: string;
+  balance: string;
   formattedIncome: string;
   formattedExpense: string;
   formattedResult: string;
@@ -169,7 +148,7 @@ export interface MonthlyBalancePoint {
 export interface AdministrativeExpense {
   category: string;
   percentage: number;
-  amount: number;
+  amount: string;
   formattedAmount: string;
   color: string;
 }
@@ -178,16 +157,16 @@ export interface TopSellingProduct {
   productName: string;
   category: string;
   unitsSold: number;
-  revenue: number;
+  revenue: string;
   formattedRevenue: string;
 }
 
 export interface DiningRevenue {
   siteName: string;
-  revenue: number;
+  revenue: string;
   formattedRevenue: string;
   ticketsCount: number;
-  averageTicket: number;
+  averageTicket: string;
   formattedAverageTicket: string;
   delta: Delta;
   hasService: boolean;

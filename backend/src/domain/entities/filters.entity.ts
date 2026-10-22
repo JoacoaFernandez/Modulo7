@@ -2,25 +2,25 @@
 import { Period } from "./period.entity";
 import { Site } from "./site.entity";
 
-// Filtros del tablero académico: ?sede=&cuatrimestre=
+// Filtros del tablero académico: ?siteId=&termId=. siteId null = todas las sedes.
 export interface AcademicFilters {
-  siteName: string;
-  quarter: string;
+  siteId: string | null;
+  termId: string;
 }
 
-// Filtros del tablero financiero y del de eventos: ?sede=&periodo=
+// Filtros del tablero financiero y del de eventos: ?siteId=&month=AAAA-MM
 export interface FinancialFilters {
-  siteName: string;
+  siteId: string | null;
   month: string;
 }
 
 export interface FilterDefaults {
-  siteName: string;
-  quarter: string;
+  siteId: string | null;
+  termId: string;
   month: string;
 }
 
-// Lo que expone GET /api/analytics/filters para alimentar los selectores del header.
+// Lo que expone GET /api/v1/filters para alimentar los selectores del header.
 export interface FilterOptions {
   sites: Site[];
   quarters: Period[];

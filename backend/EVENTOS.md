@@ -1,462 +1,313 @@
-# Ingesta de eventos — Analítica Institucional
+# Eventos que consume Analítica Institucional
 
-Este documento es el contrato que tienen que implementar los módulos de UADEnet para
-mandarnos eventos. Está **abierto a cambios**: la ingesta real todavía no se definió entre
-los equipos, así que lo de acá es una propuesta funcional, ya implementada y validada en el
-backend, para que sirva de punto de partida.
+Analítica no expone una API de ingesta: **consume los eventos del bus de CORE**, con el
+contrato de integración CORE v1 (2026-08-05). Los otros módulos publican en CORE
+(`POST /internal/v1/events`) y CORE nos entrega todo por nuestra cola. Este documento resume
+qué recibimos, qué validamos y qué usa cada tablero. El flujo de datos completo, con los
+endpoints REST que consultamos, está en
+[`../docs/Flujo_de_Datos_Modulo_7_Analitica.xlsx`](../docs/Flujo_de_Datos_Modulo_7_Analitica.xlsx).
 
-> **Estado actual:** los eventos que se reciben se guardan en memoria y se pueden consultar
-> con `GET /api/analytics/events`, pero **ningún tablero los lee todavía**. Los tableros salen
-> de un dataset mock que replica el prototipo. Conectar la ingesta con los tableros es el
-> trabajo que sigue cuando exista una base de datos.
-
----
-
-## Endpoint
-
-```
-POST /api/analytics/events
-Content-Type: application/json
-```
-
-### Envelope
-
-Todo evento, venga del módulo que venga, tiene la misma envoltura. Lo propio de cada
-módulo va adentro de `payload`, que tiene un esquema por tipo de evento (ver
-[Esquema de payloads](#esquema-de-payloads)).
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `eventId` | `string` no vacío | sí | Identificador del evento **en el módulo emisor**. Es la clave de idempotencia: reenviar el mismo `eventId` tiene que poder repetirse sin duplicar el hecho. |
-| `sourceModule` | enum (9 valores) | sí | Módulo que emite. Ver tabla de abajo. |
-| `eventType` | `string` no vacío | sí | Qué pasó, en notación `sustantivo.verbo`: `inscripcion.confirmada`. |
-| `occurredAt` | ISO 8601 | sí | Cuándo ocurrió el hecho, según el reloj del emisor. **No** es la fecha de envío. |
-| `payload` | objeto JSON | sí | Datos del hecho, según el esquema de su `eventType`. |
-
-Analítica agrega dos campos propios al guardarlo: `id` (UUID interno) y `receivedAt`
-(cuándo lo recibimos). El emisor no los manda.
-
-### Módulos admitidos
-
-`portal-estudiante` (1) · `portal-docente` (2) · `biblioteca` (3) · `comedor` (4) ·
-`tienda` (5) · `eventos` (6) · `backoffice` (8) · `gestion-academica` (9) · `core` (10)
-
-Son los 9 módulos de UADEnet que nos mandan eventos (el 7 es Analítica). Cualquier otro valor
-devuelve `400`. El detalle de qué datos le pedimos a cada uno está en
-[`../DATOS-POR-MODULO.md`](../DATOS-POR-MODULO.md).
-
-### Respuestas
-
-| Código | Cuerpo | Cuándo |
-|---|---|---|
-| `201` | `{ "eventId": "...", "status": "accepted", "warnings": [...] }` | Evento aceptado. `warnings` solo aparece si hubo que normalizar el formato o faltan campos (ver [Formatos tolerados](#formatos-tolerados)). |
-| `400` | `{ "error": "mensaje en castellano" }` | Falta un campo, `sourceModule` no existe, `eventType` no existe para ese módulo, `occurredAt` no es una fecha válida o el `payload` no cumple el esquema de abajo (campo faltante o de otro tipo). |
-| `500` | `{ "error": "Error interno del servidor" }` | Error nuestro. Reintentar. |
-
-### Ejemplo
-
-```bash
-curl -X POST http://localhost:3000/api/analytics/events \
-  -H "Content-Type: application/json" \
-  -d '{
-    "eventId": "est-insc-alumno-456-curso-42",
-    "sourceModule": "portal-estudiante",
-    "eventType": "inscripcion.confirmada",
-    "occurredAt": "2026-08-02T10:00:00.000-03:00",
-    "payload": { "alumnoId": "alumno-456", "cursoId": "curso-42", "materia": "BDD-310", "sedeId": "montserrat", "cuatrimestre": "2026-2C" }
-  }'
-```
-
-Consultar lo ingerido (solo para desarrollo, se pierde al reiniciar el servidor):
-
-```bash
-curl http://localhost:3000/api/analytics/events
-```
+> **Estado actual:** sin RabbitMQ ni base de datos todavía. La cola se simula con un endpoint
+> de desarrollo, y la inbox de deduplicación y los eventos consumidos viven en memoria.
+> **Ningún tablero lee esos eventos todavía**: los tableros salen del dataset mock.
 
 ---
 
-## Formatos tolerados
+## Cola
 
-El formato oficial es el de arriba y es **estricto**. Mientras los otros módulos ajustan sus
-eventos, la ingesta absorbe estas diferencias con una única capa de normalización
-(`src/application/services/event-normalizer.service.ts`), la misma para los 9 módulos. Es una
-tolerancia temporal: cada emisor tiene que migrar al formato oficial.
-
-| Llega | Se interpreta como |
+| | |
 |---|---|
-| `tipo: "academica.resultado.publicado"` | `sourceModule: "gestion-academica"` + `eventType: "resultado.publicado"` (el prefijo antes del primer punto es el módulo; admite alias como `academica`, `estudiante`, `docente`) |
-| `ocurridoEn` | `occurredAt` |
-| Campos sueltos en la raíz del evento | `payload` |
-| Sin `eventId` | Se deriva uno determinístico (`derivado-<hash>`), igual para el mismo hecho reenviado, y se avisa en `warnings` |
-| Ids numéricos (`cursoId: 42`) | String (`"42"`), en cualquier campo que termine en `Id` |
-| `cuatrimestre: "2026-2Q"` | `"2026-2C"` |
-| `sede: "Sede Centro"` (nombre o id) | `sedeId`, buscado en el catálogo de Backoffice. Si no existe en el catálogo no se inventa |
-| `estado: "APROBADO"` sin `aprobado` | `aprobado: true`; cualquier otro estado, `false` |
+| Cola | `analytics.all-events.v1` (pedido por PR a `contracts/topology.yaml` de CORE) |
+| Exchange | `uadenet.events.v1`, `routingKeys: ["#"]`: recibimos todo el bus |
+| Dead letter | `uadenet.dlx.v1`, `maxRetries: 3` |
+| Procesamiento | Ack manual después de persistir, `prefetch` 10–50, inbox con clave única `eventId` |
 
-Qué cambia según el formato en que llegue el evento:
+## Sobre
 
-- **Formato oficial:** falta un campo obligatorio o hay uno de otro tipo → `400`.
-- **Formato viejo (`tipo`):** un campo obligatorio faltante **no corta** la ingesta: responde
-  `201` con `warnings`, y el evento no sirve a los tableros hasta que el emisor lo complete
-  (por ejemplo, `materia` o `sedeId`). Un campo con el tipo equivocado sí devuelve `400`.
-
-La respuesta `201` incluye `warnings` cuando hubo normalización o campos faltantes:
+Todos los eventos llegan con el sobre estándar de CORE (§9.1). Sólo cambia `data`.
 
 ```json
-{ "eventId": "derivado-822daf2a1a6e3b1b47e4738a", "status": "accepted", "warnings": ["..."] }
+{
+  "specVersion": "1.0",
+  "eventId": "e3d28114-e52e-4db9-afeb-03399bcb27e7",
+  "eventType": "dining.reservation.created.v1",
+  "source": "dining",
+  "occurredAt": "2026-09-15T14:02:11.004Z",
+  "subject": "reservation/58df9fe3-4883-4dca-9d9f-4770c81543cf",
+  "correlationId": "f501201b-00bc-4200-99e0-6883500854f1",
+  "causationId": null,
+  "actor": { "type": "service", "id": "dining-service" },
+  "data": {
+    "reservationId": "58df9fe3-4883-4dca-9d9f-4770c81543cf",
+    "userId": "ba310c57-a684-4dbf-a4a4-905fcfbefa08",
+    "siteId": "3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90",
+    "slotAt": "2026-09-15T15:00:00.000Z",
+    "amount": "1500.00",
+    "currency": "ARS"
+  }
+}
 ```
+
+## Qué hace el consumer con cada entrega
+
+La lógica está en `src/application/use-cases/consume-core-event.use-case.ts`. No depende del
+transporte: la llama el endpoint de desarrollo y, más adelante, el consumer de RabbitMQ.
+
+| Caso | Resultado | Con RabbitMQ |
+|---|---|---|
+| Sobre inválido: campo faltante, `eventId` que no es UUID, `eventType` sin `.vN`, o `source` que no coincide con el prefijo del `eventType` | `400 EVENT_SCHEMA_INVALID` | DLQ |
+| `eventType` que no está en la tabla de abajo | `IGNORED` | ack sin efecto |
+| `data` que no cumple el esquema: campo faltante, monto como número, fecha mal formada | `400 EVENT_SCHEMA_INVALID` | DLQ |
+| `eventId` ya procesado (reentrega) | `DUPLICATE` | ack sin efecto |
+| Válido | `PROCESSED` | ack |
+
+Reglas de formato del contrato:
+- dinero como string decimal con dos decimales (`"1500.00"`), nunca número;
+- fechas y horas ISO 8601 en UTC;
+- fechas sin hora como `AAAA-MM-DD`;
+- IDs UUID v4;
+- los campos que el esquema no declara se aceptan y se ignoran (CORE puede sumar campos opcionales dentro de v1).
+
+## Endpoint de desarrollo (simula la cola)
+
+No existe con `NODE_ENV=production`.
+
+```bash
+curl -X POST http://localhost:3000/api/v1/dev/events \
+  -H "Content-Type: application/json" \
+  -d @evento.json
+# 202 { "eventId": "...", "eventType": "...", "status": "PROCESSED" | "DUPLICATE" | "IGNORED" }
+
+curl http://localhost:3000/api/v1/dev/events   # eventos consumidos, se pierden al reiniciar
+```
+
+La colección de Postman (`docs/postman/`) trae un ejemplo válido por cada `eventType`.
 
 ---
 
-## Esquema de payloads
+## Eventos que consumimos
 
-`eventType` es único por módulo emisor, no global: `inscripcion.confirmada` lo mandan
-`portal-estudiante` y `eventos`, y se distinguen por `sourceModule`.
-
-Cada módulo solo puede mandar los eventos de esta tabla. El backend valida el `payload`
-contra ella y responde `400` con el detalle si falta un campo obligatorio, si un tipo no
-coincide o si el `eventType` no existe para ese módulo. Los campos extra se aceptan y se
-ignoran. Tipos: `string`, `number` (montos en ARS, sin formato de texto), `boolean`, fecha
-`AAAA-MM-DD` (sin hora, hora de Argentina), `object` y `array`.
-
-Esta sección se genera con `npm run docs:payloads` desde
+Cada sección muestra el `data` de un evento. Se genera con `npm run docs:payloads` desde
 `src/domain/entities/event-schemas.ts`. **No editar a mano**: cambiar el esquema y regenerar.
 
 <!-- payloads:start -->
 
-#### `portal-estudiante`
+#### `backoffice` (backoffice)
 
-**`inscripcion.confirmada`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `materia` | `string` | sí | Código de la materia. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
-
-**`inscripcion.cancelada`**
+**`backoffice.user.upserted.v1`** — Aviso de alta o cambio de una persona: invalida el cache de nombres. No se copian datos; el nombre se consulta a Backoffice.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
-| `motivo` | `string` | no | Motivo de la baja. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `email` | `string` | sí | Mail institucional. No se persiste. |
+| `status` | enum (`PENDING_ACTIVATION`, `ACTIVE`, `SUSPENDED`, `DISABLED`) | sí | Estado de la identidad. |
+| `roles` | `array` de strings | sí | Roles: STUDENT, TEACHER, ADMIN_IT, ADMIN_STAFF. |
+| `permissions` | `array` de strings | no | Permisos {modulo}:{recurso}:{acción}. |
 
-#### `portal-docente`
-
-**`curso.creado`**
+**`backoffice.user.disabled.v1`** — Marca al docente como inactivo; sigue en el histórico.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `docenteId` | `string` | sí | Id del docente (el mismo de `docente.alta`). |
-| `materia` | `string` | sí | Código de la materia. |
-| `comision` | `string` | no | Comisión. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `reason` | `string` | sí | Motivo de la baja. |
 
-**`acta.cerrada`**
+**`backoffice.location.upserted.v1`** — Sede de cada locación: los eventos académicos traen locationId, no siteId.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `nota` | `number` | no | Nota. |
-| `aprobado` | `boolean` | sí | Si aprobó. |
+| `locationId` | `string` | sí | UUID del espacio. |
+| `siteId` | `string` | sí | UUID de la sede. |
+| `name` | `string` | sí | Nombre del espacio. |
+| `capacity` | `number` | sí | Capacidad física. |
+| `status` | enum (`ACTIVE`, `INACTIVE`, `MAINTENANCE`) | sí | Estado del espacio. |
 
-#### `biblioteca`
+#### `teacher` (portal docente)
 
-**`prestamo.realizado`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `prestamoId` | `string` | sí | Id del préstamo. |
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `materialId` | `string` | sí | Id del material (ISBN). |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fechaVencimiento` | `string` AAAA-MM-DD | no | Fecha límite de devolución. |
-
-**`prestamo.devuelto`**
+**`teacher.exam-result.published.v1`** — Tasa de aprobación por materia, por cuatrimestre y por docente.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `prestamoId` | `string` | sí | Id del préstamo. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `conDemora` | `boolean` | no | Si se devolvió después del vencimiento. |
+| `studentId` | `string` | sí | UUID del estudiante. |
+| `courseId` | `string` | sí | UUID del curso. |
+| `subjectId` | `string` | sí | UUID de la asignatura (catálogo de Gestión Académica). |
+| `examId` | `string` | sí | UUID del examen. |
+| `grade` | `number` | sí | Nota. |
+| `result` | `string` | sí | Resultado del examen (valores a confirmar con Portal Docente). |
+| `publishedAt` | `string` ISO 8601 UTC | sí | Cuándo se publicó la nota. |
+| `teacherId` | `string` | no | UUID del docente. Propuesto, opcional: sin él no hay tasa por docente. |
+| `termId` | `string` | no | UUID del cuatrimestre. Propuesto, opcional: sin él se infiere por fecha. |
 
-#### `comedor`
-
-**`reserva.confirmada`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `reservaId` | `string` | sí | Id de la reserva. |
-| `monto` | `number` | sí | Costo cobrado en ARS. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `turno` | `string` | no | Horario del turno. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha del turno. |
-
-**`reserva.asistida`**
+**`teacher.attendance.recorded.v1`** — Cursos con actividad en el cuatrimestre vigente (materias en curso).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `reservaId` | `string` | sí | Id de la reserva. |
-| `montoRestituido` | `number` | sí | Monto restituido en ARS. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
+| `studentId` | `string` | sí | UUID del estudiante. |
+| `courseId` | `string` | sí | UUID del curso. |
+| `classDate` | `string` AAAA-MM-DD | sí | Fecha de la clase. |
+| `present` | `boolean` | sí | Si estuvo presente. |
 
-**`reserva.cancelada`**
+#### `academic` (gestión académica)
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `reservaId` | `string` | sí | Id de la reserva. |
-| `montoDevuelto` | `number` | sí | Monto devuelto en ARS. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-
-#### `tienda`
-
-**`compra.realizada`**
+**`academic.term-defined.v1`** — Cuatrimestre vigente y anteriores (filtro del tablero académico).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `compraId` | `string` | sí | Id de la compra. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha de la compra. |
-| `total` | `number` | sí | Total en ARS. |
-| `items` | `array` de objetos | sí | Ítems de la compra. |
-| `items[].producto` | `string` | sí | Nombre del producto. |
-| `items[].categoria` | `string` | no | Categoría del producto. |
-| `items[].unidades` | `number` | sí | Unidades. |
-| `items[].monto` | `number` | sí | Monto en ARS. |
+| `termId` | `string` | sí | UUID del cuatrimestre. |
+| `startDate` | `string` AAAA-MM-DD | sí | Primer día. |
+| `endDate` | `string` AAAA-MM-DD | sí | Último día. |
 
-**`compra.devuelta`**
+#### `library` (biblioteca)
+
+**`library.penalty.applied.v1`** — Multas aplicadas por mes.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `compraId` | `string` | sí | Id de la compra original. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha de la devolución. |
-| `items` | `array` de objetos | sí | Ítems de la compra. |
-| `items[].producto` | `string` | sí | Nombre del producto. |
-| `items[].categoria` | `string` | no | Categoría del producto. |
-| `items[].unidades` | `number` | sí | Unidades. |
-| `items[].monto` | `number` | sí | Monto en ARS. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `loanId` | `string` | sí | UUID del préstamo. |
+| `daysLate` | `number` | sí | Días de atraso. |
+| `amount` | `string` decimal (`"1500.00"`) | sí | Monto en ARS, string con dos decimales. |
+| `currency` | `string` | sí | Moneda: ARS. |
 
-#### `eventos`
+#### `dining` (comedor)
 
-**`evento.realizado`**
+**`dining.reservation.created.v1`** — Facturación de comedores por sede, tickets y ticket promedio.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `tipoEvento` | `string` | sí | Tipo (charla, taller, ...). |
-| `locacion` | `string` | no | Locación. |
-| `cupo` | `number` | sí | Cupo máximo. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha del evento. |
-| `costo` | `number` | no | Costo de inscripción en ARS (0 si es gratis). |
+| `reservationId` | `string` | sí | UUID de la reserva. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `siteId` | `string` | sí | UUID de la sede. |
+| `slotAt` | `string` ISO 8601 UTC | sí | Turno reservado. |
+| `amount` | `string` decimal (`"1500.00"`) | sí | Monto en ARS, string con dos decimales. |
+| `currency` | `string` | sí | Moneda: ARS. |
 
-**`inscripcion.confirmada`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `personaId` | `string` | sí | Id de la persona. |
-| `monto` | `number` | sí | Monto pagado en ARS (0 si es gratis). |
-
-**`asistencia.registrada`**
+**`dining.reservation.cancelled.v1`** — Descuenta la reserva de la facturación (sede y monto por reservationId).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `personaId` | `string` | sí | Id de la persona. |
-| `presente` | `boolean` | sí | Si asistió. |
+| `reservationId` | `string` | sí | UUID de la reserva. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `slotAt` | `string` ISO 8601 UTC | sí | Turno reservado. |
+| `cancelledAt` | `string` ISO 8601 UTC | sí | Cuándo se canceló. |
 
-**`evento.cancelado`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `motivo` | `string` | no | Motivo. |
-
-**`inscripcion.cancelada`**
+**`dining.attendance.recorded.v1`** — Asistencia a la reserva; la restitución sale de core.wallet.transaction-reversed.v1.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `personaId` | `string` | sí | Id de la persona. |
-| `montoDevuelto` | `number` | no | Monto devuelto en ARS. |
+| `reservationId` | `string` | sí | UUID de la reserva. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `attendedAt` | `string` ISO 8601 UTC | sí | Cuándo se presentó. |
 
-#### `backoffice`
+#### `store` (tienda)
 
-**`sueldos.liquidados`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `periodo` | `string` | sí | Mes liquidado, formato AAAA-MM. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `monto` | `number` | sí | Total liquidado en ARS. |
-| `desglose` | `object` | no | Desglose del total. |
-| `desglose.docentes` | `number` | no | Sueldos docentes en ARS. |
-| `desglose.administrativos` | `number` | no | Sueldos administrativos en ARS. |
-
-**`gasto.registrado`**
+**`store.purchase.completed.v1`** — Productos más vendidos (unidades y facturación por producto).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `categoria` | `string` | sí | Categoría del gasto. |
-| `monto` | `number` | sí | Monto en ARS. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha del gasto. |
+| `purchaseId` | `string` | sí | UUID de la compra. |
+| `userId` | `string` | sí | UUID de quien compró. No se persiste. |
+| `total` | `string` decimal (`"1500.00"`) | sí | Total en ARS. |
+| `currency` | `string` | sí | Moneda: ARS. |
+| `items` | `array` de objetos | sí | Ítems de la compra (campos a confirmar con Tienda). |
+| `items[].productId` | `string` | sí | UUID del producto. |
+| `items[].productName` | `string` | sí | Nombre al momento de la compra. |
+| `items[].category` | `string` | no | Categoría. |
+| `items[].quantity` | `number` | sí | Unidades. |
+| `items[].unitPrice` | `string` decimal (`"1500.00"`) | no | Precio unitario en ARS. |
+| `items[].subtotal` | `string` decimal (`"1500.00"`) | sí | Subtotal en ARS. |
+| `siteId` | `string` | no | UUID de la sede. Opcional. |
 
-**`docente.alta`**
+#### `events` (eventos académicos)
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `docenteId` | `string` | sí | Id del docente (el mismo de `docente.alta`). |
-| `nombre` | `string` | sí | Nombre completo. |
-| `facultad` | `string` | no | Facultad. |
-
-**`sede.definida`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `nombre` | `string` | sí | Nombre de la sede. |
-
-#### `gestion-academica`
-
-**`resultado.publicado`**
+**`events.event.created.v1`** — Frecuencia por mes y ocupación de cupo; sede por locationId.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `materia` | `string` | sí | Código de la materia. |
-| `comision` | `string` | no | Comisión. |
-| `docenteId` | `string` | sí | Id del docente (el mismo de `docente.alta`). |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
-| `notaFinal` | `number` | no | Nota final. |
-| `estado` | `string` | no | Situación de la materia (`APROBADO`, `DESAPROBADO`, ...). |
-| `aprobado` | `boolean` | sí | Si aprobó la cursada. |
-| `fechaResultado` | `string` AAAA-MM-DD | no | Fecha del resultado, hora de Argentina. |
+| `eventId` | `string` | sí | UUID del evento. |
+| `title` | `string` | sí | Título. |
+| `locationId` | `string` | sí | UUID de la locación (Backoffice). |
+| `startAt` | `string` ISO 8601 UTC | sí | Inicio. |
+| `endAt` | `string` ISO 8601 UTC | sí | Fin. |
+| `capacity` | `number` | sí | Cupo máximo. |
+| `price` | `string` decimal (`"1500.00"`) | no | Precio de inscripción en ARS; null si es gratuito. |
+| `currency` | `string` | sí | Moneda: ARS. |
 
-**`resultado.modificado`**
+**`events.registration.completed.v1`** — Inscriptos por evento e ingresos por inscripción paga.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `notaFinal` | `number` | no | Nota corregida. |
-| `estado` | `string` | no | Situación corregida. |
-| `aprobado` | `boolean` | sí | Si aprobó, con la corrección. |
-| `motivo` | `string` | no | Motivo de la corrección. |
+| `eventId` | `string` | sí | UUID del evento. |
+| `registrationId` | `string` | sí | UUID de la inscripción. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `amount` | `string` decimal (`"1500.00"`) | sí | Monto en ARS, string con dos decimales. |
+| `currency` | `string` | sí | Moneda: ARS. |
 
-**`curso.abierto`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `materia` | `string` | sí | Código de la materia. |
-| `nombreMateria` | `string` | no | Nombre de la materia. |
-| `facultad` | `string` | no | Facultad. |
-| `comision` | `string` | no | Comisión. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
-| `cupo` | `number` | no | Cupo máximo. |
-
-**`curso.cerrado`**
+**`events.attendance.recorded.v1`** — Concurrencia y tasa de presentismo.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
+| `eventId` | `string` | sí | UUID del evento. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `present` | `boolean` | sí | Si asistió. |
+| `checkedAt` | `string` ISO 8601 UTC | sí | Cuándo se registró. |
 
-**`cuatrimestre.definido`**
+#### `core` (core)
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
-| `inicio` | `string` AAAA-MM-DD | sí | Primer día del cuatrimestre. |
-| `fin` | `string` AAAA-MM-DD | sí | Último día del cuatrimestre. |
-
-#### `core`
-
-**`saldo.movimiento`**
+**`core.wallet.transaction-posted.v1`** — Movimientos del mes por concepto (los totales salen de wallets/aggregates).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `cuentaId` | `string` | sí | Id de la cuenta institucional. |
-| `tipo` | enum (`carga`, `cobro`, `acreditacion`, `multa`, `restitucion`) | sí | Tipo de movimiento. |
-| `monto` | `number` | sí | Monto en ARS. |
-| `origen` | enum (`comedor`, `tienda`, `evento`, `biblioteca`) | sí | Módulo que originó el movimiento. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha del movimiento. |
-| `saldoPosterior` | `number` | no | Saldo de la cuenta después del movimiento. |
+| `transactionId` | `string` | sí | UUID de la transacción. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `type` | enum (`CREDIT`, `DEBIT`, `REVERSAL`) | sí | Tipo de movimiento. |
+| `concept` | enum (`TOP_UP`, `PAYROLL`, `SCHOLARSHIP`, `ADJUSTMENT`, `LIBRARY_FINE`, `DINING_RESERVATION`, `STORE_PURCHASE`, `EVENT_REGISTRATION`, `REFUND`) | sí | Por qué se movió la plata. |
+| `amount` | `string` decimal (`"1500.00"`) | sí | Monto en ARS, string con dos decimales. |
+| `currency` | `string` | sí | Moneda: ARS. |
+| `sourceModule` | `string` | sí | Módulo que originó el movimiento. |
+| `externalReference` | `string` | sí | Referencia estable del módulo originante. |
+| `status` | `string` | sí | Estado: POSTED. |
+
+**`core.wallet.transaction-rejected.v1`** — Cobros rechazados por concepto (informativo).
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `type` | enum (`CREDIT`, `DEBIT`, `REVERSAL`) | sí | Tipo de movimiento. |
+| `concept` | enum (`TOP_UP`, `PAYROLL`, `SCHOLARSHIP`, `ADJUSTMENT`, `LIBRARY_FINE`, `DINING_RESERVATION`, `STORE_PURCHASE`, `EVENT_REGISTRATION`, `REFUND`) | sí | Por qué se movió la plata. |
+| `amount` | `string` decimal (`"1500.00"`) | sí | Monto en ARS, string con dos decimales. |
+| `currency` | `string` | sí | Moneda: ARS. |
+| `sourceModule` | `string` | sí | Módulo que originó el movimiento. |
+| `externalReference` | `string` | sí | Referencia estable del módulo originante. |
+| `reasonCode` | `string` | sí | Motivo, por ejemplo WALLET_INSUFFICIENT_FUNDS. |
+
+**`core.wallet.transaction-reversed.v1`** — Reintegros: comedor asistido y reversas de Tienda y Eventos.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `transactionId` | `string` | sí | UUID de la reversa. |
+| `originalTransactionId` | `string` | sí | UUID de la transacción revertida. |
+| `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
+| `concept` | enum (`TOP_UP`, `PAYROLL`, `SCHOLARSHIP`, `ADJUSTMENT`, `LIBRARY_FINE`, `DINING_RESERVATION`, `STORE_PURCHASE`, `EVENT_REGISTRATION`, `REFUND`) | sí | Por qué se movió la plata. |
+| `amount` | `string` decimal (`"1500.00"`) | sí | Monto en ARS, string con dos decimales. |
+| `currency` | `string` | sí | Moneda: ARS. |
 
 <!-- payloads:end -->
 
 ---
 
-## Qué evento alimenta qué tablero
+## Eventos que recibimos y descartamos
 
-Resumen del catálogo. Los payloads completos, con ejemplos, están en
-[`../DATOS-POR-MODULO.md`](../DATOS-POR-MODULO.md). Todo payload lleva `sedeId` (id del
-catálogo de sedes de Backoffice) y los IDs (`alumnoId`, `cursoId`, `docenteId`) van como
-string. Los eventos de anulación o corrección restan o reemplazan lo que contó el evento
-original.
+Llegan por el binding `#`, pero ningún tablero los usa:
+- `backoffice.rate.changed.v1`
+- `events.reminder.requested.v1`
+- `academic.exam-scheduled.v1`
+- `core.notification.created.v1`
 
-### Tablero académico
+## Pendiente de acordar
 
-| Módulo | `eventType` | Alimenta |
-|---|---|---|
-| `gestion-academica` | `resultado.publicado` · `resultado.modificado` | Tasa de aprobación general · por materia · por cuatrimestre · por docente |
-| `gestion-academica` | `curso.abierto` · `curso.cerrado` | Materias en curso · Comisiones activas · Tendencia por facultad |
-| `gestion-academica` | `cuatrimestre.definido` | Qué es "en curso" y "cuatrimestre anterior" |
-| `portal-estudiante` | `inscripcion.confirmada` · `inscripcion.cancelada` | Estudiantes con cursada activa |
-| `portal-docente` | `curso.creado` · `acta.cerrada` (opcionales) | Respaldo del cruce curso → docente y de la aprobación |
-| `backoffice` | `docente.alta` | Nombre del docente |
+Las preguntas y los supuestos están en [`../docs/PREGUNTAS-A-GRUPOS.md`](../docs/PREGUNTAS-A-GRUPOS.md). Las que tocan este contrato:
 
-### Tablero financiero
-
-| Módulo | `eventType` | Alimenta |
-|---|---|---|
-| `core` | `saldo.movimiento` | Saldo acumulado · Ingresos · Egresos · Resultado |
-| `backoffice` | `sueldos.liquidados` · `gasto.registrado` | Gastos administrativos |
-| `tienda` | `compra.realizada` · `compra.devuelta` | Productos más vendidos |
-| `comedor` | `reserva.confirmada` · `reserva.asistida` · `reserva.cancelada` | Comedores por sede (facturación, tickets, ticket promedio) |
-
-### Estadísticas de eventos
-
-| Módulo | `eventType` | Alimenta |
-|---|---|---|
-| `eventos` | `evento.realizado` · `evento.cancelado` | Eventos realizados · Frecuencia por mes · Ocupación de cupo |
-| `eventos` | `inscripcion.confirmada` · `inscripcion.cancelada` | Inscriptos · Ingresos por inscripción paga |
-| `eventos` | `asistencia.registrada` | Concurrencia · Presentismo por tipo |
-
-### Datos maestros
-
-| Módulo | `eventType` | Para qué |
-|---|---|---|
-| `backoffice` | `sede.definida` | Catálogo de sedes (`sedeId` → nombre) |
-
-`biblioteca` está habilitado como emisor (`prestamo.realizado` · `prestamo.devuelto`), pero
-hoy ningún tablero consume sus eventos.
-
----
-
-## Cosas a definir entre los equipos
-
-1. **Idempotencia real.** Hoy `eventId` se guarda pero no se deduplica. Cuando haya base
-   de datos tiene que ser índice único.
-2. **Versionado del esquema.** Los payloads ya se validan por tipo de evento; falta definir
-   cómo se versiona un cambio de campos sin romper a los módulos que ya emiten.
-3. **Envío por lotes.** Si el volumen lo pide, agregar `POST /api/analytics/events/batch`.
-4. **Autenticación entre módulos.** No hay ninguna: el endpoint está abierto.
-5. **Reintentos y orden.** Analítica no asume orden de llegada; `occurredAt` manda.
+1. **`teacherId` y `termId` en `teacher.exam-result.published.v1`.** Los pedimos como opcionales. Sin `teacherId` no hay tasa de aprobación por docente.
+2. **Valores de `result`.** Falta definir cuál indica que la materia está aprobada.
+3. **Ítems de `store.purchase.completed.v1`.** Falta confirmar los campos con Tienda.
+4. **Base de datos.** La inbox tiene que pasar a una tabla con índice único por `eventId`, en la misma transacción que el efecto.

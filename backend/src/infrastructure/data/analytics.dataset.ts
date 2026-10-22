@@ -1,17 +1,20 @@
 // Mock data: datasets del prototipo «Analítica Institucional», portados 1:1 desde el diseño.
 // Mientras no haya base de datos, esta es la única fuente de datos del backend.
 import { AnalyticsDataset } from "../../domain/entities/analytics-dataset.entity";
-import { EventSource, SOURCE_MODULES } from "../../domain/entities/event-source.entity";
-import { Period } from "../../domain/entities/period.entity";
-import { Role } from "../../domain/entities/role.entity";
+import { EventSource, SOURCE_MODULE_LABELS, SOURCE_MODULES } from "../../domain/entities/event-source.entity";
+import { monthLabel, Period } from "../../domain/entities/period.entity";
+import { ANALYTICS_PERMISSIONS, Role } from "../../domain/entities/role.entity";
 import { Site } from "../../domain/entities/site.entity";
+import { TERMS } from "../integrations/academic-terms.gateway.mock";
+import { SITE_IDS } from "../integrations/backoffice-sites.gateway.mock";
 
 // Literal del prototipo: "Última ingesta de eventos: 26/08 04:12".
 const LAST_INGESTION_AT = "2026-08-26T04:12:00.000-03:00";
 
 const SITES: Site[] = [
   {
-    id: "todas-las-sedes",
+    id: null,
+    code: "",
     name: "Todas las sedes",
     studentsCount: 6842,
     subjectsCount: 148,
@@ -21,7 +24,8 @@ const SITES: Site[] = [
     isAggregate: true,
   },
   {
-    id: "sede-centro",
+    id: SITE_IDS.centro,
+    code: "CENTRO",
     name: "Sede Centro",
     studentsCount: 3915,
     subjectsCount: 96,
@@ -31,7 +35,8 @@ const SITES: Site[] = [
     isAggregate: false,
   },
   {
-    id: "sede-belgrano",
+    id: SITE_IDS.belgrano,
+    code: "BELGRANO",
     name: "Sede Belgrano",
     studentsCount: 2704,
     subjectsCount: 74,
@@ -41,7 +46,8 @@ const SITES: Site[] = [
     isAggregate: false,
   },
   {
-    id: "sede-pilar",
+    id: SITE_IDS.pilar,
+    code: "PILAR",
     name: "Sede Pilar",
     studentsCount: 1988,
     subjectsCount: 58,
@@ -51,7 +57,8 @@ const SITES: Site[] = [
     isAggregate: false,
   },
   {
-    id: "campus-online",
+    id: SITE_IDS.online,
+    code: "ONLINE",
     name: "Campus Online",
     studentsCount: 1466,
     subjectsCount: 41,
@@ -62,29 +69,13 @@ const SITES: Site[] = [
   },
 ];
 
-const QUARTERS: Period[] = ["2023-2C", "2024-1C", "2024-2C", "2025-1C", "2025-2C", "2026-1C"].map(
-  (id, index) => ({ id, label: id, kind: "quarter", index }),
+const MONTHS: Period[] = ["2026-03", "2026-04", "2026-05", "2026-06", "2026-07", "2026-08"].map(
+  (id, index) => ({ id, label: monthLabel(id), kind: "month", index }),
 );
-
-const MONTHS: Period[] = ["Mar 2026", "Abr 2026", "May 2026", "Jun 2026", "Jul 2026", "Ago 2026"].map(
-  (id, index) => ({ id, label: id, kind: "month", index }),
-);
-
-const MODULE_LABELS: Record<(typeof SOURCE_MODULES)[number], string> = {
-  "portal-estudiante": "portal estudiante",
-  "portal-docente": "portal docente",
-  biblioteca: "biblioteca",
-  comedor: "comedor",
-  tienda: "tienda",
-  eventos: "eventos académicos",
-  backoffice: "backoffice",
-  "gestion-academica": "gestión académica",
-  core: "core",
-};
 
 const EVENT_SOURCES: EventSource[] = SOURCE_MODULES.map((module) => ({
   module,
-  label: MODULE_LABELS[module],
+  label: SOURCE_MODULE_LABELS[module],
   lastIngestionAt: LAST_INGESTION_AT,
 }));
 
@@ -93,22 +84,23 @@ const ROLES: Role[] = [
     id: "academica",
     name: "Dirección Académica",
     initials: "DA",
-    description: "Rendimiento por materia, docente y sede",
-    availableDashboards: ["academic"],
+    description: "Rendimiento por materia, docente y sede, y eventos académicos",
+    permission: ANALYTICS_PERMISSIONS.academic,
+    availableDashboards: ["academic", "events"],
   },
   {
     id: "financiera",
     name: "Dirección Financiera",
     initials: "DF",
-    description: "Balance, gastos, tienda, comedores y eventos",
-    availableDashboards: ["financial", "events"],
+    description: "Balance, gastos, tienda y comedores",
+    permission: ANALYTICS_PERMISSIONS.finance,
+    availableDashboards: ["financial"],
   },
 ];
 
 export const ANALYTICS_DATASET: AnalyticsDataset = {
   baselineStudentsCount: 6842,
   sites: SITES,
-  quarters: QUARTERS,
   months: MONTHS,
 
   subjects: [
@@ -165,11 +157,11 @@ export const ANALYTICS_DATASET: AnalyticsDataset = {
   ],
 
   dining: [
-    { siteName: "Sede Centro", revenue: 84.2, ticketsCount: 41300, averageTicket: 2039, delta: 3.4 },
-    { siteName: "Sede Belgrano", revenue: 61.7, ticketsCount: 29800, averageTicket: 2070, delta: 1.1 },
-    { siteName: "Sede Pilar", revenue: 38.4, ticketsCount: 18100, averageTicket: 2121, delta: -2.6 },
+    { siteId: SITE_IDS.centro, revenue: 84.2, ticketsCount: 41300, averageTicket: 2039, delta: 3.4 },
+    { siteId: SITE_IDS.belgrano, revenue: 61.7, ticketsCount: 29800, averageTicket: 2070, delta: 1.1 },
+    { siteId: SITE_IDS.pilar, revenue: 38.4, ticketsCount: 18100, averageTicket: 2121, delta: -2.6 },
     {
-      siteName: "Campus Online",
+      siteId: SITE_IDS.online,
       revenue: 0,
       ticketsCount: 0,
       averageTicket: 0,
@@ -179,12 +171,12 @@ export const ANALYTICS_DATASET: AnalyticsDataset = {
   ],
 
   eventMonths: [
-    { month: "Mar 2026", eventsCount: 38, attendeesCount: 5120, attendanceRate: 66 },
-    { month: "Abr 2026", eventsCount: 44, attendeesCount: 6340, attendanceRate: 69 },
-    { month: "May 2026", eventsCount: 41, attendeesCount: 5880, attendanceRate: 71 },
-    { month: "Jun 2026", eventsCount: 36, attendeesCount: 4910, attendanceRate: 68 },
-    { month: "Jul 2026", eventsCount: 22, attendeesCount: 2740, attendanceRate: 63 },
-    { month: "Ago 2026", eventsCount: 51, attendeesCount: 8120, attendanceRate: 70 },
+    { month: "2026-03", eventsCount: 38, attendeesCount: 5120, attendanceRate: 66 },
+    { month: "2026-04", eventsCount: 44, attendeesCount: 6340, attendanceRate: 69 },
+    { month: "2026-05", eventsCount: 41, attendeesCount: 5880, attendanceRate: 71 },
+    { month: "2026-06", eventsCount: 36, attendeesCount: 4910, attendanceRate: 68 },
+    { month: "2026-07", eventsCount: 22, attendeesCount: 2740, attendanceRate: 63 },
+    { month: "2026-08", eventsCount: 51, attendeesCount: 8120, attendanceRate: 70 },
   ],
 
   eventTypes: [
@@ -200,13 +192,14 @@ export const ANALYTICS_DATASET: AnalyticsDataset = {
   eventSources: EVENT_SOURCES,
 
   defaults: {
-    siteName: "Todas las sedes",
-    quarter: "2026-1C",
-    month: "Ago 2026",
+    siteId: null,
+    // El cuatrimestre más reciente del mock de Gestión Académica (2026-1C).
+    termId: TERMS[TERMS.length - 1].termId,
+    month: "2026-08",
   },
 
   lastIngestionAt: LAST_INGESTION_AT,
-  academicSourceModules: ["gestion-academica", "portal-estudiante", "portal-docente"],
-  financialSourceModules: ["core", "backoffice", "tienda", "comedor"],
-  eventsSourceModules: ["eventos"],
+  academicSourceModules: ["teacher", "academic", "backoffice"],
+  financialSourceModules: ["core", "store", "dining", "backoffice"],
+  eventsSourceModules: ["events", "backoffice"],
 };

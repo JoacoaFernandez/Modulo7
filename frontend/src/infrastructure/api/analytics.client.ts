@@ -1,5 +1,7 @@
 // API clients: HTTP setup and calls to the backend, isolated from the rest of the app.
+import { authClient } from "./auth.client";
 import { authTokenStore } from "./auth-token.store";
+import { toProblemError } from "./problem";
 import type {
   AcademicFilters,
   AcademicStats,
@@ -10,28 +12,38 @@ import type {
   FinancialStats,
 } from "../../domain/entities/analytics.entity";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api";
+const ANALYTICS_BASE_URL = import.meta.env.VITE_ANALYTICS_BASE_URL ?? "http://localhost:3000/api/v1";
 
-async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const token = authTokenStore.get();
-  const response = await fetch(`${API_BASE_URL}${path}`, {
+function request(path: string, token: string | null, signal?: AbortSignal): Promise<Response> {
+  return fetch(`${ANALYTICS_BASE_URL}${path}`, {
     signal,
     headers: token ? { Authorization: `Bearer ${token}` } : undefined,
   });
+}
 
-  // CORE rechazó el token (vencido o inválido): la sesión se cierra y vuelve el login.
-  if (response.status === 401) {
-    authTokenStore.notifyUnauthorized();
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  let response = await request(path, authTokenStore.get(), signal);
+
+  // Access token vencido: un único refresh (serializado) y se reintenta una vez. Si el refresh
+  // falla, la sesión se cierra y vuelve el login.
+  if (response.status === 401 && authTokenStore.get()) {
+    try {
+      const grant = await authClient.refresh();
+      authTokenStore.set(grant.accessToken);
+    } catch {
+      authTokenStore.notifyUnauthorized();
+      throw new Error("La sesión expiró. Volvé a iniciar sesión.");
+    }
+    response = await request(path, authTokenStore.get(), signal);
+    if (response.status === 401) authTokenStore.notifyUnauthorized();
   }
 
-  if (!response.ok) {
-    throw new Error(`Request to ${path} failed with status ${response.status}`);
-  }
+  if (!response.ok) throw await toProblemError(response, "No se pudo completar el pedido");
   return response.json() as Promise<T>;
 }
 
 // Arma el query string sin params vacíos, para que el backend use sus propios defaults
-// cuando el front todavía no conoce sede/período (primer render, antes de GET /filters).
+// (sin siteId = todas las sedes; sin período = el vigente).
 function toQueryString(params: Record<string, string | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -44,23 +56,23 @@ function toQueryString(params: Record<string, string | undefined>): string {
 export const analyticsClient = {
   getAcademicStats: (filters: AcademicFilters, signal?: AbortSignal) =>
     getJson<AcademicStats>(
-      `/analytics/dashboard/academic${toQueryString({ sedeId: filters.siteId, cuatrimestre: filters.quarter })}`,
+      `/dashboard/academic${toQueryString({ siteId: filters.siteId ?? undefined, termId: filters.termId })}`,
       signal,
     ),
 
   getFinancialStats: (filters: FinancialFilters, signal?: AbortSignal) =>
     getJson<FinancialStats>(
-      `/analytics/dashboard/financial${toQueryString({ sedeId: filters.siteId, periodo: filters.month })}`,
+      `/dashboard/financial${toQueryString({ siteId: filters.siteId ?? undefined, month: filters.month })}`,
       signal,
     ),
 
   getEventsStats: (filters: FinancialFilters, signal?: AbortSignal) =>
     getJson<EventStats>(
-      `/analytics/events/stats${toQueryString({ sedeId: filters.siteId, periodo: filters.month })}`,
+      `/events/stats${toQueryString({ siteId: filters.siteId ?? undefined, month: filters.month })}`,
       signal,
     ),
 
-  getFilters: (signal?: AbortSignal) => getJson<FilterOptions>("/analytics/filters", signal),
+  getFilters: (signal?: AbortSignal) => getJson<FilterOptions>("/filters", signal),
 
-  getEventSources: (signal?: AbortSignal) => getJson<EventSource[]>("/analytics/sources", signal),
+  getEventSources: (signal?: AbortSignal) => getJson<EventSource[]>("/sources", signal),
 };

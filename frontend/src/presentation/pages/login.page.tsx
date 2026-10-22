@@ -39,7 +39,7 @@ export function LoginPage() {
 
   return (
     <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[minmax(360px,0.85fr)_1.15fr]">
-      {/* Panel izquierdo: identidad de la plataforma y las 9 fuentes de eventos */}
+      {/* Panel izquierdo: identidad de la plataforma y las fuentes de eventos */}
       <div className="flex flex-col justify-between gap-10 bg-[var(--navy)] px-6 py-10 text-white sm:px-10 lg:px-14 lg:py-16">
         <div className="flex items-center gap-2.5">
           <div className="flex size-9 items-center justify-center rounded-lg bg-[var(--blue)] text-sm font-bold">
@@ -55,7 +55,7 @@ export function LoginPage() {
             Institucional
           </h1>
           <p className="max-w-md text-sm leading-relaxed text-white/70">
-            Un mismo tablero para los eventos que emiten los 9 módulos de UADEnet: portales,
+            Un mismo tablero para los eventos que emiten los módulos de UADEnet: portales,
             comedor, tienda, eventos, biblioteca y el resto de la operación.
           </p>
         </div>

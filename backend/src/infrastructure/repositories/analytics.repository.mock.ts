@@ -6,24 +6,28 @@ import { EventSource } from "../../domain/entities/event-source.entity";
 import { EventStats } from "../../domain/entities/event-stats.entity";
 import { AcademicFilters, FilterDefaults, FinancialFilters } from "../../domain/entities/filters.entity";
 import { FinancialStats } from "../../domain/entities/financial-stats.entity";
-import { InstitutionalEvent } from "../../domain/entities/institutional-event.entity";
-import { Period } from "../../domain/entities/period.entity";
+import { StoredCoreEvent } from "../../domain/entities/core-event.entity";
+import { Period, termLabel } from "../../domain/entities/period.entity";
 import { Role } from "../../domain/entities/role.entity";
 import { Site } from "../../domain/entities/site.entity";
 import { AnalyticsCalculatorService } from "../../domain/services/analytics-calculator.service";
+import { AcademicTermsGateway } from "../../domain/gateways/academic-terms.gateway";
 import { BackofficeSitesGateway } from "../../domain/gateways/backoffice-sites.gateway";
 import { ANALYTICS_DATASET } from "../data/analytics.dataset";
-import { backofficeSitesGateway } from "../integrations/gateways";
+import { academicTermsGateway, backofficeSitesGateway } from "../integrations/gateways";
 
 export class AnalyticsRepositoryMock implements AnalyticsRepository {
   private readonly calculator = new AnalyticsCalculatorService(ANALYTICS_DATASET);
-  // Los eventos ingeridos se acumulan en memoria; todavía ningún tablero los lee.
-  private readonly events: InstitutionalEvent[] = [];
+  // Los eventos consumidos se acumulan en memoria; todavía ningún tablero los lee.
+  private readonly events: StoredCoreEvent[] = [];
 
-  constructor(private readonly sitesGateway: BackofficeSitesGateway = backofficeSitesGateway) {}
+  constructor(
+    private readonly sitesGateway: BackofficeSitesGateway = backofficeSitesGateway,
+    private readonly termsGateway: AcademicTermsGateway = academicTermsGateway,
+  ) {}
 
   async getAcademicStats(filters: AcademicFilters): Promise<AcademicStats> {
-    return this.calculator.calculateAcademicStats(filters);
+    return this.calculator.calculateAcademicStats(filters, await this.getQuarters());
   }
 
   async getFinancialStats(filters: FinancialFilters): Promise<FinancialStats> {
@@ -34,21 +38,26 @@ export class AnalyticsRepositoryMock implements AnalyticsRepository {
     return this.calculator.calculateEventStats(filters);
   }
 
-  // El catálogo de sedes (id y nombre) es de Backoffice; de acá salen solo las métricas de
-  // cada sede. Una sede que Backoffice no define no aparece, y la "agregada" siempre va primero.
+  // El catálogo de sedes (siteId, código y nombre) es de Backoffice; de acá salen solo las
+  // métricas de cada sede. Una sede que Backoffice no define o dio de baja no aparece, y la
+  // "agregada" siempre va primero.
   async getSites(): Promise<Site[]> {
     const catalog = await this.sitesGateway.listSites();
     const aggregate = ANALYTICS_DATASET.sites.filter((site) => site.isAggregate);
-    const sites = catalog.flatMap(({ sedeId, nombre }) => {
-      const metrics = ANALYTICS_DATASET.sites.find((site) => site.id === sedeId);
-      return metrics ? [{ ...metrics, name: nombre }] : [];
-    });
+    const sites = catalog
+      .filter((site) => site.status === "ACTIVE")
+      .flatMap(({ siteId, code, name }) => {
+        const metrics = ANALYTICS_DATASET.sites.find((site) => site.id === siteId);
+        return metrics ? [{ ...metrics, code, name }] : [];
+      });
 
     return [...aggregate, ...sites];
   }
 
+  // Los cuatrimestres son de Gestión Académica; la etiqueta AAAA-NC la derivamos nosotros.
   async getQuarters(): Promise<Period[]> {
-    return ANALYTICS_DATASET.quarters;
+    const terms = [...(await this.termsGateway.listTerms())].sort((a, b) => a.startDate.localeCompare(b.startDate));
+    return terms.map((term, index) => ({ id: term.termId, label: termLabel(term.startDate), kind: "quarter", index }));
   }
 
   async getMonths(): Promise<Period[]> {
@@ -67,11 +76,11 @@ export class AnalyticsRepositoryMock implements AnalyticsRepository {
     return ANALYTICS_DATASET.eventSources;
   }
 
-  async getEvents(): Promise<InstitutionalEvent[]> {
+  async getEvents(): Promise<StoredCoreEvent[]> {
     return this.events;
   }
 
-  async recordEvent(event: InstitutionalEvent): Promise<void> {
+  async recordEvent(event: StoredCoreEvent): Promise<void> {
     this.events.push(event);
   }
 }

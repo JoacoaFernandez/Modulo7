@@ -15,8 +15,10 @@ export interface InstitutionalAnalyticsFilters {
   // Tablero que se está viendo: "financial" incluye las estadísticas de eventos.
   // "sources" no es un tablero: no pide nada.
   section: "academic" | "financial" | "sources";
-  siteId: string;
-  quarter: string;
+  siteId: string | null;
+  termId: string;
+  // false hasta que GET /filters resuelva los valores vigentes: evita pedir con filtros viejos.
+  enabled: boolean;
   month: string;
 }
 
@@ -29,18 +31,18 @@ interface Loaded {
   error: string | null;
 }
 
-// Refetchea el tablero visible cada vez que cambia sección/sede/cuatrimestre/mes. Cada cambio
+// Refetchea el tablero visible cada vez que cambia sección/sede/cuatrimestre (termId)/mes. Cada cambio
 // cancela el pedido anterior con AbortController, para no pisar el estado con una respuesta
 // que llegó tarde y ya no corresponde a los filtros actuales. Se pide solo lo de la sección
 // activa (académico, o financiero + eventos): el backend responde 403 si el usuario no tiene
 // ese rol.
 export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const { section, siteId, quarter, month } = filters;
-  const key = `${section}|${siteId}|${quarter}|${month}`;
+  const { section, siteId, termId, month, enabled } = filters;
+  const key = `${section}|${siteId ?? ""}|${termId}|${month}`;
 
   useEffect(() => {
-    if (section === "sources") return;
+    if (section === "sources" || !enabled) return;
 
     const controller = new AbortController();
     const { signal } = controller;
@@ -48,7 +50,7 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
     const request =
       section === "academic"
         ? Promise.all([
-            getAcademicDashboardUseCase.execute({ siteId, quarter }, signal),
+            getAcademicDashboardUseCase.execute({ siteId, termId }, signal),
             getEventsStatsUseCase.execute({ siteId, month }, signal),
           ]).then(([academicStats, eventsStats]) => ({ academicStats, financialStats: null, eventsStats }))
         : getFinancialDashboardUseCase
@@ -66,7 +68,7 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
       });
 
     return () => controller.abort();
-  }, [key, section, siteId, quarter, month]);
+  }, [key, section, enabled, siteId, termId, month]);
 
   if (section === "sources") {
     return { academicStats: null, financialStats: null, eventsStats: null, isLoading: false, error: null };
@@ -78,7 +80,7 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
     academicStats: current?.academicStats ?? null,
     financialStats: current?.financialStats ?? null,
     eventsStats: current?.eventsStats ?? null,
-    isLoading: current === null,
+    isLoading: !enabled || current === null,
     error: current?.error ?? null,
   };
 }

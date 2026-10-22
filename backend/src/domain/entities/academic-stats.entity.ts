@@ -43,6 +43,8 @@ export interface TeacherApprovalRate {
 
 export interface AcademicStats {
   siteName: string;
+  // termId del cuatrimestre seleccionado; quarter y el resto de las etiquetas son AAAA-NC.
+  termId: string;
   quarter: string;
   previousQuarter: string;
   // Etiquetas [t-2, t-1, t] para la leyenda de las barras agrupadas.

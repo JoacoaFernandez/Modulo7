@@ -13,12 +13,19 @@ de estadísticas de eventos académicos.
 
 ## Estado de la integración
 
+El módulo sigue el contrato de integración **CORE v1** (2026-08-05). El flujo de datos completo
+(qué consumimos, por qué canal y con qué estructura) está en
+[docs/Flujo_de_Datos_Modulo_7_Analitica.xlsx](docs/Flujo_de_Datos_Modulo_7_Analitica.xlsx).
+
 | Con quién | Qué hace Analítica | Estado |
 |---|---|---|
-| **CORE (10)** | Login con mail de la universidad y validación del token (`Authorization: Bearer`) | **Mock** en `/api/auth` (`CoreAuthGateway`) |
-| **Backoffice (8)** | Catálogo de sedes (`sede.definida`); toda sede viaja como `sedeId` | **Mock** (`BackofficeSitesGateway`) |
-| **Los 9 módulos emisores** | Reciben su contrato en `POST /api/analytics/events` | Endpoint real, validado por tipo de evento; absorbe el formato real de Gestión Académica (`tipo`, `ocurridoEn`, campos sueltos) con `warnings`, ver [Formatos tolerados](backend/EVENTOS.md#formatos-tolerados) |
-| Tableros | Calculan sobre un dataset mock | Todavía **no** leen los eventos ingeridos (falta base de datos) |
+| **CORE (10) · Auth** | El portal hace login contra CORE. El backend valida el JWT RS256 localmente con el JWKS y autoriza por permiso `analytics:*` | **Mock** de CORE servido por el mismo backend (`/api/v1/auth/*`, `/.well-known/jwks.json`) |
+| **CORE (10) · Event Bus** | Consume todo el bus por la cola `analytics.all-events.v1` (binding `#`), con deduplicación por `eventId` | **Simulado** con `POST /api/v1/dev/events`; inbox en memoria |
+| **CORE (10) · Service Auth** | Token de servicio de `analytics-service` (`POST /internal/v1/service-auth/token`), cacheado hasta que vence | **Mock** por defecto. Con `CORE_BASE_URL` y `ANALYTICS_CLIENT_SECRET` usa el CORE real |
+| **CORE (10) · Wallet** | Balances y gastos administrativos desde `GET /internal/v1/wallets/aggregates` | Pendiente (los tableros salen del mock) |
+| **Backoffice (8)** | Catálogo de sedes (`siteId` UUID) y nombre de las personas. Se consulta directo a su backend (sin gateway) con el token de servicio de CORE; las personas no se copian | **Mock** por defecto. Con `BACKOFFICE_URL` en `backend/.env` usa el gateway HTTP real |
+| **Gestión Académica (9)** | Cuatrimestres (`termId`) | **Mock** (`AcademicTermsGateway`) |
+| Tableros | Calculan sobre un dataset mock con los ids y shapes reales | Todavía **no** leen los eventos consumidos (falta base de datos) |
 
 Cuando exista el módulo real, se reemplaza la clase de `backend/src/infrastructure/integrations/`
 y el resto del backend no cambia.
@@ -27,31 +34,31 @@ y el resto del backend no cambia.
 
 ```mermaid
 flowchart LR
-  subgraph Emisores["Módulos emisores de eventos"]
-    PE[1 Portal Estudiante]
+  subgraph Emisores["Módulos que publican eventos"]
     PD[2 Portal Docente]
     BI[3 Biblioteca]
     CO[4 Comedor]
     TI[5 Tienda]
     EV[6 Eventos Académicos]
+    BO[8 Backoffice]
     GA[9 Gestión Académica]
   end
-  BO[8 Backoffice]
-  CORE[10 CORE]
+  CORE[10 CORE · gateway, auth, wallet, bus]
 
   subgraph M7["7 · Analítica Institucional"]
     direction TB
     FE[Frontend React + Vite]
     BE[Backend Node + Express]
-    FE -- "HTTP + Bearer" --> BE
   end
 
-  Emisores -- "POST /api/analytics/events" --> BE
-  BO -- "sede.definida / sueldos / gastos / docente.alta" --> BE
-  CORE -- "saldo.movimiento" --> BE
-  FE -- "login (mail UADE)" --> CORE
-  BE -- "validar token" --> CORE
-  BE -- "catálogo de sedes" --> BO
+  Emisores -- "POST /internal/v1/events" --> CORE
+  CORE -- "cola analytics.all-events.v1" --> BE
+  FE -- "login / refresh" --> CORE
+  FE -- "/api/v1/analytics/* (gateway)" --> CORE
+  CORE -- "/api/v1/* + X-User-*" --> BE
+  BE -- "JWKS · wallets/aggregates" --> CORE
+  BE -- "sedes · usuarios" --> BO
+  BE -- "cuatrimestres" --> GA
 ```
 
 Ambos paquetes siguen arquitectura por capas (`domain` → `application` → `infrastructure` /
@@ -66,6 +73,7 @@ Requiere Node 20 o superior. Son dos paquetes independientes, cada uno con su
 # Terminal 1: backend en http://localhost:3000
 cd backend
 npm install
+cp .env.example .env   # opcional: URLs y secret de los módulos reales
 npm run dev
 
 # Terminal 2: frontend en http://localhost:5173
@@ -74,42 +82,49 @@ npm install
 npm run dev
 ```
 
-El frontend apunta a `http://localhost:3000/api`; se cambia con `VITE_API_BASE_URL`.
+En desarrollo no hay gateway: el frontend llama directo al backend en
+`http://localhost:3000/api/v1`, tanto para Analítica como para el mock de CORE. Se cambian con
+`VITE_ANALYTICS_BASE_URL` y `VITE_CORE_BASE_URL`. Con el gateway real serían
+`https://core/api/v1/analytics` y `https://core/api/v1`.
 
 ### Cuentas de demo (mock de CORE)
 
-| Mail | Rol | Ve |
+| Mail | Permisos | Ve |
 |---|---|---|
-| `direccion.academica@uade.edu.ar` | Dirección Académica | Tablero académico |
-| `direccion.financiera@uade.edu.ar` | Dirección Financiera | Tablero financiero y estadísticas de eventos |
-| `direccion.general@uade.edu.ar` | Ambos roles | Los dos tableros (un usuario puede tener varios roles) |
+| `direccion.academica@uade.edu.ar` | `analytics:academic:read` | Tablero académico y estadísticas de eventos |
+| `direccion.financiera@uade.edu.ar` | `analytics:finance:read` | Tablero financiero |
+| `direccion.general@uade.edu.ar` | Los dos | Los dos tableros |
 
-La contraseña de las tres es la constante `uadenet2026` de
-`backend/src/infrastructure/integrations/core-auth.gateway.mock.ts`.
+La contraseña de las tres es la constante `DEMO_PASSWORD` de
+`backend/src/infrastructure/integrations/demo-users.mock.ts`.
 
 ## API
 
-- **Contrato de eventos y esquema de cada payload (campos y tipos):** [backend/EVENTOS.md](backend/EVENTOS.md)
-- **Qué datos le pedimos a cada módulo, con ejemplos:** [DATOS-POR-MODULO.md](DATOS-POR-MODULO.md)
-- **Colección de Postman** (login, tableros y un ejemplo de cada uno de los 26 eventos):
+- **Eventos que consumimos y esquema de cada `data`:** [backend/EVENTOS.md](backend/EVENTOS.md)
+- **Preguntas abiertas a otros grupos y supuestos que tomamos:** [docs/PREGUNTAS-A-GRUPOS.md](docs/PREGUNTAS-A-GRUPOS.md)
+- **Colección de Postman** (login, tableros y un evento de ejemplo por cada `eventType`):
   [docs/postman/UADEnet-Analitica.postman_collection.json](docs/postman/UADEnet-Analitica.postman_collection.json).
-  Importarla, completar la variable `demoPassword` y correr un Login: el token se guarda solo.
+  Importarla, completar la variable `demoPassword` y correr un Login: el access token se guarda solo.
+
+Rutas tal como las recibe el backend (por el gateway de CORE se antepone `/api/v1/analytics`
+en lugar de `/api/v1`). Los errores son `application/problem+json` con `code` estable.
 
 | Método | Ruta | Acceso |
 |---|---|---|
-| `POST` | `/api/auth/login` | Público (mock de CORE) |
-| `GET` | `/api/auth/me` | Token |
-| `GET` | `/api/analytics/filters` | Token |
-| `GET` | `/api/analytics/dashboard/academic?sedeId=&cuatrimestre=` | Token, rol académico |
-| `GET` | `/api/analytics/dashboard/financial?sedeId=&periodo=` | Token, rol financiero |
-| `GET` | `/api/analytics/events/stats?sedeId=&periodo=` | Token, rol financiero |
-| `GET` | `/api/analytics/sources` | Público |
-| `POST` | `/api/analytics/events` | Público (lo llaman los otros módulos) |
+| `GET` | `/api/v1/me` | Token |
+| `GET` | `/api/v1/filters` | Token |
+| `GET` | `/api/v1/dashboard/academic?siteId=&termId=` | `analytics:academic:read` |
+| `GET` | `/api/v1/dashboard/financial?siteId=&month=AAAA-MM` | `analytics:finance:read` |
+| `GET` | `/api/v1/events/stats?siteId=&month=AAAA-MM` | `analytics:academic:read` |
+| `GET` | `/api/v1/sources` · `/api/v1/roles` | Público |
+| `GET` | `/health/live` · `/health/ready` | Público (gateway) |
+| `POST` · `GET` | `/api/v1/dev/events` | Sólo desarrollo: simula la cola de CORE |
+| `POST` | `/api/v1/auth/login` · `/refresh` · `/logout` · `GET /me` · `GET /.well-known/jwks.json` | Mock de CORE |
 
-La documentación de payloads y la colección de Postman se regeneran desde
+La documentación de eventos y la colección de Postman se regeneran desde
 `backend/src/domain/entities/event-schemas.ts` con `npm run docs` (en `backend/`).
 
 ## Más documentación
 
 - [ANALISIS-DISENO.md](ANALISIS-DISENO.md): auditoría del diseño contra la implementación.
-- [TPOUADENET.md](TPOUADENET.md) y [backend/INTEGRACION-ACADEMICA.md](backend/INTEGRACION-ACADEMICA.md): contexto del TPO e integración con Gestión Académica.
+- [TPOUADENET.md](TPOUADENET.md): contexto del TPO.

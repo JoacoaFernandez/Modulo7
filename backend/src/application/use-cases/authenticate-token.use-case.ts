@@ -6,6 +6,6 @@ export class AuthenticateTokenUseCase {
   constructor(private readonly coreAuth: CoreAuthGateway) {}
 
   execute(token: string): Promise<AuthenticatedUser | null> {
-    return this.coreAuth.validateToken(token);
+    return this.coreAuth.verifyAccessToken(token);
   }
 }
