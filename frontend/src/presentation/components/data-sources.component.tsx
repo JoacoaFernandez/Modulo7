@@ -1,6 +1,6 @@
 // Presentation components: app-specific components composed from shadcn/ui primitives (components/ui).
 // Pantalla "Fuentes de datos": los módulos que emiten eventos, su última ingesta y qué tablero alimentan.
-// No hay columna de estado: la ingesta es batch (POST por evento), no una conexión abierta.
+// No hay columna de estado: los eventos llegan por la cola de CORE, no por una conexión con cada módulo.
 import type { EventSource, SourceModule } from "@/domain/entities/analytics.entity";
 import { formatLastIngestion } from "@/lib/format";
 import { SectionCard } from "./dashboard/section-card.component";
@@ -9,7 +9,8 @@ import { SectionHeader } from "./dashboard/section-header.component";
 // Qué tableros se calculan con los eventos de cada módulo (ver backend/EVENTOS.md).
 const FEEDS: Record<SourceModule, string> = {
   academic: "Académico",
-  teacher: "Académico",
+  // Los resultados y los docentes de cada curso salen de Gestión Académica.
+  teacher: "Ninguno",
   backoffice: "Académico y financiero",
   core: "Financiero",
   store: "Financiero",

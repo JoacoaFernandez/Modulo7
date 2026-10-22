@@ -17,4 +17,6 @@ export const config = {
   clientSecret: optional("ANALYTICS_CLIENT_SECRET"),
   // Backoffice (módulo 8): se consulta directo, sin pasar por el gateway, con token de servicio.
   backofficeUrl: optional("BACKOFFICE_URL"),
+  // Gestión Académica (módulo 9): ídem, directo a su backend con token de servicio.
+  academicUrl: optional("ACADEMIC_URL"),
 };

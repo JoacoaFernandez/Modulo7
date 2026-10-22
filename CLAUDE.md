@@ -21,14 +21,15 @@ dirección académica, dirección financiera y estadísticas de eventos.
   `/api/v1/auth/*` y `/.well-known/jwks.json`). El access token es un JWT RS256 de 15 min que
   el backend valida localmente contra el JWKS; el refresh viaja en cookie HttpOnly. Se
   autoriza por **permiso** (`analytics:academic:read`, `analytics:finance:read`), no por rol de
-  CORE; los perfiles `academica`/`financiera` se derivan de esos permisos.
+  CORE; los perfiles `academica`/`financiera` se derivan de esos permisos. Los roles son los
+  del catálogo de CORE (`ACADEMIC_ADMIN`, `FINANCE_ADMIN`, …): CORE es dueño de roles y permisos.
 - Backend a backend: con el **token de servicio** de CORE (`analytics-service`, secret en
   `backend/.env`, nunca en Git). Backoffice se consulta directo a su backend, sin gateway, y las
   personas no se copian: se piden cuando hacen falta. Cada gateway usa su mock salvo que su URL
   esté configurada (ver `backend/.env.example` y `infrastructure/config.ts`).
 - Sedes: el catálogo sale de un mock de Backoffice y toda sede viaja como `siteId` UUID
   (`?siteId=3e9b0a12-...`), nunca como nombre. Sin `siteId` = todas las sedes. Los
-  cuatrimestres salen de un mock de Gestión Académica (`termId`) y los meses viajan `AAAA-MM`.
+  cuatrimestres son los períodos de Gestión Académica (`termId` = id del período) y los meses viajan `AAAA-MM`.
 - Antes de asumir que algo falta o está desactualizado, releer `ANALISIS-DISENO.md` — es
   la auditoría viva del proyecto y puede tener notas más recientes que esta guía.
 

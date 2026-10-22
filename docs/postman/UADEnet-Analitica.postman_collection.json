@@ -19,7 +19,7 @@
     },
     {
       "key": "termId",
-      "value": "f5d6e7f8-091a-42b3-b4c5-d6f708192a3b"
+      "value": "8"
     },
     {
       "key": "month",
@@ -622,10 +622,10 @@
           ]
         },
         {
-          "name": "teacher",
+          "name": "academic",
           "item": [
             {
-              "name": "teacher.exam-result.published.v1",
+              "name": "academic.course-result.published.v1",
               "request": {
                 "method": "POST",
                 "header": [
@@ -649,44 +649,10 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"teacher.exam-result.published.v1\",\n  \"source\": \"teacher\",\n  \"occurredAt\": \"2026-09-15T15:00:00.000Z\",\n  \"subject\": \"exam-result/ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"teacher-service\"\n  },\n  \"data\": {\n    \"studentId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"courseId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"subjectId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"examId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"grade\": 10,\n    \"result\": \"result-ejemplo\",\n    \"publishedAt\": \"2026-09-15T15:00:00.000Z\",\n    \"teacherId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"termId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\"\n  }\n}"
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"2026-09-15T15:00:00.000Z\",\n  \"subject\": \"course-result/ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"courseId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"subjectId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"periodId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 10,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"2026-09-15\"\n  }\n}"
                 }
               }
             },
-            {
-              "name": "teacher.attendance.recorded.v1",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Content-Type",
-                    "value": "application/json"
-                  }
-                ],
-                "url": {
-                  "raw": "{{baseUrl}}/api/v1/dev/events",
-                  "host": [
-                    "{{baseUrl}}"
-                  ],
-                  "path": [
-                    "api",
-                    "v1",
-                    "dev",
-                    "events"
-                  ],
-                  "query": []
-                },
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"teacher.attendance.recorded.v1\",\n  \"source\": \"teacher\",\n  \"occurredAt\": \"2026-09-15T15:00:00.000Z\",\n  \"subject\": \"attendance/ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"teacher-service\"\n  },\n  \"data\": {\n    \"studentId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"courseId\": \"ba310c57-a684-4dbf-a4a4-905fcfbefa08\",\n    \"classDate\": \"2026-09-15\",\n    \"present\": true\n  }\n}"
-                }
-              }
-            }
-          ]
-        },
-        {
-          "name": "academic",
-          "item": [
             {
               "name": "academic.term-defined.v1",
               "request": {

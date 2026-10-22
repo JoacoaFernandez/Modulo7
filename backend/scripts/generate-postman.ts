@@ -6,7 +6,7 @@ import path from "node:path";
 import { FieldSpec } from "../src/domain/entities/event-schema.entity";
 import { EVENT_SCHEMAS } from "../src/domain/entities/event-schemas";
 import { SOURCE_MODULES } from "../src/domain/entities/event-source.entity";
-import { TERMS } from "../src/infrastructure/integrations/academic-terms.gateway.mock";
+import { PERIODS } from "../src/infrastructure/integrations/academic-periods.gateway.mock";
 import { SITE_IDS } from "../src/infrastructure/integrations/backoffice-sites.gateway.mock";
 
 const EXAMPLE_UUID = "ba310c57-a684-4dbf-a4a4-905fcfbefa08";
@@ -124,7 +124,7 @@ const collection = {
     { key: "baseUrl", value: "http://localhost:3000" },
     { key: "token", value: "" },
     { key: "siteId", value: SITE_IDS.centro },
-    { key: "termId", value: TERMS[TERMS.length - 1].termId },
+    { key: "termId", value: PERIODS[PERIODS.length - 1].id },
     { key: "month", value: "2026-08" },
   ],
   item: [

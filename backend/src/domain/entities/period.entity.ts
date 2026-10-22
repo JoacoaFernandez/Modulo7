@@ -4,7 +4,7 @@
 export type PeriodKind = "quarter" | "month";
 
 export interface Period {
-  // Identificador tal como viaja en la query: termId (UUID de Gestión Académica) o AAAA-MM.
+  // Identificador tal como viaja en la query: termId (id del período de Gestión Académica) o AAAA-MM.
   id: string;
   // Etiqueta para mostrar: "2026-1C" o "Ago 2026".
   label: string;
@@ -13,11 +13,10 @@ export interface Period {
   index: number;
 }
 
-// Etiqueta AAAA-NC de un cuatrimestre a partir de su fecha de inicio: los que arrancan en el
-// primer semestre son 1C y el resto 2C. Gestión Académica no publica la etiqueta.
-export function termLabel(startDate: string): string {
-  const [year, month] = startDate.split("-").map(Number);
-  return `${year}-${month <= 6 ? 1 : 2}C`;
+// Etiqueta AAAA-NC de un cuatrimestre a partir del año y el número (1 o 2) del período de
+// Gestión Académica: 2026 y 2 → "2026-2C".
+export function termLabel(year: number, number: number): string {
+  return `${year}-${number}C`;
 }
 
 const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];

@@ -6,7 +6,7 @@ import { RoleId } from "./role.entity";
 export interface AuthenticatedUser {
   userId: string;
   email: string;
-  // Roles de CORE: STUDENT, TEACHER, ADMIN_IT, ADMIN_STAFF.
+  // Roles del catálogo de CORE: STUDENT, TEACHER, ADMIN, ACADEMIC_ADMIN, FINANCE_ADMIN, etc.
   roles: string[];
   // Permisos {modulo}:{recurso}:{acción}; los de Analítica son analytics:*.
   permissions: string[];

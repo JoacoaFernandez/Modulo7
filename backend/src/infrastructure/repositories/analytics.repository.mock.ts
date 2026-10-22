@@ -11,10 +11,10 @@ import { Period, termLabel } from "../../domain/entities/period.entity";
 import { Role } from "../../domain/entities/role.entity";
 import { Site } from "../../domain/entities/site.entity";
 import { AnalyticsCalculatorService } from "../../domain/services/analytics-calculator.service";
-import { AcademicTermsGateway } from "../../domain/gateways/academic-terms.gateway";
+import { AcademicPeriodsGateway } from "../../domain/gateways/academic-periods.gateway";
 import { BackofficeSitesGateway } from "../../domain/gateways/backoffice-sites.gateway";
 import { ANALYTICS_DATASET } from "../data/analytics.dataset";
-import { academicTermsGateway, backofficeSitesGateway } from "../integrations/gateways";
+import { academicPeriodsGateway, backofficeSitesGateway } from "../integrations/gateways";
 
 export class AnalyticsRepositoryMock implements AnalyticsRepository {
   private readonly calculator = new AnalyticsCalculatorService(ANALYTICS_DATASET);
@@ -23,7 +23,7 @@ export class AnalyticsRepositoryMock implements AnalyticsRepository {
 
   constructor(
     private readonly sitesGateway: BackofficeSitesGateway = backofficeSitesGateway,
-    private readonly termsGateway: AcademicTermsGateway = academicTermsGateway,
+    private readonly periodsGateway: AcademicPeriodsGateway = academicPeriodsGateway,
   ) {}
 
   async getAcademicStats(filters: AcademicFilters): Promise<AcademicStats> {
@@ -54,10 +54,16 @@ export class AnalyticsRepositoryMock implements AnalyticsRepository {
     return [...aggregate, ...sites];
   }
 
-  // Los cuatrimestres son de Gestión Académica; la etiqueta AAAA-NC la derivamos nosotros.
+  // Los cuatrimestres son los períodos de Gestión Académica; la etiqueta AAAA-NC se arma con
+  // el año y el número del período.
   async getQuarters(): Promise<Period[]> {
-    const terms = [...(await this.termsGateway.listTerms())].sort((a, b) => a.startDate.localeCompare(b.startDate));
-    return terms.map((term, index) => ({ id: term.termId, label: termLabel(term.startDate), kind: "quarter", index }));
+    const periods = [...(await this.periodsGateway.listPeriods())].sort((a, b) => a.startDate.localeCompare(b.startDate));
+    return periods.map((period, index) => ({
+      id: period.id,
+      label: termLabel(period.year, period.number),
+      kind: "quarter",
+      index,
+    }));
   }
 
   async getMonths(): Promise<Period[]> {

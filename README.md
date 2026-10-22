@@ -24,7 +24,7 @@ El módulo sigue el contrato de integración **CORE v1** (2026-08-05). El flujo 
 | **CORE (10) · Service Auth** | Token de servicio de `analytics-service` (`POST /internal/v1/service-auth/token`), cacheado hasta que vence | **Mock** por defecto. Con `CORE_BASE_URL` y `ANALYTICS_CLIENT_SECRET` usa el CORE real |
 | **CORE (10) · Wallet** | Balances y gastos administrativos desde `GET /internal/v1/wallets/aggregates` | Pendiente (los tableros salen del mock) |
 | **Backoffice (8)** | Catálogo de sedes (`siteId` UUID) y nombre de las personas. Se consulta directo a su backend (sin gateway) con el token de servicio de CORE; las personas no se copian | **Mock** por defecto. Con `BACKOFFICE_URL` en `backend/.env` usa el gateway HTTP real |
-| **Gestión Académica (9)** | Cuatrimestres (`termId`) | **Mock** (`AcademicTermsGateway`) |
+| **Gestión Académica (9)** | Cuatrimestres (`GET /api/planificacion/periodos`), directo a su backend con token de servicio. Más adelante: resultados finales (evento a registrar en CORE), cursos y docentes | **Mock** por defecto. Con `ACADEMIC_URL` usa el gateway HTTP real |
 | Tableros | Calculan sobre un dataset mock con los ids y shapes reales | Todavía **no** leen los eventos consumidos (falta base de datos) |
 
 Cuando exista el módulo real, se reemplaza la clase de `backend/src/infrastructure/integrations/`
@@ -89,11 +89,14 @@ En desarrollo no hay gateway: el frontend llama directo al backend en
 
 ### Cuentas de demo (mock de CORE)
 
-| Mail | Permisos | Ve |
+| Mail | Rol y permiso | Ve |
 |---|---|---|
-| `direccion.academica@uade.edu.ar` | `analytics:academic:read` | Tablero académico y estadísticas de eventos |
-| `direccion.financiera@uade.edu.ar` | `analytics:finance:read` | Tablero financiero |
-| `direccion.general@uade.edu.ar` | Los dos | Los dos tableros |
+| `direccion.academica@uade.edu.ar` | Rol `ACADEMIC_ADMIN` → `analytics:academic:read` | Tablero académico y estadísticas de eventos |
+| `direccion.financiera@uade.edu.ar` | Rol `FINANCE_ADMIN` → `analytics:finance:read` | Tablero financiero |
+| `direccion.general@uade.edu.ar` | Los dos roles | Los dos tableros |
+
+Los roles son los del catálogo de CORE. Que esos roles traigan los permisos `analytics:*` es
+un supuesto nuestro, pendiente de confirmar con CORE (ver `docs/PREGUNTAS-A-GRUPOS.md`).
 
 La contraseña de las tres es la constante `DEMO_PASSWORD` de
 `backend/src/infrastructure/integrations/demo-users.mock.ts`.

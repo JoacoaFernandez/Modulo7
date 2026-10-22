@@ -2,7 +2,8 @@
 // (ver config.ts y .env.example) se usa la implementación HTTP; sin ella, el mock. El resto del
 // backend no cambia.
 import { config } from "../config";
-import { AcademicTermsGatewayMock } from "./academic-terms.gateway.mock";
+import { AcademicPeriodsGatewayHttp } from "./academic.gateway.http";
+import { AcademicPeriodsGatewayMock } from "./academic-periods.gateway.mock";
 import { BackofficeSitesGatewayHttp, BackofficeUsersGatewayHttp } from "./backoffice.gateway.http";
 import { BackofficeSitesGatewayMock } from "./backoffice-sites.gateway.mock";
 import { BackofficeUsersGatewayMock } from "./backoffice-users.gateway.mock";
@@ -25,5 +26,6 @@ export const backofficeUsersGateway = config.backofficeUrl
   ? new BackofficeUsersGatewayHttp(config.backofficeUrl, coreServiceAuthGateway)
   : new BackofficeUsersGatewayMock();
 
-// Gestión Académica todavía no publicó cómo se consultan los cuatrimestres: sólo mock.
-export const academicTermsGateway = new AcademicTermsGatewayMock();
+export const academicPeriodsGateway = config.academicUrl
+  ? new AcademicPeriodsGatewayHttp(config.academicUrl, coreServiceAuthGateway)
+  : new AcademicPeriodsGatewayMock();

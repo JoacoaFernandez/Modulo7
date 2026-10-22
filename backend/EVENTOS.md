@@ -101,7 +101,7 @@ Cada sección muestra el `data` de un evento. Se genera con `npm run docs:payloa
 | `userId` | `string` | sí | UUID de la persona (lo genera Backoffice). |
 | `email` | `string` | sí | Mail institucional. No se persiste. |
 | `status` | enum (`PENDING_ACTIVATION`, `ACTIVE`, `SUSPENDED`, `DISABLED`) | sí | Estado de la identidad. |
-| `roles` | `array` de strings | sí | Roles: STUDENT, TEACHER, ADMIN_IT, ADMIN_STAFF. |
+| `roles` | `array` de strings | sí | Roles del catálogo de CORE: STUDENT, TEACHER, ADMIN, ACADEMIC_ADMIN, FINANCE_ADMIN, etc. |
 | `permissions` | `array` de strings | no | Permisos {modulo}:{recurso}:{acción}. |
 
 **`backoffice.user.disabled.v1`** — Marca al docente como inactivo; sigue en el histórico.
@@ -121,32 +121,20 @@ Cada sección muestra el `data` de un evento. Se genera con `npm run docs:payloa
 | `capacity` | `number` | sí | Capacidad física. |
 | `status` | enum (`ACTIVE`, `INACTIVE`, `MAINTENANCE`) | sí | Estado del espacio. |
 
-#### `teacher` (portal docente)
-
-**`teacher.exam-result.published.v1`** — Tasa de aprobación por materia, por cuatrimestre y por docente.
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `studentId` | `string` | sí | UUID del estudiante. |
-| `courseId` | `string` | sí | UUID del curso. |
-| `subjectId` | `string` | sí | UUID de la asignatura (catálogo de Gestión Académica). |
-| `examId` | `string` | sí | UUID del examen. |
-| `grade` | `number` | sí | Nota. |
-| `result` | `string` | sí | Resultado del examen (valores a confirmar con Portal Docente). |
-| `publishedAt` | `string` ISO 8601 UTC | sí | Cuándo se publicó la nota. |
-| `teacherId` | `string` | no | UUID del docente. Propuesto, opcional: sin él no hay tasa por docente. |
-| `termId` | `string` | no | UUID del cuatrimestre. Propuesto, opcional: sin él se infiere por fecha. |
-
-**`teacher.attendance.recorded.v1`** — Cursos con actividad en el cuatrimestre vigente (materias en curso).
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `studentId` | `string` | sí | UUID del estudiante. |
-| `courseId` | `string` | sí | UUID del curso. |
-| `classDate` | `string` AAAA-MM-DD | sí | Fecha de la clase. |
-| `present` | `boolean` | sí | Si estuvo presente. |
-
 #### `academic` (gestión académica)
+
+**`academic.course-result.published.v1`** — Tasa de aprobación por materia, por docente (docentes del curso) y por cuatrimestre. Un evento por alumno y curso; vale el último.
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `studentId` | `string` | sí | UUID del alumno. |
+| `courseId` | `string` | sí | Id del curso en Gestión Académica. |
+| `subjectId` | `string` | sí | Id de la asignatura en Gestión Académica. |
+| `periodId` | `string` | sí | Id del período (cuatrimestre) en Gestión Académica. |
+| `siteId` | `string` | sí | UUID de la sede en Backoffice (backofficeSiteId). |
+| `finalGrade` | `number` | sí | Nota final, de 0 a 10. |
+| `status` | enum (`APROBADO`, `DESAPROBADO`) | sí | Resultado final de la cursada. |
+| `resultDate` | `string` AAAA-MM-DD | sí | Fecha del resultado. |
 
 **`academic.term-defined.v1`** — Cuatrimestre vigente y anteriores (filtro del tablero académico).
 
@@ -298,6 +286,7 @@ Cada sección muestra el `data` de un evento. Se genera con `npm run docs:payloa
 ## Eventos que recibimos y descartamos
 
 Llegan por el binding `#`, pero ningún tablero los usa:
+- `teacher.exam-result.published.v1` y `teacher.attendance.recorded.v1`: los resultados finales y los docentes de cada curso los tomamos de Gestión Académica
 - `backoffice.rate.changed.v1`
 - `events.reminder.requested.v1`
 - `academic.exam-scheduled.v1`
@@ -307,7 +296,7 @@ Llegan por el binding `#`, pero ningún tablero los usa:
 
 Las preguntas y los supuestos están en [`../docs/PREGUNTAS-A-GRUPOS.md`](../docs/PREGUNTAS-A-GRUPOS.md). Las que tocan este contrato:
 
-1. **`teacherId` y `termId` en `teacher.exam-result.published.v1`.** Los pedimos como opcionales. Sin `teacherId` no hay tasa de aprobación por docente.
-2. **Valores de `result`.** Falta definir cuál indica que la materia está aprobada.
-3. **Ítems de `store.purchase.completed.v1`.** Falta confirmar los campos con Tienda.
+1. **Evento de resultado de Gestión Académica.** `academic.course-result.published.v1` es un nombre propuesto: hay que registrarlo en el catálogo de CORE, y G9 tiene que pasar a publicarlo por CORE, con un `eventId` nuevo en cada publicación.
+2. **Cola o webhooks.** La cola `analytics.all-events.v1` hay que pedírsela a G10. La alternativa son webhooks por `eventType`.
+3. **Ítems de `store.purchase.completed.v1`.** Confirmar los campos contra el JSON Schema de CORE.
 4. **Base de datos.** La inbox tiene que pasar a una tabla con índice único por `eventId`, en la misma transacción que el efecto.

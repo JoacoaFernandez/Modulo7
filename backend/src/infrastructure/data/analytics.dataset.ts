@@ -5,7 +5,7 @@ import { EventSource, SOURCE_MODULE_LABELS, SOURCE_MODULES } from "../../domain/
 import { monthLabel, Period } from "../../domain/entities/period.entity";
 import { ANALYTICS_PERMISSIONS, Role } from "../../domain/entities/role.entity";
 import { Site } from "../../domain/entities/site.entity";
-import { TERMS } from "../integrations/academic-terms.gateway.mock";
+import { PERIODS } from "../integrations/academic-periods.gateway.mock";
 import { SITE_IDS } from "../integrations/backoffice-sites.gateway.mock";
 
 // Literal del prototipo: "Última ingesta de eventos: 26/08 04:12".
@@ -193,13 +193,13 @@ export const ANALYTICS_DATASET: AnalyticsDataset = {
 
   defaults: {
     siteId: null,
-    // El cuatrimestre más reciente del mock de Gestión Académica (2026-1C).
-    termId: TERMS[TERMS.length - 1].termId,
+    // El período más reciente del mock de Gestión Académica (2026-1C).
+    termId: PERIODS[PERIODS.length - 1].id,
     month: "2026-08",
   },
 
   lastIngestionAt: LAST_INGESTION_AT,
-  academicSourceModules: ["teacher", "academic", "backoffice"],
+  academicSourceModules: ["academic", "backoffice"],
   financialSourceModules: ["core", "store", "dining", "backoffice"],
   eventsSourceModules: ["events", "backoffice"],
 };

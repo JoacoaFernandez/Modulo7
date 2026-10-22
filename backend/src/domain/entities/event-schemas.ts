@@ -49,7 +49,7 @@ export const EVENT_SCHEMAS: readonly EventSchema[] = [
       userId,
       str("email", "Mail institucional. No se persiste."),
       { ...str("status", "Estado de la identidad."), oneOf: ["PENDING_ACTIVATION", "ACTIVE", "SUSPENDED", "DISABLED"] },
-      strList("roles", "Roles: STUDENT, TEACHER, ADMIN_IT, ADMIN_STAFF."),
+      strList("roles", "Roles del catálogo de CORE: STUDENT, TEACHER, ADMIN, ACADEMIC_ADMIN, FINANCE_ADMIN, etc."),
       { ...strList("permissions", "Permisos {modulo}:{recurso}:{acción}."), required: false },
     ],
   },
@@ -72,36 +72,24 @@ export const EVENT_SCHEMAS: readonly EventSchema[] = [
     ],
   },
 
-  // --- Portal del Docente (2) ---
-  {
-    eventType: "teacher.exam-result.published.v1",
-    source: "teacher",
-    usage: "Tasa de aprobación por materia, por cuatrimestre y por docente.",
-    fields: [
-      str("studentId", "UUID del estudiante."),
-      str("courseId", "UUID del curso."),
-      str("subjectId", "UUID de la asignatura (catálogo de Gestión Académica)."),
-      str("examId", "UUID del examen."),
-      num("grade", "Nota."),
-      str("result", "Resultado del examen (valores a confirmar con Portal Docente)."),
-      datetime("publishedAt", "Cuándo se publicó la nota."),
-      str("teacherId", "UUID del docente. Propuesto, opcional: sin él no hay tasa por docente.", false),
-      str("termId", "UUID del cuatrimestre. Propuesto, opcional: sin él se infiere por fecha.", false),
-    ],
-  },
-  {
-    eventType: "teacher.attendance.recorded.v1",
-    source: "teacher",
-    usage: "Cursos con actividad en el cuatrimestre vigente (materias en curso).",
-    fields: [
-      str("studentId", "UUID del estudiante."),
-      str("courseId", "UUID del curso."),
-      date("classDate", "Fecha de la clase."),
-      bool("present", "Si estuvo presente."),
-    ],
-  },
-
   // --- Gestión Académica (9) ---
+  {
+    // Nombre propuesto, a registrar en el catálogo de CORE. Hoy G9 publica este hecho como
+    // resultado.publicado en una cola propia; tiene que pasar a POST /internal/v1/events.
+    eventType: "academic.course-result.published.v1",
+    source: "academic",
+    usage: "Tasa de aprobación por materia, por docente (docentes del curso) y por cuatrimestre. Un evento por alumno y curso; vale el último.",
+    fields: [
+      str("studentId", "UUID del alumno."),
+      str("courseId", "Id del curso en Gestión Académica."),
+      str("subjectId", "Id de la asignatura en Gestión Académica."),
+      str("periodId", "Id del período (cuatrimestre) en Gestión Académica."),
+      str("siteId", "UUID de la sede en Backoffice (backofficeSiteId)."),
+      num("finalGrade", "Nota final, de 0 a 10."),
+      { ...str("status", "Resultado final de la cursada."), oneOf: ["APROBADO", "DESAPROBADO"] },
+      date("resultDate", "Fecha del resultado."),
+    ],
+  },
   {
     eventType: "academic.term-defined.v1",
     source: "academic",
