@@ -22,7 +22,31 @@ export interface TeacherApprovalRow {
   materia: string;
 }
 
-// Materias distintas con algún curso abierto y sin cerrar en el cuatrimestre.
+// Cierre anticipado (baja) de un curso: su curso.cerrado ocurrió antes del fin del cuatrimestre. El fin sale del
+// último cuatrimestre.definido de ese cuatrimestre (se cuenta todo el día `fin`); sin definición, rige la fecha de hoy,
+// así cualquier cierre ya ocurrido excluye. Un cierre posterior al fin es el cierre de rutina y el curso sigue contando.
+function earlyClosure(sedeMatch: boolean): Prisma.Sql {
+  return Prisma.sql`
+      AND NOT EXISTS (
+        SELECT 1 FROM inbox_events c
+        WHERE c.source_module = 'gestion-academica'
+          AND c.event_type = 'curso.cerrado'
+          AND c.payload->>'cursoId' = e.payload->>'cursoId'
+          AND c.payload->>'cuatrimestre' = e.payload->>'cuatrimestre'
+          ${sedeMatch ? Prisma.sql`AND c.payload->>'sedeId' = e.payload->>'sedeId'` : Prisma.empty}
+          AND c.occurred_at < COALESCE(
+            (SELECT (q.payload->>'fin')::date + 1
+             FROM inbox_events q
+             WHERE q.source_module = 'gestion-academica'
+               AND q.event_type = 'cuatrimestre.definido'
+               AND q.payload->>'cuatrimestre' = e.payload->>'cuatrimestre'
+             ORDER BY q.occurred_at DESC LIMIT 1),
+            now() AT TIME ZONE 'UTC'
+          )
+      )`;
+}
+
+// Materias distintas con algún curso abierto en el cuatrimestre y sin cierre anticipado.
 export async function queryActiveSubjectsCount(
   prisma: PrismaClient,
   quarter: string,
@@ -35,18 +59,12 @@ export async function queryActiveSubjectsCount(
       AND e.event_type = 'curso.abierto'
       AND e.payload->>'cuatrimestre' = ${quarter}
       ${siteFilter(sedeId, Prisma.sql`e.payload->>'sedeId'`)}
-      AND NOT EXISTS (
-        SELECT 1 FROM inbox_events c
-        WHERE c.source_module = 'gestion-academica'
-          AND c.event_type = 'curso.cerrado'
-          AND c.payload->>'cursoId' = e.payload->>'cursoId'
-          AND c.payload->>'cuatrimestre' = e.payload->>'cuatrimestre'
-      )`;
+      ${earlyClosure(false)}`;
 
   return rows[0]?.total ?? 0;
 }
 
-// Comisiones: pares distintos (sede, curso) abiertos y sin cerrar en el cuatrimestre. El cierre
+// Comisiones: pares distintos (sede, curso) abiertos en el cuatrimestre y sin cierre anticipado. El cierre
 // aplica por curso + cuatrimestre + sede, así "Todas las sedes" suma las sedes aunque se repita el cursoId.
 export async function queryActiveCommissionsCount(
   prisma: PrismaClient,
@@ -60,14 +78,7 @@ export async function queryActiveCommissionsCount(
       AND e.event_type = 'curso.abierto'
       AND e.payload->>'cuatrimestre' = ${quarter}
       ${siteFilter(sedeId, Prisma.sql`e.payload->>'sedeId'`)}
-      AND NOT EXISTS (
-        SELECT 1 FROM inbox_events c
-        WHERE c.source_module = 'gestion-academica'
-          AND c.event_type = 'curso.cerrado'
-          AND c.payload->>'cursoId' = e.payload->>'cursoId'
-          AND c.payload->>'cuatrimestre' = e.payload->>'cuatrimestre'
-          AND c.payload->>'sedeId' = e.payload->>'sedeId'
-      )`;
+      ${earlyClosure(true)}`;
 
   return rows[0]?.total ?? 0;
 }

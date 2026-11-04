@@ -43,10 +43,24 @@ export async function queryQuarterIds(prisma: PrismaClient): Promise<string[]> {
   return rows.map((row) => row.cuatrimestre);
 }
 
-// Meses calendario (AAAA-MM, hora de Argentina) en los que ocurrió algún evento, de cualquier módulo.
+// Meses calendario (AAAA-MM, hora de Argentina) con eventos que alimentan los tableros mensuales: financiero
+// (core, backoffice, tienda, comedor) y estadísticas de eventos (eventos). No cuentan los eventos de catálogo
+// (sede.definida, docente.alta, etc.) ni los académicos, que se filtran por cuatrimestre.
 export async function queryEventMonths(prisma: PrismaClient): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ ym: string }[]>`
-    SELECT DISTINCT ${argentinaMonth()} AS ym FROM inbox_events`;
+    SELECT DISTINCT ${argentinaMonth()} AS ym
+    FROM inbox_events
+    WHERE (source_module, event_type) IN (
+      ('core', 'saldo.movimiento'),
+      ('backoffice', 'sueldos.liquidados'),
+      ('backoffice', 'gasto.registrado'),
+      ('tienda', 'compra.realizada'),
+      ('tienda', 'compra.devuelta'),
+      ('comedor', 'reserva.confirmada'),
+      ('eventos', 'evento.realizado'),
+      ('eventos', 'inscripcion.confirmada'),
+      ('eventos', 'asistencia.registrada')
+    )`;
 
   return rows.map((row) => row.ym);
 }

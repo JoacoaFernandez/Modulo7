@@ -54,10 +54,17 @@ npm run start   # node dist/index.js (requiere build previo)
 npm run db:up       # docker compose up -d — Postgres 16 local (:5432)
 npm run db:migrate  # prisma migrate dev — aplica las migraciones
 npm run db:seed     # eventos de ejemplo (re-ejecutable, upsert por eventId; incluye sede.definida y cuatrimestre.definido)
+npm run db:demo        # dataset de demo (~50 mil eventos `demo-*`, 2024-1C a 2026-2C y Dic 2025–Nov 2026); determinístico y re-ejecutable sin duplicar
+npm run db:demo:clear  # borra solo los eventos con eventId `demo-%` (no toca el seed mínimo ni eventos reales)
 npm run docs        # regenera la tabla de payloads de EVENTOS.md y la colección de Postman
 ```
 La config va en `backend/.env` (no se commitea): copiar `backend/.env.example` y ajustar
 `DATABASE_URL`. Es obligatoria: sin ella el backend no arranca.
+
+Para dejar una base limpia con **solo** el demo (borra todo, incluidos los eventos reales y el seed):
+`npx prisma migrate reset --force --skip-seed && npm run db:demo`. El generador está en
+`backend/prisma/demo-seed.ts`; `STUDENT_SCALE` regula la escala porque la consulta de aprobación por
+facultad crece con resultados × cursos (sin índice sobre el JSON) y a escala mayor pasa de ~1,5 s.
 
 **Frontend** (`cd frontend`):
 ```

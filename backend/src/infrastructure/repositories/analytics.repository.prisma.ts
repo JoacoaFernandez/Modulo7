@@ -103,7 +103,7 @@ export class AnalyticsRepositoryPrisma implements AnalyticsRepository {
     return buildQuarterCatalog(await queryQuarterIds(this.prisma), new Date());
   }
 
-  // Meses (hora de Argentina) en que ocurrió algún evento; sin ninguno, el actual.
+  // Meses (hora de Argentina) con eventos de los tableros mensuales (financiero y eventos); sin ninguno, el actual.
   async getMonths(): Promise<Period[]> {
     return buildMonthCatalog(await queryEventMonths(this.prisma), new Date());
   }

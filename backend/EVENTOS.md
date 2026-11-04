@@ -417,7 +417,7 @@ original.
 | Módulo | `eventType` | Alimenta |
 |---|---|---|
 | `gestion-academica` | `resultado.publicado` · `resultado.modificado` | Tasa de aprobación general · por materia · por cuatrimestre · por docente |
-| `gestion-academica` | `curso.abierto` · `curso.cerrado` | Materias en curso · Comisiones activas · Tendencia por facultad |
+| `gestion-academica` | `curso.abierto` · `curso.cerrado` | Materias en curso · Comisiones activas (un curso cuenta en su cuatrimestre salvo que `curso.cerrado` llegue antes del `fin` de `cuatrimestre.definido`; sin definición, antes de hoy) · Tendencia por facultad |
 | `gestion-academica` | `cuatrimestre.definido` | Catálogo de cuatrimestres (también se arma con el `cuatrimestre` de cualquier otro evento) |
 | `portal-estudiante` | `inscripcion.confirmada` · `inscripcion.cancelada` | Estudiantes con cursada activa |
 | `portal-docente` | `curso.creado` · `acta.cerrada` (opcionales) | Respaldo del cruce curso → docente y de la aprobación |
