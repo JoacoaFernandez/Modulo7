@@ -5,9 +5,9 @@
 import { X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-// "Eventos académicos" es una sección propia (con sus filtros), colgada de "Académica" en el
-// menú y habilitada por el mismo rol "academica". "Fuentes de datos" es la única sección que
-// no depende del rol: la ven todos los usuarios.
+// "Eventos académicos" es una sección propia (con sus filtros), al mismo nivel que las demás y
+// habilitada por el rol "academica". "Fuentes de datos" es la única sección que no depende del
+// rol: la ven todos los usuarios.
 export type AnalyticsSection = "academic" | "events" | "financial" | "sources";
 
 interface SidebarProps {
@@ -23,8 +23,6 @@ interface SidebarProps {
 interface NavItem {
   label: string;
   hint?: string;
-  // Ítem indentado, tipografía más chica: solo "Eventos académicos".
-  sub?: boolean;
   isActive: boolean;
   onClick?: () => void;
 }
@@ -48,7 +46,7 @@ export function Sidebar({ availableSections, activeSection, onSelectSection, isO
         ]
       : []),
     ...(hasEvents
-      ? [{ label: "Eventos académicos", sub: true, isActive: activeSection === "events", onClick: goTo("events") }]
+      ? [{ label: "Eventos académicos", isActive: activeSection === "events", onClick: goTo("events") }]
       : []),
     ...(hasFinancial
       ? [{ label: "Financiera", isActive: activeSection === "financial", onClick: goTo("financial") }]
@@ -89,10 +87,9 @@ export function Sidebar({ availableSections, activeSection, onSelectSection, isO
               type="button"
               onClick={item.onClick}
               className={cn(
-                "flex items-center justify-between gap-2 rounded-md text-left font-medium transition-colors hover:bg-[#243755]",
-                item.sub ? "py-[7px] pr-2.5 pl-6 text-[12.5px]" : "px-2.5 py-[9px] text-[13px]",
+                "flex items-center justify-between gap-2 rounded-md px-2.5 py-[9px] text-left text-[13px] font-medium transition-colors hover:bg-[#243755]",
                 item.onClick ? "cursor-pointer" : "cursor-default",
-                item.isActive ? "bg-[var(--blue)] text-white" : item.sub ? "text-[#A9B6C8]" : "text-[#C3CCD9]",
+                item.isActive ? "bg-[var(--blue)] text-white" : "text-[#C3CCD9]",
               )}
             >
               <span>{item.label}</span>
