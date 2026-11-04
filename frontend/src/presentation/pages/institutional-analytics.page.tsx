@@ -65,7 +65,7 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
     setEventsMonth,
     logout,
   } = useSession();
-  const { options: filterOptions, error: filtersError } = useFilters();
+  const { options: filterOptions, error: filtersError, isRefreshing: isRefreshingFilters, reload: reloadFilters } = useFilters();
   const eventSources = useEventSources();
 
   // Los catálogos son dinámicos: la elección guardada puede haber dejado de existir. Se
@@ -81,7 +81,15 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
     filterOptions?.defaults.month,
     isEventsSection ? storedEventsMonth : storedMonth,
   );
-  const { academicStats, financialStats, eventsStats, isLoading, error } = useInstitutionalAnalytics({
+  const {
+    academicStats,
+    financialStats,
+    eventsStats,
+    isLoading,
+    isRefreshing: isRefreshingStats,
+    error,
+    reload: reloadStats,
+  } = useInstitutionalAnalytics({
     section: activeSection,
     enabled: filterOptions !== null,
     siteId,
@@ -89,6 +97,17 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
     month,
   });
   const { eyebrow, title } = sectionMeta[activeSection];
+
+  // Actualizar: en los tableros recarga el tablero activo (mismos filtros), el catálogo de filtros
+  // y las fuentes; en "Fuentes de datos", sólo las fuentes.
+  const isRefreshing = isRefreshingFilters || isRefreshingStats || eventSources.isRefreshing;
+  const handleRefresh = () => {
+    if (activeSection !== "sources") {
+      reloadFilters();
+      reloadStats();
+    }
+    eventSources.reload();
+  };
 
   // El académico filtra por cuatrimestre; financiero y eventos, por mes (mismo criterio que
   // el backend). Mientras GET /filters no responda, los selects muestran "Cargando…". La sede
@@ -127,6 +146,8 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
           userName={user.name}
           onLogout={logout}
           onOpenMenu={() => setIsSidebarOpen(true)}
+          onRefresh={handleRefresh}
+          isRefreshing={isRefreshing}
         />
 
         <main className="flex-1 overflow-x-auto p-4 sm:p-6 lg:p-8">
@@ -140,7 +161,7 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
 
           {!isLoading && !error && (
             <>
-              {activeSection === "sources" && <DataSources {...eventSources} />}
+              {activeSection === "sources" && <DataSources sources={eventSources.sources} isLoading={eventSources.isLoading} error={eventSources.error} />}
               {activeSection === "academic" && academicStats && <AcademicDashboard stats={academicStats} />}
               {activeSection === "events" && eventsStats && <EventsDashboard stats={eventsStats} />}
               {activeSection === "financial" && financialStats && <FinancialDashboard stats={financialStats} />}

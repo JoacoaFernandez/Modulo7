@@ -2,7 +2,7 @@
 // Estructura y colores porteados 1:1 del <header> del prototipo (Analitica Institucional.dc.html):
 // selects nativos en pill, no el <Select> de shadcn (el diseño no usa dropdown con popover).
 // Debajo de `lg` el header envuelve en dos filas y suma el botón de menú del Sidebar.
-import { Menu } from "lucide-react";
+import { Menu, RefreshCw } from "lucide-react";
 
 export interface FilterOption {
   value: string;
@@ -54,6 +54,9 @@ interface DashboardHeaderProps {
   onLogout: () => void;
   // Abre el drawer del Sidebar; el botón que lo dispara solo se ve en <lg.
   onOpenMenu: () => void;
+  // Recarga los datos de la sección sin F5; mientras dura, el ícono gira y el botón se deshabilita.
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
 export function DashboardHeader({
@@ -70,6 +73,8 @@ export function DashboardHeader({
   userName,
   onLogout,
   onOpenMenu,
+  onRefresh,
+  isRefreshing,
 }: DashboardHeaderProps) {
   return (
     <header className="flex flex-col gap-3 border-b border-[var(--app-border)] bg-white px-4 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:px-7 lg:py-[18px]">
@@ -95,6 +100,16 @@ export function DashboardHeader({
             <FilterSelect label={periodLabel} value={periodValue} options={periodOptions} onChange={onPeriodChange} />
           </>
         )}
+        <button
+          type="button"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          aria-label="Actualizar"
+          className="flex cursor-pointer items-center gap-1.5 rounded-[7px] border border-[#DCE1E8] bg-white px-3 py-2 text-[12.5px] font-medium text-[#41506B] transition-colors hover:border-[var(--blue)] hover:text-[var(--navy)] disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+          <span className="hidden sm:inline">Actualizar</span>
+        </button>
         <span className="hidden text-[12.5px] text-[#6E7A90] xl:inline">{userName}</span>
         <button
           type="button"

@@ -1,5 +1,5 @@
 // Hooks: reusable stateful logic that connects presentation components to use cases.
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import type { AcademicStats, FinancialStats, EventStats } from "@/domain/entities/analytics.entity";
 import { AnalyticsRepositoryImpl } from "@/infrastructure/repositories/analytics.repository.impl";
 import { GetAcademicDashboardUseCase } from "@/application/use-cases/get-academic-dashboard.use-case";
@@ -25,6 +25,8 @@ export interface InstitutionalAnalyticsFilters {
 interface Loaded {
   // Filtros con los que se pidió este resultado: si no coinciden con los actuales, está viejo.
   key: string;
+  // reloadToken con el que se pidió: si es menor al actual, hay una recarga en curso.
+  token: number;
   academicStats: AcademicStats | null;
   financialStats: FinancialStats | null;
   eventsStats: EventStats | null;
@@ -39,6 +41,8 @@ interface Loaded {
 // ese rol.
 export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
+  // Se incrementa con reload(): refetchea con los mismos filtros sin vaciar lo que ya se ve.
+  const [reloadToken, setReloadToken] = useState(0);
   const { section, enabled, siteId, quarter, month } = filters;
   // Cada sección sólo depende de sus filtros: cambiar el cuatrimestre no refetchea eventos, etc.
   const key = section === "academic" ? `${section}|${siteId}|${quarter}` : `${section}|${siteId}|${month}`;
@@ -65,18 +69,27 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
     request
       .then((stats) => {
         if (signal.aborted) return;
-        setLoaded({ key, ...stats, error: null });
+        setLoaded({ key, token: reloadToken, ...stats, error: null });
       })
       .catch((error: Error) => {
         if (signal.aborted) return;
-        setLoaded({ key, academicStats: null, financialStats: null, eventsStats: null, error: error.message });
+        setLoaded({
+          key,
+          token: reloadToken,
+          academicStats: null,
+          financialStats: null,
+          eventsStats: null,
+          error: error.message,
+        });
       });
 
     return () => controller.abort();
-  }, [key, section, enabled, siteId, quarter, month]);
+  }, [key, section, enabled, siteId, quarter, month, reloadToken]);
+
+  const reload = useCallback(() => setReloadToken((token) => token + 1), []);
 
   if (section === "sources") {
-    return { academicStats: null, financialStats: null, eventsStats: null, isLoading: false, error: null };
+    return { academicStats: null, financialStats: null, eventsStats: null, isLoading: false, isRefreshing: false, error: null, reload };
   }
 
   const current = loaded?.key === key ? loaded : null;
@@ -86,6 +99,9 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
     financialStats: current?.financialStats ?? null,
     eventsStats: current?.eventsStats ?? null,
     isLoading: current === null,
+    // Recarga manual en curso: los datos anteriores siguen en pantalla hasta que lleguen los nuevos.
+    isRefreshing: current !== null && current.token !== reloadToken,
     error: current?.error ?? null,
+    reload,
   };
 }
