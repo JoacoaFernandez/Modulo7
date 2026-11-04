@@ -7,6 +7,7 @@ import {
 } from "../../../domain/entities/academic-stats.entity";
 import { createDelta } from "../../../domain/entities/delta.value-object";
 import {
+  queryActiveCommissionsCount,
   queryActiveSubjectsCount,
   querySubjectApprovals,
   queryTeacherApprovals,
@@ -25,8 +26,9 @@ export async function overlayAcademicStats(
   mockQuarters: Set<string>,
 ): Promise<AcademicStats> {
   const quarters = [...new Set(base.comparedQuarters)];
-  const [subjectsCount, subjectRows, teacherRows] = await Promise.all([
+  const [subjectsCount, commissionsCount, subjectRows, teacherRows] = await Promise.all([
     queryActiveSubjectsCount(prisma, base.quarter, sedeId),
+    queryActiveCommissionsCount(prisma, base.quarter, sedeId),
     querySubjectApprovals(prisma, quarters, sedeId),
     queryTeacherApprovals(prisma, quarters, sedeId),
   ]);
@@ -36,6 +38,11 @@ export async function overlayAcademicStats(
   // Materias en curso: con curso abierto y sin cerrar. El delta del mock es una heurística, se deja.
   if (subjectsCount > 0) {
     kpis = replaceKpi(kpis, "active-subjects", { value: subjectsCount, formattedValue: count(subjectsCount) });
+  }
+
+  // Comisiones activas: cursos (por sede) abiertos y sin cerrar. Mismo criterio y delta que las materias.
+  if (commissionsCount > 0) {
+    kpis = replaceKpi(kpis, "active-commissions", { value: commissionsCount, formattedValue: count(commissionsCount) });
   }
 
   // Tasa de aprobación por materia: las materias que informan resultados en el cuatrimestre elegido.

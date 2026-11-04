@@ -46,6 +46,32 @@ export async function queryActiveSubjectsCount(
   return rows[0]?.total ?? 0;
 }
 
+// Comisiones: pares distintos (sede, curso) abiertos y sin cerrar en el cuatrimestre. El cierre
+// aplica por curso + cuatrimestre + sede, así "Todas las sedes" suma las sedes aunque se repita el cursoId.
+export async function queryActiveCommissionsCount(
+  prisma: PrismaClient,
+  quarter: string,
+  sedeId: string | null,
+): Promise<number> {
+  const rows = await prisma.$queryRaw<{ total: number }[]>`
+    SELECT COUNT(DISTINCT (e.payload->>'sedeId', e.payload->>'cursoId'))::int AS total
+    FROM inbox_events e
+    WHERE e.source_module = 'gestion-academica'
+      AND e.event_type = 'curso.abierto'
+      AND e.payload->>'cuatrimestre' = ${quarter}
+      ${siteFilter(sedeId, Prisma.sql`e.payload->>'sedeId'`)}
+      AND NOT EXISTS (
+        SELECT 1 FROM inbox_events c
+        WHERE c.source_module = 'gestion-academica'
+          AND c.event_type = 'curso.cerrado'
+          AND c.payload->>'cursoId' = e.payload->>'cursoId'
+          AND c.payload->>'cuatrimestre' = e.payload->>'cuatrimestre'
+          AND c.payload->>'sedeId' = e.payload->>'sedeId'
+      )`;
+
+  return rows[0]?.total ?? 0;
+}
+
 // Resultado vigente de cada (alumno, curso): el último publicado, corregido por la última
 // modificación si existe. Así un reenvío o una corrección no cuentan dos veces.
 function currentResults(quarters: string[], sedeId: string | null): Prisma.Sql {
