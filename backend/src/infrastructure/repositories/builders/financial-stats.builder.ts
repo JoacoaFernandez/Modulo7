@@ -185,14 +185,24 @@ export async function buildFinancialStats(
     };
   });
 
-  // Productos más vendidos del mes, netos de devoluciones.
-  const topSellingProducts: TopSellingProduct[] = productRows.slice(0, TOP_PRODUCTS_LIMIT).map((row) => ({
+  // Productos del mes, netos de devoluciones: dos rankings con el mismo límite, uno por unidades y otro por
+  // facturación. Ambos desempatan por nombre.
+  const toTopProduct = (row: (typeof productRows)[number]): TopSellingProduct => ({
     productName: row.producto,
     category: row.categoria ? capitalize(row.categoria) : "Sin categoría",
     unitsSold: Math.round(row.unidades),
     revenue: toMillions(row.monto),
     formattedRevenue: money(toMillions(row.monto)),
-  }));
+  });
+  const byName = (a: (typeof productRows)[number], b: (typeof productRows)[number]) => a.producto.localeCompare(b.producto);
+  const topSellingProducts = [...productRows]
+    .sort((a, b) => b.unidades - a.unidades || byName(a, b))
+    .slice(0, TOP_PRODUCTS_LIMIT)
+    .map(toTopProduct);
+  const topRevenueProducts = [...productRows]
+    .sort((a, b) => b.monto - a.monto || byName(a, b))
+    .slice(0, TOP_PRODUCTS_LIMIT)
+    .map(toTopProduct);
 
   // Comedores: una fila por sede definida. El filtro de sede solo resalta, no recorta. Una sede sin ninguna
   // reserva registrada se muestra sin servicio.
@@ -233,6 +243,7 @@ export async function buildFinancialStats(
     monthlyBalance,
     administrativeExpenses,
     topSellingProducts,
+    topRevenueProducts,
     diningRevenues,
     ...context.meta,
   };

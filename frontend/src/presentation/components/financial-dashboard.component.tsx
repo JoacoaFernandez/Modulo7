@@ -1,6 +1,8 @@
 // Presentation components: tablero financiero. Porta 1:1 la pantalla "Situación económica y
 // financiera" del prototipo (Analitica Institucional.dc.html) contra las primitivas del Paso 6.
+import { useState } from "react";
 import type { FinancialStats } from "@/domain/entities/analytics.entity";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { StatCard } from "./stat-card.component";
 import { DeltaLabel } from "./trend-pill.component";
 import { SectionCard } from "./dashboard/section-card.component";
@@ -24,7 +26,11 @@ const INCOME_COLOR = "#2D5DA1";
 const EXPENSE_COLOR = "#A51C30";
 const BALANCE_COLOR = "#127453";
 
+type ProductRanking = "units" | "revenue";
+
 export function FinancialDashboard({ stats }: FinancialDashboardProps) {
+  // Criterio del ranking de productos; solo estado local.
+  const [ranking, setRanking] = useState<ProductRanking>("units");
   const hasBalanceData = stats.monthlyBalance.some((m) => m.income !== 0 || m.expense !== 0 || m.balance !== 0);
   const maxBar = Math.max(1, ...stats.monthlyBalance.flatMap((m) => [m.income, m.expense]));
   const balanceCategories: GroupedBarCategory[] = stats.monthlyBalance.map((month) => {
@@ -68,7 +74,6 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
   const selectedBalance = stats.monthlyBalance.find((m) => m.isSelected);
 
   const maxDining = Math.max(1, ...stats.diningRevenues.map((d) => d.revenue));
-  const maxProductRevenue = Math.max(1, ...stats.topSellingProducts.map((p) => p.revenue));
 
   const expenseRows: BarListRow[] = stats.administrativeExpenses.map((expense) => ({
     key: expense.category,
@@ -78,11 +83,16 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
     secondaryValueLabel: formatPercent(expense.percentage),
   }));
 
-  const productRows: BarListRow[] = stats.topSellingProducts.map((product) => ({
+  const rankedProducts = ranking === "units" ? stats.topSellingProducts : stats.topRevenueProducts;
+  const productMetric = (product: (typeof rankedProducts)[number]) =>
+    ranking === "units" ? product.unitsSold : product.revenue;
+  const maxProductMetric = Math.max(1, ...rankedProducts.map(productMetric));
+
+  const productRows: BarListRow[] = rankedProducts.map((product) => ({
     key: product.productName,
     primaryLabel: product.productName,
     secondaryLabel: `${product.category} · ${formatCount(product.unitsSold)} u`,
-    bar: { color: "#2D5DA1", widthPercent: (product.revenue / maxProductRevenue) * 100 },
+    bar: { color: "#2D5DA1", widthPercent: (productMetric(product) / maxProductMetric) * 100 },
     valueLabel: product.formattedRevenue,
   }));
 
@@ -166,7 +176,25 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <SectionCard className="px-5 py-[18px]">
-          <SectionHeader title="Productos más vendidos · Tienda del Campus" description={`Por facturación en ${stats.month}`} />
+          <SectionHeader
+            title="Productos más vendidos · Tienda del Campus"
+            description={`${ranking === "units" ? "Por unidades vendidas" : "Por facturación"} en ${stats.month}`}
+            right={
+              <Tabs value={ranking} onValueChange={(value) => setRanking(value as ProductRanking)}>
+                <TabsList aria-label="Criterio del ranking de productos" className="h-8 bg-[#EEF1F6]">
+                  {([["units", "Unidades"], ["revenue", "Facturación"]] as const).map(([value, label]) => (
+                    <TabsTrigger
+                      key={value}
+                      value={value}
+                      className="px-3 text-xs text-[#647188] hover:text-[#16243C] data-active:bg-white data-active:text-[#16243C]"
+                    >
+                      {label}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            }
+          />
           {productRows.length > 0 ? (
             <BarList rows={productRows} columns="180px 1fr 92px" />
           ) : (

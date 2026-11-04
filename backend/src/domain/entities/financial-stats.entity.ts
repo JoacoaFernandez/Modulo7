@@ -63,7 +63,10 @@ export interface FinancialStats {
   // Hasta seis meses, terminando en el seleccionado: alimenta las barras de ingresos/egresos y el área del saldo acumulado.
   monthlyBalance: MonthlyBalancePoint[];
   administrativeExpenses: AdministrativeExpense[];
+  // Top de productos del mes por unidades vendidas (netas de devoluciones).
   topSellingProducts: TopSellingProduct[];
+  // Top de productos del mes por facturación; mismo tipo y límite que el anterior.
+  topRevenueProducts: TopSellingProduct[];
   diningRevenues: DiningRevenue[];
   sourceModules: SourceModule[];
   // Último evento recibido de cualquier módulo (ISO 8601); null si no hay ninguno.

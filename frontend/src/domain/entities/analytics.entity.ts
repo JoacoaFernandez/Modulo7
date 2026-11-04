@@ -199,7 +199,10 @@ export interface FinancialStats {
   kpis: KpiCard[];
   monthlyBalance: MonthlyBalancePoint[];
   administrativeExpenses: AdministrativeExpense[];
+  // Top de productos del mes por unidades vendidas (netas de devoluciones).
   topSellingProducts: TopSellingProduct[];
+  // Top de productos del mes por facturación; mismo tipo y límite que el anterior.
+  topRevenueProducts: TopSellingProduct[];
   diningRevenues: DiningRevenue[];
   sourceModules: SourceModule[];
   // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
