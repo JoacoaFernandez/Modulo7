@@ -5,6 +5,7 @@ import { StatCard } from "./stat-card.component";
 import { DeltaLabel } from "./trend-pill.component";
 import { SectionCard } from "./dashboard/section-card.component";
 import { SectionHeader } from "./dashboard/section-header.component";
+import { EmptyState } from "./dashboard/empty-state.component";
 import { DataSourceNote } from "./dashboard/data-source-note.component";
 import { ChartLegend } from "./charts/chart-legend.component";
 import { ChartTooltip } from "./charts/chart-tooltip.component";
@@ -12,8 +13,8 @@ import { GroupedBarChart, type GroupedBarCategory } from "./charts/grouped-bar-c
 import { AreaLineChart } from "./charts/area-line-chart.component";
 import { StackedBar } from "./charts/stacked-bar.component";
 import { BarList, type BarListRow } from "./charts/bar-list.component";
-import { createScale, buildPolylinePoints, buildAreaPoints, buildDots, buildGridRows } from "@/lib/chart-scale";
-import { formatCount, formatMillions, formatPercent } from "@/lib/format";
+import { createScale, buildPolylinePoints, buildAreaPoints, buildDots, buildGridRows, paddedDomain } from "@/lib/chart-scale";
+import { formatCount, formatLastIngestion, formatMillions, formatPercent } from "@/lib/format";
 
 interface FinancialDashboardProps {
   stats: FinancialStats;
@@ -24,10 +25,11 @@ const EXPENSE_COLOR = "#A51C30";
 const BALANCE_COLOR = "#127453";
 
 export function FinancialDashboard({ stats }: FinancialDashboardProps) {
-  const maxIncome = Math.max(...stats.monthlyBalance.map((m) => m.income));
+  const hasBalanceData = stats.monthlyBalance.some((m) => m.income !== 0 || m.expense !== 0 || m.balance !== 0);
+  const maxBar = Math.max(1, ...stats.monthlyBalance.flatMap((m) => [m.income, m.expense]));
   const balanceCategories: GroupedBarCategory[] = stats.monthlyBalance.map((month) => {
-    const incomeHeight = `${(month.income / maxIncome) * 100}%`;
-    const expenseHeight = `${(month.expense / maxIncome) * 100}%`;
+    const incomeHeight = `${(month.income / maxBar) * 100}%`;
+    const expenseHeight = `${(month.expense / maxBar) * 100}%`;
     return {
       key: month.month,
       barHeights: [incomeHeight, expenseHeight],
@@ -47,10 +49,9 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
   });
 
   const balanceValues = stats.monthlyBalance.map((m) => m.balance);
-  const balanceLo = Math.min(...balanceValues) * 0.94;
-  const balanceHi = Math.max(...balanceValues) * 1.03;
+  const { min: balanceLo, max: balanceHi } = paddedDomain(balanceValues);
   const balanceScale = createScale({
-    pointCount: 6,
+    pointCount: balanceValues.length,
     domainMin: balanceLo,
     domainMax: balanceHi,
     marginLeft: 46,
@@ -66,8 +67,8 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
   );
   const selectedBalance = stats.monthlyBalance.find((m) => m.isSelected);
 
-  const maxDining = Math.max(...stats.diningRevenues.map((d) => d.revenue));
-  const maxProductRevenue = Math.max(...stats.topSellingProducts.map((p) => p.revenue));
+  const maxDining = Math.max(1, ...stats.diningRevenues.map((d) => d.revenue));
+  const maxProductRevenue = Math.max(1, ...stats.topSellingProducts.map((p) => p.revenue));
 
   const expenseRows: BarListRow[] = stats.administrativeExpenses.map((expense) => ({
     key: expense.category,
@@ -116,6 +117,8 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
               />
             }
           />
+          {hasBalanceData ? (
+            <>
           <GroupedBarChart
             seriesColors={[INCOME_COLOR, EXPENSE_COLOR]}
             categories={balanceCategories}
@@ -133,6 +136,10 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
             dots={buildDots(balanceValues, balanceScale)}
             color={BALANCE_COLOR}
           />
+            </>
+          ) : (
+            <EmptyState message="Todavía no hay movimientos para este período" />
+          )}
         </SectionCard>
 
         <SectionCard className="px-5 py-[18px]">
@@ -140,21 +147,31 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
             title="Gastos administrativos"
             description={`Composición de egresos de ${stats.month}, salarios incluidos`}
           />
-          <StackedBar
-            segments={stats.administrativeExpenses.map((expense) => ({
-              key: expense.category,
-              color: expense.color,
-              widthPercent: expense.percentage,
-            }))}
-          />
-          <BarList rows={expenseRows} columns="1fr 96px 52px" />
+          {stats.administrativeExpenses.some((expense) => expense.amount > 0) ? (
+            <>
+              <StackedBar
+                segments={stats.administrativeExpenses.map((expense) => ({
+                  key: expense.category,
+                  color: expense.color,
+                  widthPercent: expense.percentage,
+                }))}
+              />
+              <BarList rows={expenseRows} columns="1fr 96px 52px" />
+            </>
+          ) : (
+            <EmptyState message="Todavía no hay egresos registrados para este período" />
+          )}
         </SectionCard>
       </div>
 
       <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
         <SectionCard className="px-5 py-[18px]">
           <SectionHeader title="Productos más vendidos · Tienda del Campus" description={`Por facturación en ${stats.month}`} />
-          <BarList rows={productRows} columns="180px 1fr 92px" />
+          {productRows.length > 0 ? (
+            <BarList rows={productRows} columns="180px 1fr 92px" />
+          ) : (
+            <EmptyState message="Todavía no hay ventas de la tienda para este período" />
+          )}
         </SectionCard>
 
         <SectionCard className="px-5 py-[18px]">
@@ -166,6 +183,9 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
           {/* overflow-x-auto + minWidth compartido: en mobile, con ~5 sedes y bastante texto por
               columna (nombre, monto, tickets, ticket promedio, delta), scrollea en vez de aplastar
               cada columna hasta volverla ilegible. */}
+          {!stats.diningRevenues.some((dining) => dining.hasService && dining.revenue > 0) ? (
+            <EmptyState message="Todavía no hay reservas de comedor para este período" />
+          ) : (
           <div className="overflow-x-auto">
             <div style={{ minWidth: stats.diningRevenues.length * 84 }}>
               <div className="relative border-b border-[#DCE1E8]" style={{ height: 132 }}>
@@ -211,7 +231,9 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
                     <span className="text-[10.5px] text-[#7A8598]">
                       {dining.hasService ? `${formatCount(dining.ticketsCount)} tickets` : dining.note}
                     </span>
-                    <span className="text-[10.5px] text-[#6E7A90]">ticket {dining.formattedAverageTicket}</span>
+                    {dining.hasService && (
+                      <span className="text-[10.5px] text-[#6E7A90]">ticket {dining.formattedAverageTicket}</span>
+                    )}
                     {dining.hasService && (
                       <DeltaLabel label={dining.delta.formatted} tone={dining.delta.tone} className="text-[11px] font-medium" />
                     )}
@@ -220,11 +242,13 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
               </div>
             </div>
           </div>
+          )}
         </SectionCard>
       </div>
 
       <DataSourceNote>
-        Datos de ejemplo · agregados desde eventos de Finanzas, Tienda y Comedores · valores en millones de ARS
+        Agregados desde eventos de Finanzas, Tienda y Comedores · valores en millones de ARS · última ingesta{" "}
+        {formatLastIngestion(stats.lastIngestionAt)}
       </DataSourceNote>
     </div>
   );

@@ -2,7 +2,7 @@
 // oficial de EVENTOS.md antes de validarlos. Es una única capa para los 9 módulos (ver
 // INTEGRACION-ACADEMICA.md): no hay un validador especial por emisor. Es pura: no hace I/O.
 import { createHash } from "node:crypto";
-import { BackofficeSite } from "../../domain/gateways/backoffice-sites.gateway";
+import { Site } from "../../domain/entities/site.entity";
 
 // Prefijo del campo `tipo` ("academica.resultado.publicado") → sourceModule oficial.
 const MODULE_ALIASES: Record<string, string> = {
@@ -31,7 +31,7 @@ export interface NormalizedEvent {
   warnings: string[];
 }
 
-export function normalizeIncomingEvent(raw: unknown, sites: BackofficeSite[]): NormalizedEvent {
+export function normalizeIncomingEvent(raw: unknown, sites: Site[]): NormalizedEvent {
   if (!isPlainObject(raw)) return { body: {}, isLegacyFormat: false, warnings: [] };
 
   const warnings: string[] = [];
@@ -76,7 +76,7 @@ function fromLegacyEnvelope(raw: Record<string, unknown>, warnings: string[]): R
 // Diferencias de formato que se absorben en cualquier envelope, oficial o no.
 function normalizePayload(
   original: Record<string, unknown>,
-  sites: BackofficeSite[],
+  sites: Site[],
   warnings: string[],
 ): Record<string, unknown> {
   const payload: Record<string, unknown> = { ...original };
@@ -93,13 +93,15 @@ function normalizePayload(
     payload.cuatrimestre = payload.cuatrimestre.replace(/^(\d{4}-\d)Q$/, "$1C");
   }
 
-  // `sede` (nombre o id del catálogo de Backoffice) → `sedeId`. Si no está en el catálogo
-  // no se inventa una sede: queda sin sedeId y el esquema lo marca.
+  // `sede` (nombre o id del catálogo de sedes, que sale de los `sede.definida` de Backoffice) → `sedeId`.
+  // Si no está en el catálogo no se inventa una sede: queda sin sedeId y el esquema lo marca.
   if (payload.sedeId === undefined && typeof payload.sede === "string") {
     const sede = payload.sede.trim().toLowerCase();
-    const site = sites.find((candidate) => candidate.sedeId === sede || candidate.nombre.toLowerCase() === sede);
+    const site = sites.find(
+      (candidate) => !candidate.isAggregate && (candidate.id === sede || candidate.name.toLowerCase() === sede),
+    );
     if (site) {
-      payload.sedeId = site.sedeId;
+      payload.sedeId = site.id;
     } else {
       warnings.push(`La sede "${payload.sede}" no está en el catálogo de Backoffice: no se pudo asignar "sedeId".`);
     }

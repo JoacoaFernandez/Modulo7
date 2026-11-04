@@ -4,13 +4,13 @@ import { Site } from "./site.entity";
 
 // Filtros del tablero académico: ?sede=&cuatrimestre=
 export interface AcademicFilters {
-  siteName: string;
+  siteId: string;
   quarter: string;
 }
 
 // Filtros del tablero financiero y del de eventos: ?sede=&periodo=
 export interface FinancialFilters {
-  siteName: string;
+  siteId: string;
   month: string;
 }
 

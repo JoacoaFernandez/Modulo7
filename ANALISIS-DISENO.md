@@ -308,3 +308,19 @@ Notas de la implementación:
 - **El diseño se autodescribe como "Prototipo · datos de ejemplo · sin backend"**; el timestamp "26/08 04:12" y "9 módulos conectados" son literales del prototipo. Los voy a servir desde `GET /sources` como datos mock, no como estado real de ingesta.
 - El diseño tiene `hint-placeholder-count="3"` en el `<sc-for>` de roles pero `ROLES` define solo 2. **Implemento 2**, que es lo que el dato manda.
 - `POST /events` va a quedar aceptando y guardando eventos en memoria que **ningún tablero lee** (los tableros salen de los datasets mock). Es consecuencia directa de la decisión "mocks 1:1"; queda como base para cuando se defina la ingesta real.
+
+---
+
+## Nota 2026-11-04 — el dataset mock se eliminó
+
+- Se borraron `analytics.dataset.ts`, el repositorio mock, `analytics-calculator.service.ts`, el
+  gateway mock de sedes de Backoffice y los overlays. Los tableros (académico, financiero y de
+  eventos), los KPIs y los catálogos de filtros salen **100% de `inbox_events`** (Postgres);
+  `DATABASE_URL` es obligatoria. El único mock que queda es el de CORE para el login.
+- Todo lo que antes decía "los tableros salen de datasets mock" (Estado actual, Riesgos y notas,
+  Verificación) quedó superado: sin eventos para un recorte, el tablero muestra ceros y listas
+  vacías, y los deltas son neutros si no hay período anterior con datos.
+- Sedes: eventos `sede.definida` (+ "Todas las sedes"); la entidad `Site` ya no trae métricas por sede.
+  Cuatrimestres: `payload.cuatrimestre` de cualquier evento; meses: `occurred_at` (hora de Argentina).
+- La demo se arma cargando un set de eventos en la base (`prisma/seed.ts` es solo un seed de desarrollo).
+

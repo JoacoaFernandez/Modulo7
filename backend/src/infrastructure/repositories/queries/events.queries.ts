@@ -1,5 +1,5 @@
 // Queries del tablero de eventos académicos sobre inbox_events (módulo eventos).
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { argentinaMonth, siteFilter } from "./query-helpers";
 
 // Un evento realizado con sus inscriptos y presentes (personas distintas).

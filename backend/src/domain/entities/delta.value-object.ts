@@ -35,6 +35,11 @@ export function createDelta(value: number, options: DeltaOptions = {}): Delta {
   };
 }
 
+// Sin período anterior (o sin datos en él) no hay contra qué comparar: variación en cero, tono neutro.
+export function createNeutralDelta(options: DeltaOptions = {}): Delta {
+  return createDelta(0, options);
+}
+
 function resolveTone(value: number, inverted: boolean): DeltaTone {
   if (value > NEUTRAL_THRESHOLD) return inverted ? "negative" : "positive";
   if (value < -NEUTRAL_THRESHOLD) return inverted ? "positive" : "negative";

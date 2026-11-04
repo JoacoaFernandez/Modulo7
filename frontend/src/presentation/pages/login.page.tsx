@@ -22,7 +22,13 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const lastIngestionAt = sources.length > 0 ? formatLastIngestion(sources[0].lastIngestionAt) : null;
+  // La más reciente entre los módulos; null = todavía no llegó ningún evento.
+  const latestIso = sources.reduce<string | null>(
+    (latest, source) => (source.lastIngestionAt && (!latest || Date.parse(source.lastIngestionAt) > Date.parse(latest)) ? source.lastIngestionAt : latest),
+    null,
+  );
+  const lastIngestionAt = sources.length > 0 ? formatLastIngestion(latestIso) : null;
+  const connectedModules = sources.filter((source) => source.lastIngestionAt !== null).length;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -132,7 +138,9 @@ export function LoginPage() {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="size-1.5 rounded-full bg-[var(--green)]" />
           {lastIngestionAt
-            ? `Última ingesta de eventos: ${lastIngestionAt} · ${sources.length} módulos conectados`
+            ? latestIso
+              ? `Última ingesta de eventos: ${lastIngestionAt} · ${connectedModules} de ${sources.length} módulos con datos`
+              : "Sin datos recibidos todavía"
             : "Conectando con las fuentes de eventos…"}
         </div>
       </div>

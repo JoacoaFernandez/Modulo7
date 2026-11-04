@@ -18,11 +18,6 @@ export interface KpiCard {
 export interface Site {
   id: string;
   name: string;
-  studentsCount: number;
-  subjectsCount: number;
-  commissionsCount: number;
-  teachersCount: number;
-  rateAdjustment: number;
   isAggregate: boolean;
 }
 
@@ -84,7 +79,8 @@ export type SourceModule =
 export interface EventSource {
   module: SourceModule;
   label: string;
-  lastIngestionAt: string;
+  // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
+  lastIngestionAt: string | null;
 }
 
 export interface InstitutionalEvent {
@@ -149,7 +145,8 @@ export interface AcademicStats {
   teacherApprovalRates: TeacherApprovalRate[];
   totalTeachersCount: number;
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
+  lastIngestionAt: string | null;
 }
 
 export interface MonthlyBalancePoint {
@@ -205,7 +202,8 @@ export interface FinancialStats {
   topSellingProducts: TopSellingProduct[];
   diningRevenues: DiningRevenue[];
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
+  lastIngestionAt: string | null;
 }
 
 export interface EventTypeStats {
@@ -241,5 +239,6 @@ export interface EventStats {
   monthlySeries: EventMonthlyPoint[];
   eventTypes: EventTypeStats[];
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
+  lastIngestionAt: string | null;
 }

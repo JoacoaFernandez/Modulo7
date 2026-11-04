@@ -12,3 +12,21 @@ export interface Role {
   description: string;
   availableDashboards: DashboardId[];
 }
+
+// Configuración, no datos: los roles los define CORE y cada uno ve ciertos tableros.
+export const ROLES: readonly Role[] = [
+  {
+    id: "academica",
+    name: "Dirección Académica",
+    initials: "DA",
+    description: "Rendimiento por materia, docente y sede",
+    availableDashboards: ["academic"],
+  },
+  {
+    id: "financiera",
+    name: "Dirección Financiera",
+    initials: "DF",
+    description: "Balance, gastos, tienda, comedores y eventos",
+    availableDashboards: ["financial", "events"],
+  },
+];

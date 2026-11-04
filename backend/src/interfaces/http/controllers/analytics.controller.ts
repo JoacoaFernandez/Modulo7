@@ -5,11 +5,11 @@ import { GetEventSourcesUseCase } from "../../../application/use-cases/get-event
 import { GetEventsStatsUseCase } from "../../../application/use-cases/get-events-stats.use-case";
 import { GetFiltersUseCase } from "../../../application/use-cases/get-filters.use-case";
 import { GetFinancialDashboardUseCase } from "../../../application/use-cases/get-financial-dashboard.use-case";
+import { GetSitesUseCase } from "../../../application/use-cases/get-sites.use-case";
 import { GetRolesUseCase } from "../../../application/use-cases/get-roles.use-case";
 import { ListEventsUseCase } from "../../../application/use-cases/list-events.use-case";
 import { RecordEventUseCase } from "../../../application/use-cases/record-event.use-case";
 import { normalizeIncomingEvent } from "../../../application/services/event-normalizer.service";
-import { backofficeSitesGateway } from "../../../infrastructure/integrations/gateways";
 import { analyticsRepository } from "../../../infrastructure/repositories/analytics-repository.provider";
 import {
   parseAcademicFilters,
@@ -21,7 +21,8 @@ const getAcademicDashboardUseCase = new GetAcademicDashboardUseCase(analyticsRep
 const getFinancialDashboardUseCase = new GetFinancialDashboardUseCase(analyticsRepository);
 const getEventsStatsUseCase = new GetEventsStatsUseCase(analyticsRepository);
 const getFiltersUseCase = new GetFiltersUseCase(analyticsRepository);
-const getRolesUseCase = new GetRolesUseCase(analyticsRepository);
+const getRolesUseCase = new GetRolesUseCase();
+const getSitesUseCase = new GetSitesUseCase(analyticsRepository);
 const getEventSourcesUseCase = new GetEventSourcesUseCase(analyticsRepository);
 const listEventsUseCase = new ListEventsUseCase(analyticsRepository);
 const recordEventUseCase = new RecordEventUseCase(analyticsRepository);
@@ -52,7 +53,7 @@ export class AnalyticsController {
   }
 
   async getRoles(_req: Request, res: Response) {
-    res.json(await getRolesUseCase.execute());
+    res.json(getRolesUseCase.execute());
   }
 
   async getEventSources(_req: Request, res: Response) {
@@ -65,7 +66,7 @@ export class AnalyticsController {
 
   async recordEvent(req: Request, res: Response) {
     // Primero se absorben los formatos viejos de los emisores, después se valida el contrato.
-    const normalized = normalizeIncomingEvent(req.body, await backofficeSitesGateway.listSites());
+    const normalized = normalizeIncomingEvent(req.body, await getSitesUseCase.execute());
     const { dto, warnings: validationWarnings } = parseRecordEventDto(normalized.body, {
       isLegacyFormat: normalized.isLegacyFormat,
     });

@@ -1,6 +1,7 @@
 // Pages: top-level views assembled from components, wired to hooks and use cases.
 import { useState } from "react";
 import type { AuthUser } from "@/domain/entities/auth.entity";
+import type { FilterOptions, Period } from "@/domain/entities/analytics.entity";
 import { useSession } from "../hooks/use-session.hook";
 import { useInstitutionalAnalytics } from "../hooks/use-institutional-analytics.hook";
 import { useEventSources } from "../hooks/use-event-sources.hook";
@@ -28,15 +29,43 @@ const sectionByRole: Record<AuthUser["roles"][number], AnalyticsSection> = {
   financiera: "financial",
 };
 
+// Sede efectiva: la guardada si sigue en el catálogo, si no la agregada (o la primera).
+function resolveSiteId(options: FilterOptions | null, stored: string | null): string {
+  if (!options) return "";
+  const { sites } = options;
+  return (
+    sites.find((site) => site.id === stored)?.id ?? sites.find((site) => site.isAggregate)?.id ?? sites[0]?.id ?? ""
+  );
+}
+
+// Período efectivo: el guardado si sigue en el catálogo, si no el default del backend, si no el
+// último del catálogo. "" (catálogo vacío) hace que no se mande el param.
+function resolvePeriodId(periods: Period[] | undefined, backendDefault: string | undefined, stored: string | null): string {
+  if (!periods) return "";
+  const ids = periods.map((period) => period.id);
+  if (stored && ids.includes(stored)) return stored;
+  if (backendDefault && ids.includes(backendDefault)) return backendDefault;
+  return ids[ids.length - 1] ?? "";
+}
+
 export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
   const availableSections = user.roles.map((role) => sectionByRole[role]);
   const [activeSection, setActiveSection] = useState<AnalyticsSection>(availableSections[0]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { siteId, quarter, month, setSiteId, setQuarter, setMonth, logout } = useSession();
-  const { options: filterOptions } = useFilters();
+  const { siteId: storedSiteId, quarter: storedQuarter, month: storedMonth, setSiteId, setQuarter, setMonth, logout } =
+    useSession();
+  const { options: filterOptions, error: filtersError } = useFilters();
   const eventSources = useEventSources();
+
+  // Los catálogos son dinámicos: la elección guardada puede haber dejado de existir. Se
+  // resuelve contra GET /filters (elección válida, si no el default del backend, si no la
+  // primera opción) y no se piden tableros hasta tener el catálogo.
+  const siteId = resolveSiteId(filterOptions, storedSiteId);
+  const quarter = resolvePeriodId(filterOptions?.quarters, filterOptions?.defaults.quarter, storedQuarter);
+  const month = resolvePeriodId(filterOptions?.months, filterOptions?.defaults.month, storedMonth);
   const { academicStats, financialStats, eventsStats, isLoading, error } = useInstitutionalAnalytics({
     section: activeSection,
+    enabled: filterOptions !== null,
     siteId,
     quarter,
     month,
@@ -44,16 +73,17 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
   const { eyebrow, title } = sectionMeta[activeSection];
 
   // El académico filtra por cuatrimestre; financiero y eventos, por mes (mismo criterio que
-  // el backend). Mientras GET /filters no responda, se usa el valor de sesión como única
-  // opción para que el <select> no quede vacío. La sede se identifica por el id de Backoffice.
+  // el backend). Mientras GET /filters no responda, los selects muestran "Cargando…". La sede
+  // se identifica por el id de Backoffice.
   const isAcademicSection = activeSection === "academic";
-  const siteOptions = filterOptions?.sites.map((site) => ({ value: site.id, label: site.name })) ?? [
-    { value: siteId, label: siteId },
-  ];
+  const loadingOption = [{ value: "", label: "Cargando…" }];
+  const siteOptions = filterOptions?.sites.map((site) => ({ value: site.id, label: site.name })) ?? loadingOption;
   const currentPeriod = isAcademicSection ? quarter : month;
-  const periodOptions = (isAcademicSection ? filterOptions?.quarters : filterOptions?.months)?.map(
-    (period) => ({ value: period.id, label: period.label }),
-  ) ?? [{ value: currentPeriod, label: currentPeriod }];
+  const periodOptions =
+    (isAcademicSection ? filterOptions?.quarters : filterOptions?.months)?.map((period) => ({
+      value: period.id,
+      label: period.label,
+    })) ?? loadingOption;
 
   return (
     <div className="flex min-h-screen w-full bg-[var(--app-bg)]">
@@ -83,7 +113,12 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
         />
 
         <main className="flex-1 overflow-x-auto p-4 sm:p-6 lg:p-8">
-          {isLoading && <p className="text-sm text-muted-foreground">Cargando estadísticas...</p>}
+          {isLoading && !filtersError && activeSection !== "sources" && (
+            <p className="text-sm text-muted-foreground">Cargando estadísticas...</p>
+          )}
+          {filtersError && activeSection !== "sources" && (
+            <p className="text-sm text-destructive">No se pudieron cargar los filtros: {filtersError}</p>
+          )}
           {error && <p className="text-sm text-destructive">Error al cargar las estadísticas: {error}</p>}
 
           {!isLoading && !error && (

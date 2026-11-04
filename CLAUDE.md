@@ -10,20 +10,24 @@ dirección académica, dirección financiera y estadísticas de eventos.
 - **Postgres + Prisma** (rama `feature/db-postgres`): la ingesta (`POST /api/analytics/events`)
   persiste en la tabla `inbox_events` con **idempotencia por `eventId`** (un `eventId`
   repetido se ignora y responde igual que la primera vez).
-- **Los dashboards son un overlay de métricas reales sobre el mock**: cada request arranca del
-  dataset mock (`ANALISIS-DISENO.md`, shape completo, filtros de sede/período server-side) y
-  pisa solo las métricas que se pueden derivar de eventos y tienen datos para los filtros
-  (queries en `backend/src/infrastructure/repositories/queries/`, mapeo en `overlays/`). Sin
-  eventos para ese recorte, queda el valor del mock; si la DB falla se loguea y se devuelve el
-  mock entero.
-- **Sin `DATABASE_URL`** el backend cae al repositorio mock en memoria (la ingesta no
-  persiste y los dashboards son 100% mock). Los catálogos (sedes, roles) siguen
-  saliendo del mock; los períodos son dinámicos solo con DB (mock + cuatrimestres definidos y meses con eventos).
+- **No hay datos mock**: todos los tableros, KPIs y catálogos salen de `inbox_events`. Lo que
+  no tiene eventos se ve vacío o en cero, nunca con números inventados. Las queries están en
+  `backend/src/infrastructure/repositories/queries/` y cada tablero lo arma un *builder* en
+  `repositories/builders/` (filtros de sede/período server-side). Los deltas comparan contra
+  el período anterior del catálogo; sin período anterior o sin datos en él, son neutros.
+- **`DATABASE_URL` es obligatoria**: sin ella el server no arranca (error claro en castellano).
+  Si la DB falla en una request, responde 500 por el error handler.
+- Catálogos desde eventos: sedes = `backoffice` / `sede.definida` (más "Todas las sedes",
+  `todas-las-sedes`, siempre primera); cuatrimestres = todo `payload.cuatrimestre` de cualquier
+  evento; meses = meses (hora de Argentina) de `occurred_at`. Con la base vacía los filtros
+  devuelven el período actual según la fecha de hoy. Roles y etiquetas de módulos son
+  configuración (`domain/entities`), y colores/categorías de tableros viven en
+  `infrastructure/config/dashboard.config.ts`.
 - Auth: login con mail `@uade.edu.ar` contra un **mock de CORE** (`/api/auth`, gateway en
-  `backend/src/infrastructure/integrations/`). El token viaja como Bearer y el rol (académica /
-  financiera) lo define CORE; los tableros exigen sesión y el rol correcto.
-- Sedes: el catálogo sale de un mock de Backoffice y toda sede viaja como `sedeId`
-  (`?sedeId=sede-centro`), nunca como nombre.
+  `backend/src/infrastructure/integrations/`). Es el único mock que queda: es autenticación, no
+  datos de tableros. El token viaja como Bearer y el rol (académica / financiera) lo define
+  CORE; los tableros exigen sesión y el rol correcto.
+- Sedes: toda sede viaja como `sedeId` (`?sedeId=sede-centro`), nunca como nombre.
 - Antes de asumir que algo falta o está desactualizado, releer `ANALISIS-DISENO.md` — es
   la auditoría viva del proyecto y puede tener notas más recientes que esta guía.
 
@@ -49,10 +53,11 @@ npm run build   # tsc → dist/
 npm run start   # node dist/index.js (requiere build previo)
 npm run db:up       # docker compose up -d — Postgres 16 local (:5432)
 npm run db:migrate  # prisma migrate dev — aplica las migraciones
-npm run db:seed     # eventos de ejemplo (re-ejecutable, upsert por eventId)
+npm run db:seed     # eventos de ejemplo (re-ejecutable, upsert por eventId; incluye sede.definida y cuatrimestre.definido)
+npm run docs        # regenera la tabla de payloads de EVENTOS.md y la colección de Postman
 ```
 La config va en `backend/.env` (no se commitea): copiar `backend/.env.example` y ajustar
-`DATABASE_URL`. Sin esa variable el backend usa el mock en memoria.
+`DATABASE_URL`. Es obligatoria: sin ella el backend no arranca.
 
 **Frontend** (`cd frontend`):
 ```
@@ -76,9 +81,9 @@ si hay que actualizar la contraparte en el otro paquete.
 
 ```
 domain/           Entidades, value objects, interfaces de repositorio, servicios de dominio
-                   (ej: analytics-calculator.service.ts con la lógica de cálculo pura)
+                   (ej: period-catalog.service.ts con la lógica de catálogos de períodos)
 application/      Casos de uso (un archivo por acción) + DTOs
-infrastructure/   Implementaciones concretas: datasets mock, repos, cliente HTTP (frontend)
+infrastructure/   Implementaciones concretas: repos Prisma, queries y builders de tableros, config, gateways (mock de CORE), cliente HTTP (frontend)
 interfaces/       (solo backend) rutas, controllers, validators — capa HTTP
 presentation/     (solo frontend) componentes, páginas, hooks, contexto de sesión
 shared/           Helpers transversales (ej: ValidationError)
@@ -130,8 +135,10 @@ tocar cualquier cosa relacionada a eventos. Resumen:
 - Nuevo endpoint: DTO en `application/dtos` → caso de uso en `application/use-cases` →
   controller + ruta en `interfaces/http` → si aplica, reflejar el contrato en
   `frontend/src/domain/entities` y el cliente en `frontend/src/infrastructure/api`.
-- Nuevo dato mock: agregarlo en `backend/src/infrastructure/data/analytics.dataset.ts`
-  siguiendo el mismo shape que usa `analytics-calculator.service.ts`.
+- Nueva métrica o dato de un tablero: query en `infrastructure/repositories/queries/` sobre
+  `inbox_events` y armado en el builder del tablero (`repositories/builders/`). No se agregan
+  datos fijos: si el evento no existe, se define primero en `event-schemas.ts` y `EVENTOS.md`.
+  Para una demo, cargar eventos en la base (`prisma/seed.ts`), no código.
 - Cambios al contrato de eventos: actualizar `backend/EVENTOS.md` en el mismo commit —
   es la referencia que van a leer los otros equipos de UADEnet.
 

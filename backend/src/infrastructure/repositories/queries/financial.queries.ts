@@ -1,5 +1,5 @@
 // Queries del tablero financiero sobre inbox_events (core, backoffice, tienda y comedor). Montos en ARS.
-import { Prisma, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import { argentinaMonth, MonthRange, siteFilter } from "./query-helpers";
 
 export interface MonthlyFlowRow {
@@ -130,4 +130,15 @@ export async function queryDiningRevenue(
     GROUP BY sede_id, ym`;
 
   return rows.map((row) => ({ sedeId: row.sede_id, ym: row.ym, revenue: row.revenue, tickets: row.tickets }));
+}
+
+// Sedes que registraron alguna reserva de comedor en cualquier fecha: las que tienen servicio.
+export async function queryDiningSites(prisma: PrismaClient): Promise<string[]> {
+  const rows = await prisma.$queryRaw<{ sede_id: string }[]>`
+    SELECT DISTINCT payload->>'sedeId' AS sede_id
+    FROM inbox_events
+    WHERE source_module = 'comedor' AND event_type = 'reserva.confirmada'
+      AND payload->>'sedeId' IS NOT NULL`;
+
+  return rows.map((row) => row.sede_id);
 }

@@ -11,7 +11,7 @@ export interface SubjectApprovalPoint {
 export interface SubjectApprovalRate {
   code: string;
   name: string;
-  // Tasa del cuatrimestre seleccionado, ya ajustada por sede.
+  // Tasa del cuatrimestre seleccionado, para la sede del filtro.
   approvalRate: number;
   // Tres puntos: cuatrimestres t-2, t-1 y t. Alimenta las barras agrupadas.
   series: SubjectApprovalPoint[];
@@ -28,7 +28,7 @@ export interface FacultyTrendSeries {
   facultyName: string;
   // Color fijo de la serie en el gráfico de líneas.
   color: string;
-  // Seis cuatrimestres: la serie completa, no recortada al filtro.
+  // Hasta seis cuatrimestres, terminando en el seleccionado; 0 donde la facultad no tuvo resultados.
   points: FacultyTrendPoint[];
   latestApprovalRate: number;
   delta: Delta;
@@ -52,8 +52,9 @@ export interface AcademicStats {
   subjectApprovalRates: SubjectApprovalRate[];
   facultyTrends: FacultyTrendSeries[];
   teacherApprovalRates: TeacherApprovalRate[];
-  // Total de docentes de la sede, del que teacherApprovalRates es una muestra.
+  // Docentes distintos con actividad (resultados o cursos) en el cuatrimestre y la sede del filtro.
   totalTeachersCount: number;
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido de cualquier módulo (ISO 8601); null si no hay ninguno.
+  lastIngestionAt: string | null;
 }

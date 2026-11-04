@@ -1,11 +1,9 @@
 // Queries de agregación sobre inbox_events: helpers comunes de sede y período para las queries crudas.
 import { Prisma } from "@prisma/client";
+import { ARGENTINA_TZ, MONTH_LABELS } from "../../../domain/services/period-catalog.service";
 
 // Las fechas de los tableros son hora de Argentina; occurred_at se guarda en UTC (timestamp sin zona).
-export const ARGENTINA_TZ = "America/Argentina/Buenos_Aires";
 const ARGENTINA_UTC_OFFSET_HOURS = 3;
-
-const MONTH_LABELS = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
 
 export interface MonthRange {
   // AAAA-MM, el mismo formato que `periodo` en sueldos.liquidados.
@@ -30,12 +28,6 @@ export function parseMonthId(id: string): MonthRange | null {
     start: start.toISOString(),
     end: end.toISOString(),
   };
-}
-
-// "2026-11" → "Nov 2026", el id que usa el catálogo de períodos; null si no tiene ese formato.
-export function monthIdFromYm(ym: string): string | null {
-  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(ym);
-  return match ? `${MONTH_LABELS[Number(match[2]) - 1]} ${match[1]}` : null;
 }
 
 // Filtro de sede; null (sede agregada) no filtra. `column` permite calificar el alias en los joins.

@@ -7,18 +7,14 @@ import { SessionContext, type SessionContextValue, type SessionState } from "../
 
 const STORAGE_KEY = "uadenet.session";
 
-// Defaults del diseño (coinciden con el fallback que aplica el backend cuando no llega
-// query param): "Todas las sedes", "2026-1C", "Ago 2026". Se usan hasta que el primer
-// GET /filters confirme cuáles son los valores vigentes del dataset.
-const DEFAULT_SITE_ID = "todas-las-sedes";
-const DEFAULT_QUARTER = "2026-1C";
-const DEFAULT_MONTH = "Ago 2026";
-
+// Sede y períodos son la última elección del usuario (null si nunca eligió). Los catálogos
+// son dinámicos (salen de los eventos), así que no hay defaults acá: la página resuelve el
+// valor efectivo contra GET /filters y no pide tableros hasta tenerlo.
 const initialState: SessionState = {
   auth: null,
-  siteId: DEFAULT_SITE_ID,
-  quarter: DEFAULT_QUARTER,
-  month: DEFAULT_MONTH,
+  siteId: null,
+  quarter: null,
+  month: null,
 };
 
 function isAuthSession(value: unknown): value is AuthSession {
@@ -50,9 +46,9 @@ function readStoredState(): SessionState {
 
     return {
       auth,
-      siteId: typeof parsed.siteId === "string" ? parsed.siteId : DEFAULT_SITE_ID,
-      quarter: typeof parsed.quarter === "string" ? parsed.quarter : DEFAULT_QUARTER,
-      month: typeof parsed.month === "string" ? parsed.month : DEFAULT_MONTH,
+      siteId: typeof parsed.siteId === "string" ? parsed.siteId : null,
+      quarter: typeof parsed.quarter === "string" ? parsed.quarter : null,
+      month: typeof parsed.month === "string" ? parsed.month : null,
     };
   } catch {
     // localStorage corrupto o inaccesible (modo privado, etc.): arrancar de cero.

@@ -2,6 +2,7 @@
 import { RecordEventDto } from "../../../application/dtos/analytics.dto";
 import { isSourceModule, SOURCE_MODULES } from "../../../domain/entities/event-source.entity";
 import { AcademicFilters, FilterOptions, FinancialFilters } from "../../../domain/entities/filters.entity";
+import { AGGREGATE_SITE } from "../../../domain/entities/site.entity";
 import { eventTypesOf } from "../../../domain/entities/event-schemas";
 import { validateEventPayload } from "../../../domain/services/event-payload-validator.service";
 import { ValidationError } from "../../../shared/validation-error";
@@ -12,7 +13,7 @@ type Query = Record<string, unknown>;
 // porque devolver otro recorte de datos en silencio es peor que fallar.
 export function parseAcademicFilters(query: Query, options: FilterOptions): AcademicFilters {
   return {
-    siteName: pickSiteName(query.sedeId, options),
+    siteId: pickSiteId(query.sedeId, options),
     quarter: pickOption(
       query.cuatrimestre,
       "cuatrimestre",
@@ -24,7 +25,7 @@ export function parseAcademicFilters(query: Query, options: FilterOptions): Acad
 
 export function parseFinancialFilters(query: Query, options: FilterOptions): FinancialFilters {
   return {
-    siteName: pickSiteName(query.sedeId, options),
+    siteId: pickSiteId(query.sedeId, options),
     month: pickOption(
       query.periodo,
       "periodo",
@@ -92,10 +93,9 @@ export function parseRecordEventDto(body: unknown, options: { isLegacyFormat?: b
   };
 }
 
-// La sede viaja como id del catálogo de Backoffice (?sedeId=sede-centro), nunca como nombre.
-// Internamente los tableros siguen resolviendo por nombre de sede.
-function pickSiteName(raw: unknown, options: FilterOptions): string {
-  if (raw === undefined) return options.defaults.siteName;
+// La sede viaja como id del catálogo (?sedeId=sede-centro), nunca como nombre; sin parámetro, la agregada.
+function pickSiteId(raw: unknown, options: FilterOptions): string {
+  if (raw === undefined) return AGGREGATE_SITE.id;
 
   const site = options.sites.find((candidate) => candidate.id === raw);
   if (!site) {
@@ -104,7 +104,7 @@ function pickSiteName(raw: unknown, options: FilterOptions): string {
     );
   }
 
-  return site.name;
+  return site.id;
 }
 
 function pickOption(raw: unknown, param: string, allowed: string[], fallback: string): string {

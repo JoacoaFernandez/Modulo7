@@ -2,5 +2,5 @@
 try {
   process.loadEnvFile();
 } catch {
-  // Sin .env se usan las variables del entorno tal cual (o el mock en memoria).
+  // Sin .env se usan las variables del entorno tal cual (DATABASE_URL es obligatoria: sin ella el server no arranca).
 }

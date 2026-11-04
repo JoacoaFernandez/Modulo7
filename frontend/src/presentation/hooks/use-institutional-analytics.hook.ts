@@ -15,6 +15,9 @@ export interface InstitutionalAnalyticsFilters {
   // Tablero que se está viendo: "financial" incluye las estadísticas de eventos.
   // "sources" no es un tablero: no pide nada.
   section: "academic" | "financial" | "sources";
+  // false mientras no se conozcan los filtros vigentes (GET /filters): no se pide nada para
+  // no mandar un período fuera del catálogo (el backend responde 400).
+  enabled: boolean;
   siteId: string;
   quarter: string;
   month: string;
@@ -36,11 +39,11 @@ interface Loaded {
 // ese rol.
 export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
-  const { section, siteId, quarter, month } = filters;
+  const { section, enabled, siteId, quarter, month } = filters;
   const key = `${section}|${siteId}|${quarter}|${month}`;
 
   useEffect(() => {
-    if (section === "sources") return;
+    if (section === "sources" || !enabled) return;
 
     const controller = new AbortController();
     const { signal } = controller;
@@ -66,7 +69,7 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
       });
 
     return () => controller.abort();
-  }, [key, section, siteId, quarter, month]);
+  }, [key, section, enabled, siteId, quarter, month]);
 
   if (section === "sources") {
     return { academicStats: null, financialStats: null, eventsStats: null, isLoading: false, error: null };

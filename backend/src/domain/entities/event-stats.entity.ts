@@ -35,9 +35,10 @@ export interface EventStats {
   capacityOccupancy: number;
   bestAttendance: EventAttendanceHighlight;
   worstAttendance: EventAttendanceHighlight;
-  // Seis meses: barras de frecuencia y área de concurrencia.
+  // Hasta seis meses, terminando en el seleccionado: barras de frecuencia y área de concurrencia.
   monthlySeries: EventMonthlyPoint[];
   eventTypes: EventTypeStats[];
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido de cualquier módulo (ISO 8601); null si no hay ninguno.
+  lastIngestionAt: string | null;
 }

@@ -47,7 +47,7 @@ export interface DiningRevenue {
   averageTicket: number;
   formattedAverageTicket: string;
   delta: Delta;
-  // Campus Online no tiene comedor: sin datos y con nota en lugar de tickets.
+  // false si la sede no registró ninguna reserva de comedor: sin datos y con nota en lugar de tickets.
   hasService: boolean;
   note: string;
   // true si la sede está incluida en el filtro activo.
@@ -60,11 +60,12 @@ export interface FinancialStats {
   previousMonth: string;
   // Saldo acumulado, ingresos del período, egresos del período, resultado operativo.
   kpis: KpiCard[];
-  // Seis meses: alimenta las barras de ingresos/egresos y el área del saldo acumulado.
+  // Hasta seis meses, terminando en el seleccionado: alimenta las barras de ingresos/egresos y el área del saldo acumulado.
   monthlyBalance: MonthlyBalancePoint[];
   administrativeExpenses: AdministrativeExpense[];
   topSellingProducts: TopSellingProduct[];
   diningRevenues: DiningRevenue[];
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido de cualquier módulo (ISO 8601); null si no hay ninguno.
+  lastIngestionAt: string | null;
 }

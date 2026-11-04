@@ -5,9 +5,11 @@ import type { AuthSession, AuthUser } from "@/domain/entities/auth.entity";
 export interface SessionState {
   // Sesión de CORE; null mientras no se haya iniciado sesión.
   auth: AuthSession | null;
-  siteId: string;
-  quarter: string;
-  month: string;
+  // Última elección del usuario; null hasta que elija. Puede quedar fuera del catálogo vigente
+  // (los catálogos salen de los eventos): la página lo valida contra GET /filters.
+  siteId: string | null;
+  quarter: string | null;
+  month: string | null;
 }
 
 export interface SessionContextValue extends SessionState {

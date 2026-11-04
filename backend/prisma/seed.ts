@@ -1,4 +1,4 @@
-// Seed de desarrollo: eventos representativos de cada tipo del contrato. Re-ejecutable (upsert por eventId).
+// Seed de desarrollo (no es el set de la demo): eventos representativos de cada tipo del contrato. Re-ejecutable (upsert por eventId).
 import { PrismaClient, Prisma } from "@prisma/client";
 import { EVENT_SCHEMAS } from "../src/domain/entities/event-schemas";
 import { SourceModule } from "../src/domain/entities/event-source.entity";
@@ -68,6 +68,9 @@ const EVENTS: SeedEvent[] = [
   }),
   ev("ga-cuatri-1", "gestion-academica", "cuatrimestre.definido", "2026-02-15T09:00:00-03:00", {
     cuatrimestre: "2026-1C", inicio: "2026-03-09", fin: "2026-07-31",
+  }),
+  ev("ga-cuatri-2", "gestion-academica", "cuatrimestre.definido", "2026-07-15T09:00:00-03:00", {
+    cuatrimestre: "2026-2C", inicio: "2026-08-03", fin: "2026-12-18",
   }),
 
   // --- Portal Docente ---

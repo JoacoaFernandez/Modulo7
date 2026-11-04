@@ -5,11 +5,10 @@ mandarnos eventos. Está **abierto a cambios**: la ingesta real todavía no se d
 los equipos, así que lo de acá es una propuesta funcional, ya implementada y validada en el
 backend, para que sirva de punto de partida.
 
-> **Estado actual:** con `DATABASE_URL` los eventos se guardan en Postgres (tabla
-> `inbox_events`) y los tableros pisan con métricas calculadas de esos eventos las que se
-> pueden derivar; el resto sigue saliendo del dataset mock que replica el prototipo. Sin
-> `DATABASE_URL` se guardan en memoria y ningún tablero los lee. Se pueden consultar con
-> `GET /api/analytics/events`.
+> **Estado actual:** los eventos se guardan en Postgres (tabla `inbox_events`, `DATABASE_URL`
+> obligatoria) y **todos** los tableros, KPIs y catálogos (sedes, cuatrimestres, meses) se
+> calculan desde ellos: no hay datos mock. Lo que no tiene eventos se ve vacío o en cero. Se
+> pueden consultar con `GET /api/analytics/events`.
 
 ---
 
@@ -419,10 +418,11 @@ original.
 |---|---|---|
 | `gestion-academica` | `resultado.publicado` · `resultado.modificado` | Tasa de aprobación general · por materia · por cuatrimestre · por docente |
 | `gestion-academica` | `curso.abierto` · `curso.cerrado` | Materias en curso · Comisiones activas · Tendencia por facultad |
-| `gestion-academica` | `cuatrimestre.definido` | Qué es "en curso" y "cuatrimestre anterior" |
+| `gestion-academica` | `cuatrimestre.definido` | Catálogo de cuatrimestres (también se arma con el `cuatrimestre` de cualquier otro evento) |
 | `portal-estudiante` | `inscripcion.confirmada` · `inscripcion.cancelada` | Estudiantes con cursada activa |
 | `portal-docente` | `curso.creado` · `acta.cerrada` (opcionales) | Respaldo del cruce curso → docente y de la aprobación |
 | `backoffice` | `docente.alta` | Nombre del docente |
+| `gestion-academica` | `curso.abierto` (`facultad`) | Tendencia por facultad |
 
 ### Tablero financiero
 
@@ -445,7 +445,7 @@ original.
 
 | Módulo | `eventType` | Para qué |
 |---|---|---|
-| `backoffice` | `sede.definida` | Catálogo de sedes (`sedeId` → nombre) |
+| `backoffice` | `sede.definida` | Catálogo de sedes (`sedeId` → nombre): sin este evento no hay sedes para filtrar |
 
 `biblioteca` está habilitado como emisor (`prestamo.realizado` · `prestamo.devuelto`), pero
 hoy ningún tablero consume sus eventos.
