@@ -11,6 +11,9 @@ import { Period } from "../../domain/entities/period.entity";
 import { Role } from "../../domain/entities/role.entity";
 import { Site } from "../../domain/entities/site.entity";
 import { AnalyticsRepositoryMock } from "./analytics.repository.mock";
+import { buildAcademicBase, buildEventsBase, buildFinancialBase } from "./overlays/period-bases";
+import { mergeMonths, mergeQuarters } from "./overlays/period-catalog";
+import { queryDefinedQuarters, queryEventMonths } from "./queries/period.queries";
 import { overlayAcademicStats } from "./overlays/academic.overlay";
 import { overlayEventStats } from "./overlays/events.overlay";
 import { overlayFinancialStats } from "./overlays/financial.overlay";
@@ -49,15 +52,21 @@ export class AnalyticsRepositoryPrisma implements AnalyticsRepository {
     }));
   }
 
-  // Tableros: arrancan del mock (shape completo) y pisan solo las métricas que se derivan de
-  // eventos y tienen datos para los filtros pedidos. Si la DB falla, se devuelve el mock entero.
+  // Tableros: arrancan de una base sobre el catálogo dinámico de períodos (el mock para los períodos que
+  // conoce, una base vacía para los nuevos) y pisan las métricas que se derivan de eventos. Si la DB
+  // falla, se devuelve la base sin pisar.
   async getAcademicStats(filters: AcademicFilters): Promise<AcademicStats> {
-    const base = await this.fallback.getAcademicStats(filters);
-    return this.overlay("académico", base, async (sedeId) => overlayAcademicStats(this.prisma, base, sedeId), filters.siteName);
+    const { stats, history, mockQuarters } = await buildAcademicBase(this.fallback, filters, await this.getQuarters());
+    return this.overlay(
+      "académico",
+      stats,
+      async (sedeId) => overlayAcademicStats(this.prisma, stats, sedeId, history, mockQuarters),
+      filters.siteName,
+    );
   }
 
   async getFinancialStats(filters: FinancialFilters): Promise<FinancialStats> {
-    const base = await this.fallback.getFinancialStats(filters);
+    const base = await buildFinancialBase(this.fallback, filters, await this.getMonths());
     return this.overlay(
       "financiero",
       base,
@@ -68,7 +77,7 @@ export class AnalyticsRepositoryPrisma implements AnalyticsRepository {
   }
 
   async getEventsStats(filters: FinancialFilters): Promise<EventStats> {
-    const base = await this.fallback.getEventsStats(filters);
+    const base = await buildEventsBase(this.fallback, filters, await this.getMonths());
     return this.overlay("de eventos", base, async (sedeId) => overlayEventStats(this.prisma, base, sedeId), filters.siteName);
   }
 
@@ -95,16 +104,41 @@ export class AnalyticsRepositoryPrisma implements AnalyticsRepository {
     return this.fallback.getSites();
   }
 
-  getQuarters(): Promise<Period[]> {
-    return this.fallback.getQuarters();
+  // Cuatrimestres del mock más los que Gestión Académica definió; sin DB disponible, solo los del mock.
+  async getQuarters(): Promise<Period[]> {
+    const mock = await this.fallback.getQuarters();
+    try {
+      return mergeQuarters(mock, await queryDefinedQuarters(this.prisma));
+    } catch (error) {
+      console.error("No se pudo leer el catálogo de cuatrimestres de la base; se usa el del mock.", error);
+      return mock;
+    }
   }
 
-  getMonths(): Promise<Period[]> {
-    return this.fallback.getMonths();
+  // Meses del mock más los meses (hora de Argentina) en que ocurrió algún evento.
+  async getMonths(): Promise<Period[]> {
+    const mock = await this.fallback.getMonths();
+    try {
+      return mergeMonths(mock, await queryEventMonths(this.prisma));
+    } catch (error) {
+      console.error("No se pudo leer el catálogo de meses de la base; se usa el del mock.", error);
+      return mock;
+    }
   }
 
-  getFilterDefaults(): Promise<FilterDefaults> {
-    return this.fallback.getFilterDefaults();
+  // Por defecto, el período más reciente de cada catálogo; la sede sigue siendo la del mock.
+  async getFilterDefaults(): Promise<FilterDefaults> {
+    const [defaults, quarters, months] = await Promise.all([
+      this.fallback.getFilterDefaults(),
+      this.getQuarters(),
+      this.getMonths(),
+    ]);
+
+    return {
+      ...defaults,
+      quarter: quarters[quarters.length - 1]?.id ?? defaults.quarter,
+      month: months[months.length - 1]?.id ?? defaults.month,
+    };
   }
 
   getRoles(): Promise<Role[]> {

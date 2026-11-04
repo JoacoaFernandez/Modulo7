@@ -17,8 +17,8 @@ dirección académica, dirección financiera y estadísticas de eventos.
   eventos para ese recorte, queda el valor del mock; si la DB falla se loguea y se devuelve el
   mock entero.
 - **Sin `DATABASE_URL`** el backend cae al repositorio mock en memoria (la ingesta no
-  persiste y los dashboards son 100% mock). Los catálogos (sedes, períodos, roles) siguen
-  saliendo del mock.
+  persiste y los dashboards son 100% mock). Los catálogos (sedes, roles) siguen
+  saliendo del mock; los períodos son dinámicos solo con DB (mock + cuatrimestres definidos y meses con eventos).
 - Auth: login con mail `@uade.edu.ar` contra un **mock de CORE** (`/api/auth`, gateway en
   `backend/src/infrastructure/integrations/`). El token viaja como Bearer y el rol (académica /
   financiera) lo define CORE; los tableros exigen sesión y el rol correcto.

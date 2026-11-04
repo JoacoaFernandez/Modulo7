@@ -32,6 +32,12 @@ export function parseMonthId(id: string): MonthRange | null {
   };
 }
 
+// "2026-11" → "Nov 2026", el id que usa el catálogo de períodos; null si no tiene ese formato.
+export function monthIdFromYm(ym: string): string | null {
+  const match = /^(\d{4})-(0[1-9]|1[0-2])$/.exec(ym);
+  return match ? `${MONTH_LABELS[Number(match[2]) - 1]} ${match[1]}` : null;
+}
+
 // Filtro de sede; null (sede agregada) no filtra. `column` permite calificar el alias en los joins.
 export function siteFilter(sedeId: string | null, column: Prisma.Sql = Prisma.sql`payload->>'sedeId'`): Prisma.Sql {
   return sedeId === null ? Prisma.empty : Prisma.sql`AND ${column} = ${sedeId}`;

@@ -11,6 +11,7 @@ import {
   querySubjectApprovals,
   queryTeacherApprovals,
 } from "../queries/academic.queries";
+import { MockApprovalHistory } from "./period-bases";
 import { count, replaceKpi, round1 } from "./overlay-format";
 
 const rate = (approved: number, total: number) => round1((approved * 100) / total);
@@ -19,6 +20,9 @@ export async function overlayAcademicStats(
   prisma: PrismaClient,
   base: AcademicStats,
   sedeId: string | null,
+  // Historial del mock para los cuatrimestres comparados (vacío si ninguno es nuevo) y cuáles conoce el mock.
+  history: MockApprovalHistory,
+  mockQuarters: Set<string>,
 ): Promise<AcademicStats> {
   const quarters = [...new Set(base.comparedQuarters)];
   const [subjectsCount, subjectRows, teacherRows] = await Promise.all([
@@ -50,9 +54,12 @@ export async function overlayAcademicStats(
     const current = byQuarter.get(base.quarter);
     if (current === undefined) continue;
 
-    // Un cuatrimestre sin resultados toma el valor del siguiente: la serie siempre tiene tres puntos.
-    const rates = base.comparedQuarters.map((quarter) => byQuarter.get(quarter));
-    for (let index = rates.length - 2; index >= 0; index -= 1) rates[index] ??= rates[index + 1];
+    // Cada punto: el valor real, o el del mock si el cuatrimestre es del mock y la materia figura ahí. Un
+    // cuatrimestre del mock sin ninguno toma el valor del siguiente; uno nuevo sin resultados queda en 0.
+    const rates = base.comparedQuarters.map((quarter) => byQuarter.get(quarter) ?? history.get(quarter)?.get(code));
+    for (let index = rates.length - 2; index >= 0; index -= 1) {
+      rates[index] ??= mockQuarters.has(base.comparedQuarters[index]) ? rates[index + 1] : 0;
+    }
     const series = rates as number[];
 
     seriesRates.push(series);

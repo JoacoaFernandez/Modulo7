@@ -152,7 +152,7 @@ export async function overlayFinancialStats(
 }
 
 // Mismas fórmulas que el calculator, pero sobre la serie ya pisada.
-function recalculateFinancialKpis(
+export function recalculateFinancialKpis(
   kpis: KpiCard[],
   series: MonthlyBalancePoint[],
   month: string,
