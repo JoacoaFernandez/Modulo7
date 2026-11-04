@@ -15,6 +15,8 @@ const initialState: SessionState = {
   siteId: null,
   quarter: null,
   month: null,
+  eventsSiteId: null,
+  eventsMonth: null,
 };
 
 function isAuthSession(value: unknown): value is AuthSession {
@@ -49,6 +51,9 @@ function readStoredState(): SessionState {
       siteId: typeof parsed.siteId === "string" ? parsed.siteId : null,
       quarter: typeof parsed.quarter === "string" ? parsed.quarter : null,
       month: typeof parsed.month === "string" ? parsed.month : null,
+      // Estados guardados con la forma vieja no los tienen: null → default del backend.
+      eventsSiteId: typeof parsed.eventsSiteId === "string" ? parsed.eventsSiteId : null,
+      eventsMonth: typeof parsed.eventsMonth === "string" ? parsed.eventsMonth : null,
     };
   } catch {
     // localStorage corrupto o inaccesible (modo privado, etc.): arrancar de cero.
@@ -95,9 +100,17 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, month }));
   }, []);
 
+  const setEventsSiteId = useCallback((eventsSiteId: string) => {
+    setState((prev) => ({ ...prev, eventsSiteId }));
+  }, []);
+
+  const setEventsMonth = useCallback((eventsMonth: string) => {
+    setState((prev) => ({ ...prev, eventsMonth }));
+  }, []);
+
   const value = useMemo<SessionContextValue>(
-    () => ({ ...state, user: state.auth?.user ?? null, login, logout, setSiteId, setQuarter, setMonth }),
-    [state, login, logout, setSiteId, setQuarter, setMonth],
+    () => ({ ...state, user: state.auth?.user ?? null, login, logout, setSiteId, setQuarter, setMonth, setEventsSiteId, setEventsMonth }),
+    [state, login, logout, setSiteId, setQuarter, setMonth, setEventsSiteId, setEventsMonth],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

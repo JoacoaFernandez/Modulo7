@@ -13,20 +13,20 @@ import { Sidebar, type AnalyticsSection } from "../components/sidebar.component"
 import { DataSources } from "../components/data-sources.component";
 import { DashboardHeader } from "../components/dashboard-header.component";
 
-// Eyebrow y título literales del prototipo (rolActual / tituloVista). No hay un tercero para
-// "eventos": esa sección vive dentro de "financial" (ver Sidebar y el <section id="eventos">
-// más abajo), así que comparte el mismo encabezado.
+// Eyebrow y título literales del prototipo (rolActual / tituloVista); "events" es la sección
+// propia de estadísticas de eventos.
 const sectionMeta: Record<AnalyticsSection, { eyebrow: string; title: string }> = {
   academic: { eyebrow: "Dirección Académica", title: "Rendimiento académico" },
+  events: { eyebrow: "Dirección Académica", title: "Eventos académicos" },
   financial: { eyebrow: "Dirección Financiera", title: "Situación económica y financiera" },
   sources: { eyebrow: "Analítica Institucional", title: "Fuentes de datos" },
 };
 
-// Cada rol habilita su tablero; los eventos académicos viven dentro del financiero. Un usuario
-// con varios roles ve todos los tableros que le corresponden.
-const sectionByRole: Record<AuthUser["roles"][number], AnalyticsSection> = {
-  academica: "academic",
-  financiera: "financial",
+// Cada rol habilita sus secciones (la académica incluye los eventos). Un usuario con varios
+// roles ve todas las que le corresponden.
+const sectionsByRole: Record<AuthUser["roles"][number], AnalyticsSection[]> = {
+  academica: ["academic", "events"],
+  financiera: ["financial"],
 };
 
 // Sede efectiva: la guardada si sigue en el catálogo, si no la agregada (o la primera).
@@ -49,20 +49,38 @@ function resolvePeriodId(periods: Period[] | undefined, backendDefault: string |
 }
 
 export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
-  const availableSections = user.roles.map((role) => sectionByRole[role]);
+  const availableSections = user.roles.flatMap((role) => sectionsByRole[role]);
   const [activeSection, setActiveSection] = useState<AnalyticsSection>(availableSections[0]);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
-  const { siteId: storedSiteId, quarter: storedQuarter, month: storedMonth, setSiteId, setQuarter, setMonth, logout } =
-    useSession();
+  const {
+    siteId: storedSiteId,
+    quarter: storedQuarter,
+    month: storedMonth,
+    eventsSiteId: storedEventsSiteId,
+    eventsMonth: storedEventsMonth,
+    setSiteId,
+    setQuarter,
+    setMonth,
+    setEventsSiteId,
+    setEventsMonth,
+    logout,
+  } = useSession();
   const { options: filterOptions, error: filtersError } = useFilters();
   const eventSources = useEventSources();
 
   // Los catálogos son dinámicos: la elección guardada puede haber dejado de existir. Se
   // resuelve contra GET /filters (elección válida, si no el default del backend, si no la
   // primera opción) y no se piden tableros hasta tener el catálogo.
-  const siteId = resolveSiteId(filterOptions, storedSiteId);
+  const isEventsSection = activeSection === "events";
+  const isAcademicSection = activeSection === "academic";
+  // Eventos tiene sede y mes propios, independientes de los demás tableros.
+  const siteId = resolveSiteId(filterOptions, isEventsSection ? storedEventsSiteId : storedSiteId);
   const quarter = resolvePeriodId(filterOptions?.quarters, filterOptions?.defaults.quarter, storedQuarter);
-  const month = resolvePeriodId(filterOptions?.months, filterOptions?.defaults.month, storedMonth);
+  const month = resolvePeriodId(
+    filterOptions?.months,
+    filterOptions?.defaults.month,
+    isEventsSection ? storedEventsMonth : storedMonth,
+  );
   const { academicStats, financialStats, eventsStats, isLoading, error } = useInstitutionalAnalytics({
     section: activeSection,
     enabled: filterOptions !== null,
@@ -75,7 +93,6 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
   // El académico filtra por cuatrimestre; financiero y eventos, por mes (mismo criterio que
   // el backend). Mientras GET /filters no responda, los selects muestran "Cargando…". La sede
   // se identifica por el id de Backoffice.
-  const isAcademicSection = activeSection === "academic";
   const loadingOption = [{ value: "", label: "Cargando…" }];
   const siteOptions = filterOptions?.sites.map((site) => ({ value: site.id, label: site.name })) ?? loadingOption;
   const currentPeriod = isAcademicSection ? quarter : month;
@@ -102,11 +119,11 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
           showFilters={activeSection !== "sources"}
           siteId={siteId}
           siteOptions={siteOptions}
-          onSiteChange={setSiteId}
+          onSiteChange={isEventsSection ? setEventsSiteId : setSiteId}
           periodLabel={isAcademicSection ? "Cuatrimestre" : "Período"}
           periodValue={currentPeriod}
           periodOptions={periodOptions}
-          onPeriodChange={isAcademicSection ? setQuarter : setMonth}
+          onPeriodChange={isAcademicSection ? setQuarter : isEventsSection ? setEventsMonth : setMonth}
           userName={user.name}
           onLogout={logout}
           onOpenMenu={() => setIsSidebarOpen(true)}
@@ -124,16 +141,8 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
           {!isLoading && !error && (
             <>
               {activeSection === "sources" && <DataSources {...eventSources} />}
-              {activeSection === "academic" && academicStats && (
-                <div className="flex flex-col gap-8">
-                  <AcademicDashboard stats={academicStats} />
-                  {eventsStats && (
-                    <section id="eventos">
-                      <EventsDashboard stats={eventsStats} />
-                    </section>
-                  )}
-                </div>
-              )}
+              {activeSection === "academic" && academicStats && <AcademicDashboard stats={academicStats} />}
+              {activeSection === "events" && eventsStats && <EventsDashboard stats={eventsStats} />}
               {activeSection === "financial" && financialStats && <FinancialDashboard stats={financialStats} />}
             </>
           )}

@@ -10,6 +10,9 @@ export interface SessionState {
   siteId: string | null;
   quarter: string | null;
   month: string | null;
+  // Filtros propios de la sección de eventos, independientes de los demás tableros.
+  eventsSiteId: string | null;
+  eventsMonth: string | null;
 }
 
 export interface SessionContextValue extends SessionState {
@@ -20,6 +23,8 @@ export interface SessionContextValue extends SessionState {
   setSiteId: (siteId: string) => void;
   setQuarter: (quarter: string) => void;
   setMonth: (month: string) => void;
+  setEventsSiteId: (siteId: string) => void;
+  setEventsMonth: (month: string) => void;
 }
 
 export const SessionContext = createContext<SessionContextValue | null>(null);

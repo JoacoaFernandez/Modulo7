@@ -12,9 +12,8 @@ const getFinancialDashboardUseCase = new GetFinancialDashboardUseCase(analyticsR
 const getEventsStatsUseCase = new GetEventsStatsUseCase(analyticsRepository);
 
 export interface InstitutionalAnalyticsFilters {
-  // Tablero que se está viendo: "financial" incluye las estadísticas de eventos.
-  // "sources" no es un tablero: no pide nada.
-  section: "academic" | "financial" | "sources";
+  // Tablero que se está viendo. "sources" no es un tablero: no pide nada.
+  section: "academic" | "financial" | "events" | "sources";
   // false mientras no se conozcan los filtros vigentes (GET /filters): no se pide nada para
   // no mandar un período fuera del catálogo (el backend responde 400).
   enabled: boolean;
@@ -32,15 +31,17 @@ interface Loaded {
   error: string | null;
 }
 
-// Refetchea el tablero visible cada vez que cambia sección/sede/cuatrimestre/mes. Cada cambio
+// Refetchea el tablero visible cada vez que cambian sección o los filtros que le corresponden
+// (académico: sede/cuatrimestre; financiero y eventos: sede/mes, cada uno con la suya). Cada cambio
 // cancela el pedido anterior con AbortController, para no pisar el estado con una respuesta
 // que llegó tarde y ya no corresponde a los filtros actuales. Se pide solo lo de la sección
-// activa (académico, o financiero + eventos): el backend responde 403 si el usuario no tiene
+// activa (académico, financiero o eventos): el backend responde 403 si el usuario no tiene
 // ese rol.
 export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters) {
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   const { section, enabled, siteId, quarter, month } = filters;
-  const key = `${section}|${siteId}|${quarter}|${month}`;
+  // Cada sección sólo depende de sus filtros: cambiar el cuatrimestre no refetchea eventos, etc.
+  const key = section === "academic" ? `${section}|${siteId}|${quarter}` : `${section}|${siteId}|${month}`;
 
   useEffect(() => {
     if (section === "sources" || !enabled) return;
@@ -50,13 +51,16 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
 
     const request =
       section === "academic"
-        ? Promise.all([
-            getAcademicDashboardUseCase.execute({ siteId, quarter }, signal),
-            getEventsStatsUseCase.execute({ siteId, month }, signal),
-          ]).then(([academicStats, eventsStats]) => ({ academicStats, financialStats: null, eventsStats }))
-        : getFinancialDashboardUseCase
-            .execute({ siteId, month }, signal)
-            .then((financialStats) => ({ academicStats: null, financialStats, eventsStats: null }));
+        ? getAcademicDashboardUseCase
+            .execute({ siteId, quarter }, signal)
+            .then((academicStats) => ({ academicStats, financialStats: null, eventsStats: null }))
+        : section === "events"
+          ? getEventsStatsUseCase
+              .execute({ siteId, month }, signal)
+              .then((eventsStats) => ({ academicStats: null, financialStats: null, eventsStats }))
+          : getFinancialDashboardUseCase
+              .execute({ siteId, month }, signal)
+              .then((financialStats) => ({ academicStats: null, financialStats, eventsStats: null }));
 
     request
       .then((stats) => {
