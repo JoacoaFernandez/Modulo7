@@ -1,0 +1,24 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Bandeja de entrada: cada evento recibido de los otros módulos de UADEnet, tal cual llegó.
+model InboxEvent {
+  id           String   @id @default(cuid())
+  eventId      String   @unique @map("event_id")
+  sourceModule String   @map("source_module")
+  eventType    String   @map("event_type")
+  occurredAt   DateTime @map("occurred_at")
+  payload      Json
+  receivedAt   DateTime @default(now()) @map("received_at")
+
+  @@index([eventType])
+  @@index([occurredAt])
+  @@index([sourceModule, eventType])
+  @@map("inbox_events")
+}

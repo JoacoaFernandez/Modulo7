@@ -7,11 +7,18 @@ dirección académica, dirección financiera y estadísticas de eventos.
 
 ## Estado del proyecto
 
-- **Sin base de datos todavía** (no decidida). El backend sirve **datasets mock 1:1** con
-  el diseño (`ANALISIS-DISENO.md`), con filtros de sede/período resueltos server-side.
-- La ingesta de eventos (`POST /api/analytics/events`) funciona y guarda en memoria, pero
-  **ningún dashboard lee esos eventos todavía** — los dashboards salen del mock. Conectar
-  ingesta real con dashboards es el trabajo pendiente cuando exista DB.
+- **Postgres + Prisma** (rama `feature/db-postgres`): la ingesta (`POST /api/analytics/events`)
+  persiste en la tabla `inbox_events` con **idempotencia por `eventId`** (un `eventId`
+  repetido se ignora y responde igual que la primera vez).
+- **Los dashboards son un overlay de métricas reales sobre el mock**: cada request arranca del
+  dataset mock (`ANALISIS-DISENO.md`, shape completo, filtros de sede/período server-side) y
+  pisa solo las métricas que se pueden derivar de eventos y tienen datos para los filtros
+  (queries en `backend/src/infrastructure/repositories/queries/`, mapeo en `overlays/`). Sin
+  eventos para ese recorte, queda el valor del mock; si la DB falla se loguea y se devuelve el
+  mock entero.
+- **Sin `DATABASE_URL`** el backend cae al repositorio mock en memoria (la ingesta no
+  persiste y los dashboards son 100% mock). Los catálogos (sedes, períodos, roles) siguen
+  saliendo del mock.
 - Auth: login con mail `@uade.edu.ar` contra un **mock de CORE** (`/api/auth`, gateway en
   `backend/src/infrastructure/integrations/`). El token viaja como Bearer y el rol (académica /
   financiera) lo define CORE; los tableros exigen sesión y el rol correcto.
@@ -40,7 +47,12 @@ no tiene scripts reales).
 npm run dev     # tsx watch index.ts — server en :3000 (o $PORT), con hot reload
 npm run build   # tsc → dist/
 npm run start   # node dist/index.js (requiere build previo)
+npm run db:up       # docker compose up -d — Postgres 16 local (:5432)
+npm run db:migrate  # prisma migrate dev — aplica las migraciones
+npm run db:seed     # eventos de ejemplo (re-ejecutable, upsert por eventId)
 ```
+La config va en `backend/.env` (no se commitea): copiar `backend/.env.example` y ajustar
+`DATABASE_URL`. Sin esa variable el backend usa el mock en memoria.
 
 **Frontend** (`cd frontend`):
 ```
@@ -93,7 +105,7 @@ tocar cualquier cosa relacionada a eventos. Resumen:
   Postman se generan de ahí con `npm run docs` (en `backend/`), no se editan a mano.
 - El contrato **está abierto a cambios** — todavía no se acordó formalmente entre los
   equipos de los 10 módulos. No asumir que es definitivo.
-- Sin autenticación entre módulos (la ingesta es pública), sin idempotencia real (falta cuando haya DB), sin envío
+- Sin autenticación entre módulos (la ingesta es pública), idempotente por `eventId` (si hay DB), sin envío
   por lotes.
 
 ## Convenciones de código

@@ -10,14 +10,13 @@ import { ListEventsUseCase } from "../../../application/use-cases/list-events.us
 import { RecordEventUseCase } from "../../../application/use-cases/record-event.use-case";
 import { normalizeIncomingEvent } from "../../../application/services/event-normalizer.service";
 import { backofficeSitesGateway } from "../../../infrastructure/integrations/gateways";
-import { AnalyticsRepositoryMock } from "../../../infrastructure/repositories/analytics.repository.mock";
+import { analyticsRepository } from "../../../infrastructure/repositories/analytics-repository.provider";
 import {
   parseAcademicFilters,
   parseFinancialFilters,
   parseRecordEventDto,
 } from "../validators/analytics.validator";
 
-const analyticsRepository = new AnalyticsRepositoryMock();
 const getAcademicDashboardUseCase = new GetAcademicDashboardUseCase(analyticsRepository);
 const getFinancialDashboardUseCase = new GetFinancialDashboardUseCase(analyticsRepository);
 const getEventsStatsUseCase = new GetEventsStatsUseCase(analyticsRepository);

@@ -5,10 +5,11 @@ mandarnos eventos. Está **abierto a cambios**: la ingesta real todavía no se d
 los equipos, así que lo de acá es una propuesta funcional, ya implementada y validada en el
 backend, para que sirva de punto de partida.
 
-> **Estado actual:** los eventos que se reciben se guardan en memoria y se pueden consultar
-> con `GET /api/analytics/events`, pero **ningún tablero los lee todavía**. Los tableros salen
-> de un dataset mock que replica el prototipo. Conectar la ingesta con los tableros es el
-> trabajo que sigue cuando exista una base de datos.
+> **Estado actual:** con `DATABASE_URL` los eventos se guardan en Postgres (tabla
+> `inbox_events`) y los tableros pisan con métricas calculadas de esos eventos las que se
+> pueden derivar; el resto sigue saliendo del dataset mock que replica el prototipo. Sin
+> `DATABASE_URL` se guardan en memoria y ningún tablero los lee. Se pueden consultar con
+> `GET /api/analytics/events`.
 
 ---
 
@@ -27,7 +28,7 @@ módulo va adentro de `payload`, que tiene un esquema por tipo de evento (ver
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `eventId` | `string` no vacío | sí | Identificador del evento **en el módulo emisor**. Es la clave de idempotencia: reenviar el mismo `eventId` tiene que poder repetirse sin duplicar el hecho. |
+| `eventId` | `string` no vacío | sí | Identificador del evento **en el módulo emisor**. Es la clave de idempotencia: reenviar el mismo `eventId` se ignora (no duplica ni pisa el evento original) y responde `201` igual que la primera vez. |
 | `sourceModule` | enum (9 valores) | sí | Módulo que emite. Ver tabla de abajo. |
 | `eventType` | `string` no vacío | sí | Qué pasó, en notación `sustantivo.verbo`: `inscripcion.confirmada`. |
 | `occurredAt` | ISO 8601 | sí | Cuándo ocurrió el hecho, según el reloj del emisor. **No** es la fecha de envío. |
@@ -453,8 +454,8 @@ hoy ningún tablero consume sus eventos.
 
 ## Cosas a definir entre los equipos
 
-1. **Idempotencia real.** Hoy `eventId` se guarda pero no se deduplica. Cuando haya base
-   de datos tiene que ser índice único.
+1. **Idempotencia.** Resuelta: `eventId` es único en la base y un reenvío se ignora. Falta
+   acordar que cada módulo mantenga el mismo `eventId` en los reintentos.
 2. **Versionado del esquema.** Los payloads ya se validan por tipo de evento; falta definir
    cómo se versiona un cambio de campos sin romper a los módulos que ya emiten.
 3. **Envío por lotes.** Si el volumen lo pide, agregar `POST /api/analytics/events/batch`.

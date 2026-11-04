@@ -10,18 +10,27 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "docs:payloads": "tsx scripts/generate-payload-docs.ts",
     "docs:postman": "tsx scripts/generate-postman.ts",
-    "docs": "npm run docs:payloads && npm run docs:postman"
+    "docs": "npm run docs:payloads && npm run docs:postman",
+    "db:up": "docker compose up -d",
+    "db:migrate": "prisma migrate dev",
+    "db:seed": "prisma db seed",
+    "postinstall": "prisma generate"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@prisma/client": "^6.19.3",
     "express": "^5.2.1"
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",
+    "prisma": "^6.19.3",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

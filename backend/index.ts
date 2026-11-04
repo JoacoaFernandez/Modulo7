@@ -1,3 +1,4 @@
+import "./src/shared/load-env";
 import express, { NextFunction, Request, Response } from "express";
 import { authRoutes } from "./src/interfaces/http/routes/auth.routes";
 import { analyticsRoutes } from "./src/interfaces/http/routes/analytics.routes";
