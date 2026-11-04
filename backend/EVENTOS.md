@@ -225,12 +225,12 @@ Esta sección se genera con `npm run docs:payloads` desde
 | `compraId` | `string` | sí | Id de la compra. |
 | `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
 | `fecha` | `string` AAAA-MM-DD | sí | Fecha de la compra. |
-| `total` | `number` | sí | Total en ARS. |
+| `total` | `number` | sí | Total de la compra en ARS (suma de los montos de los ítems). |
 | `items` | `array` de objetos | sí | Ítems de la compra. |
 | `items[].producto` | `string` | sí | Nombre del producto. |
 | `items[].categoria` | `string` | no | Categoría del producto. |
 | `items[].unidades` | `number` | sí | Unidades. |
-| `items[].monto` | `number` | sí | Monto en ARS. |
+| `items[].monto` | `number` | sí | Monto total de la línea en ARS (unidades × precio unitario), no el precio unitario. |
 
 **`compra.devuelta`**
 
@@ -243,7 +243,7 @@ Esta sección se genera con `npm run docs:payloads` desde
 | `items[].producto` | `string` | sí | Nombre del producto. |
 | `items[].categoria` | `string` | no | Categoría del producto. |
 | `items[].unidades` | `number` | sí | Unidades. |
-| `items[].monto` | `number` | sí | Monto en ARS. |
+| `items[].monto` | `number` | sí | Monto total de la línea en ARS (unidades × precio unitario), no el precio unitario. |
 
 #### `eventos`
 

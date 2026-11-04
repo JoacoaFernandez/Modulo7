@@ -44,7 +44,7 @@ const purchaseItems: FieldSpec = {
     str("producto", "Nombre del producto."),
     str("categoria", "Categoría del producto.", false),
     num("unidades", "Unidades."),
-    num("monto", "Monto en ARS."),
+    num("monto", "Monto total de la línea en ARS (unidades × precio unitario), no el precio unitario."),
   ],
 };
 
@@ -181,7 +181,7 @@ export const EVENT_SCHEMAS: readonly EventSchema[] = [
   {
     sourceModule: "tienda",
     eventType: "compra.realizada",
-    fields: [str("compraId", "Id de la compra."), sedeId, date("fecha", "Fecha de la compra."), num("total", "Total en ARS."), purchaseItems],
+    fields: [str("compraId", "Id de la compra."), sedeId, date("fecha", "Fecha de la compra."), num("total", "Total de la compra en ARS (suma de los montos de los ítems)."), purchaseItems],
   },
   {
     sourceModule: "tienda",

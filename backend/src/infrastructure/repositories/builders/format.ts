@@ -18,9 +18,16 @@ export function toMillions(amountArs: number): number {
   return amountArs / MILLION;
 }
 
-export function money(amount: number): string {
-  const formatted = amount.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  return `$ ${formatted} M`;
+// Recibe millones de ARS. Desde un millón se muestra en millones con un decimal ("$ 1,1 M");
+// por debajo, en pesos enteros ("$ 1.000"), para que una venta chica no quede como "$ 0,0 M".
+export function money(amountMillions: number): string {
+  if (Math.abs(amountMillions) >= 1) {
+    const formatted = amountMillions.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    return `$ ${formatted} M`;
+  }
+
+  const pesos = Math.round(amountMillions * MILLION);
+  return `$ ${pesos.toLocaleString("es-AR")}`;
 }
 
 export function count(value: number): string {
