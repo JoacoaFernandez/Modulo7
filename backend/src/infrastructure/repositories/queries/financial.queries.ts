@@ -1,144 +1,96 @@
-// Queries del tablero financiero sobre inbox_events (core, backoffice, tienda y comedor). Montos en ARS.
-import { PrismaClient } from "@prisma/client";
+// Queries del tablero financiero sobre inbox_events (tienda y comedor) y wallet_balance_snapshots. Montos en ARS.
+// Ingresos, egresos y sueldos no salen de acá: vienen de `aggregates` de CORE (docs/INTEGRACION.md, 6.2).
+import { Prisma, PrismaClient } from "@prisma/client";
 import { argentinaMonth, MonthRange, siteFilter } from "./query-helpers";
 
-export interface MonthlyFlowRow {
-  ym: string;
-  income: number;
-  expense: number;
-}
-
-export interface ExpenseRow {
-  // "sueldos-docentes", "sueldos-administrativos", "sueldos-sin-desglose" o la categoría libre del gasto.
-  category: string;
-  total: number;
-}
-
 export interface ProductRow {
-  producto: string;
-  categoria: string | null;
-  unidades: number;
-  monto: number;
+  productId: string;
+  productName: string;
+  category: string | null;
+  units: number;
+  revenue: number;
 }
 
 export interface DiningRow {
-  sedeId: string;
+  siteId: string;
   ym: string;
   revenue: number;
   tickets: number;
 }
 
-// Ingresos y egresos por mes de saldo.movimiento. Criterio del plan: `carga` es ingreso y el
-// resto de los tipos (cobro, acreditacion, multa, restitucion) egreso.
-export async function queryMonthlyFlows(
-  prisma: PrismaClient,
-  from: string,
-  to: string,
-  sedeId: string | null,
-): Promise<MonthlyFlowRow[]> {
-  return prisma.$queryRaw<MonthlyFlowRow[]>`
-    SELECT ${argentinaMonth()} AS ym,
-      COALESCE(SUM(CASE WHEN data->>'tipo' = 'carga' THEN (data->>'monto')::numeric ELSE 0 END), 0)::float8 AS income,
-      COALESCE(SUM(CASE WHEN data->>'tipo' <> 'carga' THEN (data->>'monto')::numeric ELSE 0 END), 0)::float8 AS expense
-    FROM inbox_events
-    WHERE source = 'core'
-      AND event_type = 'saldo.movimiento'
-      AND occurred_at >= ${from}::timestamptz AND occurred_at < ${to}::timestamptz
-      ${siteFilter(sedeId)}
-    GROUP BY ym`;
-}
-
-// Gastos del mes: sueldos liquidados (por `periodo`, con su desglose) y gastos registrados.
-export async function queryAdministrativeExpenses(
-  prisma: PrismaClient,
-  month: MonthRange,
-  sedeId: string | null,
-): Promise<ExpenseRow[]> {
-  return prisma.$queryRaw<ExpenseRow[]>`
-    SELECT 'sueldos-docentes' AS category,
-      COALESCE(SUM((data->'desglose'->>'docentes')::numeric), 0)::float8 AS total
-    FROM inbox_events
-    WHERE source = 'backoffice' AND event_type = 'sueldos.liquidados'
-      AND data->>'periodo' = ${month.ym} ${siteFilter(sedeId)}
-    UNION ALL
-    SELECT 'sueldos-administrativos',
-      COALESCE(SUM((data->'desglose'->>'administrativos')::numeric), 0)::float8
-    FROM inbox_events
-    WHERE source = 'backoffice' AND event_type = 'sueldos.liquidados'
-      AND data->>'periodo' = ${month.ym} ${siteFilter(sedeId)}
-    UNION ALL
-    SELECT 'sueldos-sin-desglose',
-      COALESCE(SUM((data->>'monto')::numeric
-        - COALESCE((data->'desglose'->>'docentes')::numeric, 0)
-        - COALESCE((data->'desglose'->>'administrativos')::numeric, 0)), 0)::float8
-    FROM inbox_events
-    WHERE source = 'backoffice' AND event_type = 'sueldos.liquidados'
-      AND data->>'periodo' = ${month.ym} ${siteFilter(sedeId)}
-    UNION ALL
-    SELECT data->>'categoria', SUM((data->>'monto')::numeric)::float8
-    FROM inbox_events
-    WHERE source = 'backoffice' AND event_type = 'gasto.registrado'
-      AND occurred_at >= ${month.start}::timestamptz AND occurred_at < ${month.end}::timestamptz
-      ${siteFilter(sedeId)}
-    GROUP BY data->>'categoria'`;
-}
-
-// Productos del mes: ventas de compra.realizada menos lo devuelto en compra.devuelta.
-export async function queryTopProducts(
-  prisma: PrismaClient,
-  month: MonthRange,
-  sedeId: string | null,
-): Promise<ProductRow[]> {
-  return prisma.$queryRaw<ProductRow[]>`
+// Productos del mes: ítems de store.purchase.completed.v1 agrupados por productId (nombre y categoría de la última
+// compra). Con sede elegida sólo cuentan las compras que traen ese siteId (es opcional en el evento).
+export async function queryTopProducts(prisma: PrismaClient, month: MonthRange, siteId: string | null): Promise<ProductRow[]> {
+  const rows = await prisma.$queryRaw<{ product_id: string; product_name: string; category: string | null; units: number; revenue: number }[]>`
     WITH lines AS (
-      SELECT item->>'producto' AS producto, item->>'categoria' AS categoria,
-        (item->>'unidades')::numeric AS unidades, (item->>'monto')::numeric AS monto
-      FROM inbox_events, jsonb_array_elements(data->'items') AS item
-      WHERE source = 'tienda' AND event_type = 'compra.realizada'
-        AND occurred_at >= ${month.start}::timestamptz AND occurred_at < ${month.end}::timestamptz
-        ${siteFilter(sedeId)}
-      UNION ALL
-      SELECT item->>'producto', item->>'categoria',
-        -(item->>'unidades')::numeric, -(item->>'monto')::numeric
-      FROM inbox_events, jsonb_array_elements(data->'items') AS item
-      WHERE source = 'tienda' AND event_type = 'compra.devuelta'
-        AND occurred_at >= ${month.start}::timestamptz AND occurred_at < ${month.end}::timestamptz
-        ${siteFilter(sedeId)}
+      SELECT e.occurred_at, item->>'productId' AS product_id, item->>'productName' AS product_name,
+        NULLIF(item->>'category', '') AS category,
+        (item->>'quantity')::numeric AS quantity, (item->>'subtotal')::numeric AS subtotal
+      FROM inbox_events e, jsonb_array_elements(e.data->'items') AS item
+      WHERE e.event_type = 'store.purchase.completed.v1'
+        AND e.occurred_at >= ${month.start}::timestamptz AND e.occurred_at < ${month.end}::timestamptz
+        ${siteFilter(siteId, Prisma.sql`e.data->>'siteId'`)}
     )
-    SELECT producto, MAX(categoria) AS categoria,
-      SUM(unidades)::float8 AS unidades, SUM(monto)::float8 AS monto
+    SELECT product_id,
+      (array_agg(product_name ORDER BY occurred_at DESC))[1] AS product_name,
+      (array_agg(category ORDER BY occurred_at DESC) FILTER (WHERE category IS NOT NULL))[1] AS category,
+      SUM(quantity)::float8 AS units, SUM(subtotal)::float8 AS revenue
     FROM lines
-    GROUP BY producto
-    HAVING SUM(unidades) > 0
-    ORDER BY SUM(unidades) DESC, producto`;
+    GROUP BY product_id`;
+
+  return rows.map((row) => ({
+    productId: row.product_id,
+    productName: row.product_name,
+    category: row.category,
+    units: row.units,
+    revenue: row.revenue,
+  }));
 }
 
-// Facturación y tickets de comedor por sede y mes (reserva.confirmada). Sin filtro de sede: el
-// tablero muestra todas las sedes y el filtro solo resalta.
-export async function queryDiningRevenue(
-  prisma: PrismaClient,
-  from: string,
-  to: string,
-): Promise<DiningRow[]> {
-  const rows = await prisma.$queryRaw<{ sede_id: string; ym: string; revenue: number; tickets: number }[]>`
-    SELECT data->>'sedeId' AS sede_id, ${argentinaMonth()} AS ym,
-      COALESCE(SUM((data->>'monto')::numeric), 0)::float8 AS revenue,
-      COUNT(*)::int AS tickets
-    FROM inbox_events
-    WHERE source = 'comedor' AND event_type = 'reserva.confirmada'
-      AND occurred_at >= ${from}::timestamptz AND occurred_at < ${to}::timestamptz
-    GROUP BY sede_id, ym`;
+// Facturación y tickets de comedor por sede y mes: reservas creadas en el rango sin su cancelación (cruce por
+// reservationId, sin límite de fecha) y, con `netOfAttendance`, también sin la asistencia (lo restituido).
+// Sin filtro de sede: el tablero muestra todas las sedes y el filtro sólo resalta.
+export async function queryDiningRevenue(prisma: PrismaClient, from: string, to: string, netOfAttendance: boolean): Promise<DiningRow[]> {
+  const rows = await prisma.$queryRaw<{ site_id: string; ym: string; revenue: number; tickets: number }[]>`
+    WITH res AS (
+      SELECT DISTINCT ON (data->>'reservationId')
+        data->>'reservationId' AS reservation_id, data->>'siteId' AS site_id,
+        (data->>'amount')::numeric AS amount, occurred_at
+      FROM inbox_events
+      WHERE event_type = 'dining.reservation.created.v1'
+        AND occurred_at >= ${from}::timestamptz AND occurred_at < ${to}::timestamptz
+      ORDER BY data->>'reservationId', occurred_at
+    )
+    SELECT r.site_id, ${argentinaMonth(Prisma.sql`r.occurred_at`)} AS ym,
+           COALESCE(SUM(r.amount), 0)::float8 AS revenue, COUNT(*)::int AS tickets
+    FROM res r
+    WHERE NOT EXISTS (SELECT 1 FROM inbox_events c
+                      WHERE c.event_type = 'dining.reservation.cancelled.v1'
+                        AND c.data->>'reservationId' = r.reservation_id)
+      ${
+        netOfAttendance
+          ? Prisma.sql`AND NOT EXISTS (SELECT 1 FROM inbox_events a
+                         WHERE a.event_type = 'dining.attendance.recorded.v1'
+                           AND a.data->>'reservationId' = r.reservation_id)`
+          : Prisma.empty
+      }
+    GROUP BY r.site_id, ym`;
 
-  return rows.map((row) => ({ sedeId: row.sede_id, ym: row.ym, revenue: row.revenue, tickets: row.tickets }));
+  return rows.map((row) => ({ siteId: row.site_id, ym: row.ym, revenue: row.revenue, tickets: row.tickets }));
 }
 
-// Sedes que registraron alguna reserva de comedor en cualquier fecha: las que tienen servicio.
+// Sedes con alguna reserva de comedor en cualquier fecha: las que tienen servicio.
 export async function queryDiningSites(prisma: PrismaClient): Promise<string[]> {
-  const rows = await prisma.$queryRaw<{ sede_id: string }[]>`
-    SELECT DISTINCT data->>'sedeId' AS sede_id
+  const rows = await prisma.$queryRaw<{ site_id: string }[]>`
+    SELECT DISTINCT data->>'siteId' AS site_id
     FROM inbox_events
-    WHERE source = 'comedor' AND event_type = 'reserva.confirmada'
-      AND data->>'sedeId' IS NOT NULL`;
+    WHERE event_type = 'dining.reservation.created.v1' AND data->>'siteId' IS NOT NULL`;
 
-  return rows.map((row) => row.sede_id);
+  return rows.map((row) => row.site_id);
+}
+
+// Saldo vigente por mes (AAAA-MM) de los snapshots que toma el job sobre `aggregates`.
+export async function queryBalanceSnapshots(prisma: PrismaClient, months: string[]): Promise<Map<string, number>> {
+  const rows = await prisma.walletBalanceSnapshot.findMany({ where: { month: { in: months } } });
+  return new Map(rows.map((row) => [row.month, Number(row.outstandingBalance.toString())]));
 }

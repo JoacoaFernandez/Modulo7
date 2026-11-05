@@ -6,7 +6,7 @@ import { ARGENTINA_TZ, MONTH_LABELS } from "../../../domain/services/period-cata
 const ARGENTINA_UTC_OFFSET_HOURS = 3;
 
 export interface MonthRange {
-  // AAAA-MM, el mismo formato que `periodo` en sueldos.liquidados.
+  // AAAA-MM.
   ym: string;
   // Límites en UTC (ISO 8601): [start, end).
   start: string;
@@ -30,26 +30,12 @@ export function parseMonthId(id: string): MonthRange | null {
   };
 }
 
-// Filtro de sede; null (sede agregada) no filtra. `column` permite calificar el alias en los joins.
-export function siteFilter(sedeId: string | null, column: Prisma.Sql = Prisma.sql`data->>'sedeId'`): Prisma.Sql {
-  return sedeId === null ? Prisma.empty : Prisma.sql`AND ${column} = ${sedeId}`;
+// Filtro de sede (siteId UUID de Backoffice); null (sede agregada) no filtra. `column` permite calificar el alias en los joins.
+export function siteFilter(siteId: string | null, column: Prisma.Sql = Prisma.sql`data->>'siteId'`): Prisma.Sql {
+  return siteId === null ? Prisma.empty : Prisma.sql`AND ${column} = ${siteId}`;
 }
 
-// Filtro de facultad; null (todas) no filtra. La facultad sólo existe en curso.abierto, así que el resto de los
-// eventos se atribuye por (cursoId, cuatrimestre) del curso que abrió esa facultad. `cursoId` y `cuatrimestre`
-// son las columnas del evento que se filtra; el nombre viaja bindeado, nunca concatenado.
-export function facultyFilter(facultad: string | null, cursoId: Prisma.Sql, cuatrimestre: Prisma.Sql): Prisma.Sql {
-  return facultad === null
-    ? Prisma.empty
-    : Prisma.sql`AND (${cursoId}, ${cuatrimestre}) IN (
-        SELECT fa.data->>'cursoId', fa.data->>'cuatrimestre'
-        FROM inbox_events fa
-        WHERE fa.source = 'gestion-academica' AND fa.event_type = 'curso.abierto'
-          AND fa.data->>'facultad' = ${facultad}
-      )`;
-}
-
-// Mes calendario (AAAA-MM, hora de Argentina) de occurred_at.
+// Mes calendario (AAAA-MM, hora de Argentina) de una columna timestamptz.
 export function argentinaMonth(column: Prisma.Sql = Prisma.sql`occurred_at`): Prisma.Sql {
   return Prisma.sql`to_char(${column} AT TIME ZONE ${ARGENTINA_TZ}, 'YYYY-MM')`;
 }

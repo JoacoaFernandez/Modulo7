@@ -1,0 +1,42 @@
+[
+  {
+    "id": 11,
+    "codigo": "ISI-101",
+    "nombre": "Algoritmos y Estructuras de Datos",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 12,
+    "codigo": "ISI-102",
+    "nombre": "Bases de Datos",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 13,
+    "codigo": "ISI-103",
+    "nombre": "Sistemas Operativos",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 14,
+    "codigo": "ISI-104",
+    "nombre": "Diseño de Aplicaciones II",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  }
+]

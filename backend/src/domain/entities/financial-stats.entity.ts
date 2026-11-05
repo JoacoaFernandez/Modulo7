@@ -2,6 +2,7 @@
 // Todos los montos están expresados en millones de ARS.
 import { Delta } from "./delta.value-object";
 import { KpiCard } from "./kpi.value-object";
+import { DashboardWarning } from "./dashboard-warning.entity";
 import { SourceModule } from "./event-source.entity";
 
 export interface MonthlyBalancePoint {
@@ -12,8 +13,8 @@ export interface MonthlyBalancePoint {
   expense: number;
   // Ingresos menos egresos del mes.
   result: number;
-  // Saldo acumulado al cierre del mes.
-  balance: number;
+  // Saldo acumulado al cierre del mes; null si no hay snapshot de ese mes (formattedBalance: "—").
+  balance: number | null;
   formattedIncome: string;
   formattedExpense: string;
   formattedResult: string;
@@ -58,17 +59,21 @@ export interface FinancialStats {
   siteName: string;
   month: string;
   previousMonth: string;
-  // Saldo acumulado, ingresos del período, egresos del período, resultado operativo.
+  // Saldo acumulado, ingresos del período, egresos del período, resultado operativo (margen sobre ingresos).
   kpis: KpiCard[];
   // Hasta seis meses, terminando en el seleccionado: alimenta las barras de ingresos/egresos y el área del saldo acumulado.
   monthlyBalance: MonthlyBalancePoint[];
   administrativeExpenses: AdministrativeExpense[];
-  // Top de productos del mes por unidades vendidas (netas de devoluciones).
+  // Top de productos del mes por unidades vendidas (store.purchase.completed.v1; no hay evento de devolución).
   topSellingProducts: TopSellingProduct[];
   // Top de productos del mes por facturación; mismo tipo y límite que el anterior.
   topRevenueProducts: TopSellingProduct[];
   diningRevenues: DiningRevenue[];
+  // Con una sede elegida: aviso de que saldo, ingresos, egresos y sueldos son institucionales (CORE no los distingue por sede). null con "Todas las sedes".
+  siteScopeNote: string | null;
+  // Fuentes que no respondieron: el bloque afectado sale vacío (nunca números inventados).
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
-  // Último evento recibido de cualquier módulo (ISO 8601); null si no hay ninguno.
+  // Último evento recibido de los módulos que alimentan el tablero (ISO 8601); null si no hay ninguno.
   lastIngestionAt: string | null;
 }

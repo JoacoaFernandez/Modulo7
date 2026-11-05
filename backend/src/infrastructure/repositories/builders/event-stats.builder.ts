@@ -1,4 +1,4 @@
-// Arma el tablero de eventos académicos desde los eventos de inbox_events; sin eventos, todo en cero.
+// Arma el tablero de eventos académicos (docs/INTEGRACION.md, 6.3) desde los eventos de G6 y las locaciones de G8 en inbox_events; sin eventos, todo en cero.
 import { PrismaClient } from "@prisma/client";
 import { EventMonthlyPoint, EventStats, EventTypeStats } from "../../../domain/entities/event-stats.entity";
 import { FinancialFilters } from "../../../domain/entities/filters.entity";
@@ -10,16 +10,18 @@ import { HeldEventRow, queryHeldEvents } from "../queries/events.queries";
 import { MonthRange, parseMonthId } from "../queries/query-helpers";
 import { capitalize, findSite, indexOfPeriod, percentage, shortMonth } from "./format";
 import { SourceMeta } from "./source-meta.builder";
+import { WarningCollector } from "./warning-collector";
 
 export interface EventsContext {
   sites: Site[];
   months: Period[];
+  warnings: WarningCollector;
   meta: SourceMeta;
 }
 
 interface Totals {
   events: number;
-  cupo: number;
+  capacity: number;
   registered: number;
   present: number;
 }
@@ -28,11 +30,11 @@ function sum(rows: HeldEventRow[]): Totals {
   return rows.reduce(
     (total, row) => ({
       events: total.events + 1,
-      cupo: total.cupo + row.cupo,
+      capacity: total.capacity + row.capacity,
       registered: total.registered + row.registered,
       present: total.present + row.present,
     }),
-    { events: 0, cupo: 0, registered: 0, present: 0 },
+    { events: 0, capacity: 0, registered: 0, present: 0 },
   );
 }
 
@@ -52,12 +54,12 @@ export async function buildEventStats(
   context: EventsContext,
 ): Promise<EventStats> {
   const site = findSite(context.sites, filters.siteId);
-  const sedeId = site.isAggregate ? null : site.id;
+  const siteId = site.isAggregate ? null : site.id;
   const current = indexOfPeriod(context.months, filters.month, "periodo");
   const window = periodWindow(context.months, current, SERIES_LENGTH);
   const selected = monthRange(context.months[current]);
 
-  const rows = await queryHeldEvents(prisma, monthRange(window[0]).start, selected.end, sedeId);
+  const rows = await queryHeldEvents(prisma, monthRange(window[0]).start, selected.end, siteId);
 
   // Frecuencia mensual, concurrencia (presentes) y presentismo por mes de la ventana.
   const monthlySeries = window.map((month): EventMonthlyPoint => {
@@ -76,7 +78,7 @@ export async function buildEventStats(
   const selectedRows = rows.filter((row) => row.ym === selected.ym);
   const totals = sum(selectedRows);
   const byType = new Map<string, HeldEventRow[]>();
-  for (const row of selectedRows) byType.set(row.tipoEvento, [...(byType.get(row.tipoEvento) ?? []), row]);
+  for (const row of selectedRows) byType.set(row.eventType, [...(byType.get(row.eventType) ?? []), row]);
 
   const typeEntries = [...byType].map(([type, typeRows]) => {
     const typeTotals = sum(typeRows);
@@ -98,6 +100,14 @@ export async function buildEventStats(
   const highlight = (stats: EventTypeStats | undefined) =>
     stats ? { eventType: stats.eventType, attendanceRate: stats.attendanceRate } : { eventType: "—", attendanceRate: 0 };
 
+  // Mientras G6 no informe `category`, el tipo es la clase de precio: se declara en un aviso.
+  if (selectedRows.some((row) => row.typeFromPrice)) {
+    context.warnings.add(
+      "events",
+      "Tipo de evento aproximado por clase de precio (Pago / Gratuito): G6 todavía no informa `category` en events.event.created.v1.",
+    );
+  }
+
   return {
     siteName: site.name,
     month: filters.month,
@@ -105,12 +115,13 @@ export async function buildEventStats(
     totalAttendees: totals.present,
     totalRegistered: totals.registered,
     averageAttendanceRate: attendanceRate(totals.present, totals.registered),
-    // Concurrencia sobre el cupo ofrecido; sin cupo informado no hay tasa.
-    capacityOccupancy: totals.cupo > 0 ? percentage(totals.present, totals.cupo) : 0,
+    // Concurrencia sobre el cupo ofrecido (`capacity`); sin cupo informado no hay tasa.
+    capacityOccupancy: totals.capacity > 0 ? percentage(totals.present, totals.capacity) : 0,
     bestAttendance: highlight(ranked[0]),
     worstAttendance: highlight(ranked[ranked.length - 1]),
     monthlySeries,
     eventTypes,
+    ...(context.warnings.warnings ? { warnings: context.warnings.warnings } : {}),
     ...context.meta,
   };
 }

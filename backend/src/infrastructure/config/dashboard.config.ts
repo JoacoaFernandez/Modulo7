@@ -6,24 +6,23 @@ export const SERIES_LENGTH = 6;
 
 export const TOP_PRODUCTS_LIMIT = 6;
 
-// Categorías de gastos administrativos, en el orden en que se apilan en la barra.
-export const EXPENSE_CATEGORIES: readonly { category: string; color: string }[] = [
-  { category: "Salarios docentes", color: "#1A2B48" },
-  { category: "Salarios administrativos", color: "#2D5DA1" },
-  { category: "Servicios e infraestructura", color: "#4B79B8" },
-  { category: "Mantenimiento y obras", color: "#6D94C7" },
-  { category: "Licencias y sistemas", color: "#94B2D8" },
-  { category: "Becas y bonificaciones", color: "#BACDE7" },
-  { category: "Otros gastos operativos", color: "#DCE5F1" },
-];
+// Conceptos de `aggregates` de CORE (docs/INTEGRACION.md, 6.2). Definiciones a validar con el equipo y la cátedra:
+// ingresos = cobros de servicios (DEBIT) menos devoluciones (REVERSAL, mínimo 0); egresos = acreditaciones de sueldos
+// y becas (CREDIT). TOP_UP y ADJUSTMENT no entran (saldo cargado, no ingreso).
+export const INCOME_CONCEPTS: readonly string[] = ["STORE_PURCHASE", "DINING_RESERVATION", "LIBRARY_FINE", "EVENT_REGISTRATION"];
+export const REVERSAL_CONCEPTS: readonly string[] = ["REFUND"];
 
-export const OTHER_EXPENSES_CATEGORY = "Otros gastos operativos";
+// Egresos que además se muestran como "gastos administrativos", en el orden en que se apilan en la barra.
+export const EXPENSE_CONCEPTS: readonly { key: string; category: string; color: string }[] = [
+  { key: "PAYROLL", category: "Sueldos", color: "#1A2B48" },
+  { key: "SCHOLARSHIP", category: "Becas y bonificaciones", color: "#4B79B8" },
+];
 
 // Colores de las series por facultad; se asignan por orden alfabético de facultad (y se reciclan).
 export const FACULTY_COLORS: readonly string[] = ["#2D5DA1", "#127453", "#1A2B48", "#B7791F", "#7A3E9D", "#C2410C"];
 
 // Módulos que pueden alimentar cada tablero (ver "Qué evento alimenta qué tablero" en EVENTOS.md).
-// La nota al pie muestra solo los que ya mandaron eventos.
-export const ACADEMIC_FEEDERS: readonly SourceModule[] = ["gestion-academica", "portal-estudiante", "portal-docente", "backoffice"];
+// La nota al pie muestra solo los que ya mandaron eventos, y la última ingesta es la de esos módulos.
+export const ACADEMIC_FEEDERS: readonly SourceModule[] = ["gestion-academica", "backoffice"];
 export const FINANCIAL_FEEDERS: readonly SourceModule[] = ["core", "backoffice", "tienda", "comedor"];
-export const EVENTS_FEEDERS: readonly SourceModule[] = ["eventos"];
+export const EVENTS_FEEDERS: readonly SourceModule[] = ["eventos", "backoffice"];

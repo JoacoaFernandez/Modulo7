@@ -10,4 +10,6 @@ export interface KpiCard {
   // Unidad al lado del valor: "materias", "comisiones", "ARS" o vacío.
   unit: string;
   delta: Delta;
+  // Aclaración de la definición o del dato faltante (por ejemplo "Sin resultados publicados en el período").
+  note?: string;
 }

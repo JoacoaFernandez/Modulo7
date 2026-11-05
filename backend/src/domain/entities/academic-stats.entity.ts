@@ -1,6 +1,7 @@
 // Domain entities: core business objects, independent of frameworks and infrastructure.
 import { Delta } from "./delta.value-object";
 import { KpiCard } from "./kpi.value-object";
+import { DashboardWarning } from "./dashboard-warning.entity";
 import { SourceModule } from "./event-source.entity";
 
 export interface SubjectApprovalPoint {
@@ -54,9 +55,11 @@ export interface AcademicStats {
   subjectApprovalRates: SubjectApprovalRate[];
   facultyTrends: FacultyTrendSeries[];
   teacherApprovalRates: TeacherApprovalRate[];
-  // Docentes distintos con actividad (resultados o cursos) en el cuatrimestre y la sede del filtro.
+  // Docentes distintos con resultados publicados en el cuatrimestre, la sede y la facultad del filtro.
   totalTeachersCount: number;
+  // Fuentes que no respondieron: el bloque afectado sale vacío (nunca números inventados).
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
-  // Último evento recibido de cualquier módulo (ISO 8601); null si no hay ninguno.
+  // Último evento recibido de los módulos que alimentan el tablero (ISO 8601); null si no hay ninguno.
   lastIngestionAt: string | null;
 }

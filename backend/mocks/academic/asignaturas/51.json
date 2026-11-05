@@ -1,0 +1,42 @@
+[
+  {
+    "id": 51,
+    "codigo": "PSI-101",
+    "nombre": "Psicología General",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  },
+  {
+    "id": 52,
+    "codigo": "PSI-102",
+    "nombre": "Neurociencias",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  },
+  {
+    "id": 53,
+    "codigo": "PSI-103",
+    "nombre": "Psicometría",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  },
+  {
+    "id": 54,
+    "codigo": "PSI-104",
+    "nombre": "Psicología Social",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  }
+]

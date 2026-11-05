@@ -1,6 +1,8 @@
-// Arma el tablero financiero desde los eventos de inbox_events; sin eventos, todo en cero.
+// Arma el tablero financiero (docs/INTEGRACION.md, 6.2): ingresos, egresos y sueldos salen de `aggregates` de CORE
+// (un llamado por mes de la ventana), el saldo de los snapshots, y productos y comedor de eventos del inbox.
+// Si CORE falla, los bloques afectados salen vacíos ("—") con un warning; nunca números inventados.
 import { PrismaClient } from "@prisma/client";
-import { createDelta, createNeutralDelta } from "../../../domain/entities/delta.value-object";
+import { createDelta, createNeutralDelta, Delta } from "../../../domain/entities/delta.value-object";
 import {
   AdministrativeExpense,
   DiningRevenue,
@@ -12,27 +14,31 @@ import { FinancialFilters } from "../../../domain/entities/filters.entity";
 import { KpiCard } from "../../../domain/entities/kpi.value-object";
 import { Period } from "../../../domain/entities/period.entity";
 import { Site } from "../../../domain/entities/site.entity";
-import { periodWindow } from "../../../domain/services/period-catalog.service";
+import { CoreWalletGateway, WalletAggregates } from "../../../domain/gateways/core-wallet.gateway";
+import { argentinaToday, currentMonthYm, periodWindow } from "../../../domain/services/period-catalog.service";
+import { EXPENSE_CONCEPTS, INCOME_CONCEPTS, REVERSAL_CONCEPTS, SERIES_LENGTH, TOP_PRODUCTS_LIMIT } from "../../config/dashboard.config";
 import {
-  EXPENSE_CATEGORIES,
-  OTHER_EXPENSES_CATEGORY,
-  SERIES_LENGTH,
-  TOP_PRODUCTS_LIMIT,
-} from "../../config/dashboard.config";
-import {
-  queryAdministrativeExpenses,
+  ProductRow,
+  queryBalanceSnapshots,
   queryDiningRevenue,
   queryDiningSites,
-  queryMonthlyFlows,
   queryTopProducts,
 } from "../queries/financial.queries";
 import { MonthRange, parseMonthId } from "../queries/query-helpers";
 import { capitalize, count, findSite, growth, indexOfPeriod, money, percentage, shortMonth, toMillions } from "./format";
 import { SourceMeta } from "./source-meta.builder";
+import { WarningCollector } from "./warning-collector";
+
+export const SITE_SCOPE_NOTE = "Saldo, ingresos, egresos y sueldos son institucionales: CORE no los distingue por sede.";
 
 export interface FinancialContext {
   sites: Site[];
   months: Period[];
+  wallet: CoreWalletGateway;
+  warnings: WarningCollector;
+  // DINING_REVENUE_NET_OF_ATTENDANCE: la facturación del comedor descuenta también lo restituido por asistencia.
+  diningNetOfAttendance: boolean;
+  now: Date;
   meta: SourceMeta;
 }
 
@@ -43,175 +49,205 @@ function monthRange(month: Period): MonthRange {
   return range;
 }
 
-// Categoría del tablero para un sueldo o un gasto registrado (la categoría del gasto es texto libre).
-function expenseCategoryName(rawCategory: string): string {
-  if (rawCategory === "sueldos-docentes") return "Salarios docentes";
-  if (rawCategory === "sueldos-administrativos") return "Salarios administrativos";
-  // Sueldos liquidados sin desglose: no se sabe a qué categoría pertenecen.
-  if (rawCategory === "sueldos-sin-desglose") return OTHER_EXPENSES_CATEGORY;
+function lastDayOf(ym: string): string {
+  const [year, month] = ym.split("-").map(Number);
+  return `${ym}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, "0")}`;
+}
 
-  const text = (rawCategory ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-  if (text.includes("docente")) return "Salarios docentes";
-  if (text.includes("administrativ")) return "Salarios administrativos";
-  if (/manten|obra/.test(text)) return "Mantenimiento y obras";
-  if (/servicio|infra/.test(text)) return "Servicios e infraestructura";
-  if (/licencia|sistema|software/.test(text)) return "Licencias y sistemas";
-  if (/beca|bonific/.test(text)) return "Becas y bonificaciones";
+const sumGroups = (aggregates: WalletAggregates, type: string, keys: readonly string[]): number =>
+  aggregates.groups.filter((group) => group.type === type && keys.includes(group.key)).reduce((total, group) => total + Number(group.total), 0);
 
-  return OTHER_EXPENSES_CATEGORY;
+// Cifras de un mes en ARS; `available: false` = CORE no respondió ese mes.
+interface MonthFigures {
+  available: boolean;
+  income: number;
+  expense: number;
+  aggregates: WalletAggregates | null;
+}
+
+function figuresOf(aggregates: WalletAggregates | null): MonthFigures {
+  if (!aggregates) return { available: false, income: 0, expense: 0, aggregates: null };
+
+  // Ingresos: cobros de servicios (DEBIT) menos devoluciones (REVERSAL), sin bajar de 0. Egresos: sueldos y becas (CREDIT).
+  const income = Math.max(0, sumGroups(aggregates, "DEBIT", INCOME_CONCEPTS) - sumGroups(aggregates, "REVERSAL", REVERSAL_CONCEPTS));
+  const expense = sumGroups(aggregates, "CREDIT", EXPENSE_CONCEPTS.map((concept) => concept.key));
+  return { available: true, income, expense, aggregates };
+}
+
+interface MonthPoint {
+  figures: MonthFigures;
+  // Millones de ARS; null si no hay snapshot de ese mes.
+  balance: number | null;
+  income: number;
+  expense: number;
 }
 
 // Resultado operativo: margen sobre ingresos (0 sin ingresos).
-const margin = (point: MonthlyBalancePoint) => (point.income === 0 ? 0 : (point.result / point.income) * 100);
+const margin = (point: MonthPoint) => (point.income === 0 ? 0 : ((point.income - point.expense) / point.income) * 100);
 
-// KPIs del mes elegido contra el anterior; sin mes anterior, los deltas quedan neutros.
-function buildKpis(current: MonthlyBalancePoint, previous: MonthlyBalancePoint | undefined): KpiCard[] {
-  const change = (now: number, before: number | undefined, inverted = false) =>
-    before === undefined ? createNeutralDelta({ suffix: "%" }) : createDelta(growth(now, before), { suffix: "%", inverted });
-  // El margen solo se compara si los dos meses tuvieron ingresos.
+// KPIs del mes elegido contra el anterior; sin mes anterior (o sin dato en él), los deltas quedan neutros.
+function buildKpis(current: MonthPoint, previous: MonthPoint | undefined): KpiCard[] {
+  const available = current.figures.available;
+  const comparable = previous?.figures.available === true && available;
+  const change = (now: number, before: number | undefined, inverted = false): Delta =>
+    comparable && before !== undefined ? createDelta(growth(now, before), { suffix: "%", inverted }) : createNeutralDelta({ suffix: "%" });
   const marginDelta =
-    previous && current.income > 0 && previous.income > 0
-      ? createDelta(margin(current) - margin(previous), { suffix: "%" })
+    comparable && current.income > 0 && previous!.income > 0
+      ? createDelta(margin(current) - margin(previous!), { suffix: "%" })
+      : createNeutralDelta({ suffix: "%" });
+  const balanceDelta =
+    current.balance !== null && previous?.balance != null && previous.balance !== 0
+      ? createDelta(growth(current.balance, previous.balance), { suffix: "%" })
       : createNeutralDelta({ suffix: "%" });
 
   return [
     {
       id: "accumulated-balance",
       label: "Saldo acumulado",
-      value: current.balance,
-      formattedValue: money(current.balance),
+      value: current.balance ?? 0,
+      formattedValue: current.balance === null ? "—" : money(current.balance),
       unit: "ARS",
-      delta: change(current.balance, previous?.balance),
+      delta: balanceDelta,
+      ...(current.balance === null ? { note: "Sin snapshot del saldo de CORE para este mes: sólo hay historia desde que corre el job." } : {}),
     },
     {
       id: "period-income",
       label: "Ingresos del período",
       value: current.income,
-      formattedValue: money(current.income),
+      formattedValue: available ? money(current.income) : "—",
       unit: "ARS",
       delta: change(current.income, previous?.income),
+      note: "Cobros de servicios (tienda, comedor, multas, eventos) menos devoluciones.",
     },
     {
       id: "period-expenses",
       label: "Egresos del período",
       value: current.expense,
-      formattedValue: money(current.expense),
+      formattedValue: available ? money(current.expense) : "—",
       unit: "ARS",
       // Que los egresos suban es malo: la semántica del chip va invertida.
       delta: change(current.expense, previous?.expense, true),
+      note: "Sueldos y becas acreditados.",
     },
     {
       id: "operating-result",
       label: "Resultado operativo",
-      value: margin(current),
-      formattedValue: `${margin(current).toFixed(1)}%`,
+      value: available ? margin(current) : 0,
+      formattedValue: available ? `${margin(current).toFixed(1)}%` : "—",
       unit: "",
       delta: marginDelta,
     },
   ];
 }
 
-export async function buildFinancialStats(
-  prisma: PrismaClient,
-  filters: FinancialFilters,
-  context: FinancialContext,
-): Promise<FinancialStats> {
+export async function buildFinancialStats(prisma: PrismaClient, filters: FinancialFilters, context: FinancialContext): Promise<FinancialStats> {
   const site = findSite(context.sites, filters.siteId);
-  const sedeId = site.isAggregate ? null : site.id;
-  const { months } = context;
+  const siteId = site.isAggregate ? null : site.id;
+  const { months, warnings } = context;
 
   const current = indexOfPeriod(months, filters.month, "periodo");
   const previous = Math.max(0, current - 1);
   const selected = monthRange(months[current]);
   const previousRange = monthRange(months[previous]);
   const window = periodWindow(months, current, SERIES_LENGTH);
+  const currentYm = currentMonthYm(context.now);
 
-  // Los flujos se piden desde el primer mes del catálogo: el saldo acumulado arrastra todo lo anterior.
-  const [flows, expenseRows, productRows, diningRows, diningSites] = await Promise.all([
-    queryMonthlyFlows(prisma, monthRange(months[0]).start, selected.end, sedeId),
-    queryAdministrativeExpenses(prisma, selected, sedeId),
-    queryTopProducts(prisma, selected, sedeId),
-    queryDiningRevenue(prisma, previousRange.start, selected.end),
+  // Un `aggregates` por mes de la ventana (el mes en curso, hasta hoy). Los avisos iguales se juntan en uno.
+  const readMonth = async (month: Period): Promise<WalletAggregates | null> => {
+    const { ym } = monthRange(month);
+    const to = ym === currentYm ? argentinaToday(context.now) : lastDayOf(ym);
+    const read = await warnings.guard("core", "los agregados de wallet", () => context.wallet.getAggregates(`${ym}-01`, to), null);
+    return read.value;
+  };
+
+  const [aggregates, snapshots, productRows, diningRows, diningSites] = await Promise.all([
+    Promise.all(window.map(readMonth)),
+    queryBalanceSnapshots(prisma, window.map((month) => monthRange(month).ym)),
+    queryTopProducts(prisma, selected, siteId),
+    queryDiningRevenue(prisma, previousRange.start, selected.end, context.diningNetOfAttendance),
     queryDiningSites(prisma),
   ]);
 
-  // Balance mensual en millones: ingresos y egresos de saldo.movimiento y saldo acumulado desde el primer mes.
-  const flowByMonth = new Map(flows.map((flow) => [flow.ym, flow]));
-  const firstInWindow = months.indexOf(window[0]);
-  const monthlyBalance: MonthlyBalancePoint[] = [];
-  let accumulated = 0;
-  for (let index = 0; index <= current; index += 1) {
-    const flow = flowByMonth.get(monthRange(months[index]).ym);
-    const income = toMillions(flow?.income ?? 0);
-    const expense = toMillions(flow?.expense ?? 0);
-    accumulated += income - expense;
-    if (index < firstInWindow) continue;
-
-    monthlyBalance.push({
-      month: months[index].id,
-      shortMonth: shortMonth(months[index]),
-      income,
-      expense,
-      result: income - expense,
-      balance: accumulated,
-      formattedIncome: money(income),
-      formattedExpense: money(expense),
-      formattedResult: money(income - expense),
-      formattedBalance: money(accumulated),
-      isSelected: index === current,
-    });
-  }
-  const kpis = buildKpis(
-    monthlyBalance[monthlyBalance.length - 1],
-    current > 0 ? monthlyBalance[monthlyBalance.length - 2] : undefined,
-  );
-
-  // Gastos administrativos del mes: sueldos liquidados + gastos registrados, repartidos en las categorías del tablero.
-  const amounts = new Map<string, number>();
-  for (const row of expenseRows) {
-    const name = expenseCategoryName(row.category);
-    amounts.set(name, (amounts.get(name) ?? 0) + row.total);
-  }
-  const totalExpenses = [...amounts.values()].reduce((total, amount) => total + amount, 0);
-  const administrativeExpenses: AdministrativeExpense[] = EXPENSE_CATEGORIES.map(({ category, color }) => {
-    const amount = amounts.get(category) ?? 0;
+  // Serie mensual en millones. Saldo: el mes en curso toma el valor en vivo de CORE; los meses cerrados sólo el snapshot
+  // (CORE puede devolver el saldo "a hoy" para un rango pasado, así que no sirve como saldo histórico).
+  const points: MonthPoint[] = window.map((month, index) => {
+    const { ym } = monthRange(month);
+    const figures = figuresOf(aggregates[index]);
+    const live = ym === currentYm && figures.aggregates ? Number(figures.aggregates.outstandingBalance) : undefined;
+    const balance = live ?? snapshots.get(ym);
 
     return {
-      category,
-      percentage: totalExpenses > 0 ? percentage(amount, totalExpenses) : 0,
-      amount: toMillions(amount),
-      formattedAmount: money(toMillions(amount)),
-      color,
+      figures,
+      balance: balance === undefined ? null : toMillions(balance),
+      income: toMillions(figures.income),
+      expense: toMillions(figures.expense),
     };
   });
+  const monthlyBalance: MonthlyBalancePoint[] = window.map((month, index) => {
+    const point = points[index];
+    const available = point.figures.available;
+    const result = point.income - point.expense;
 
-  // Productos del mes, netos de devoluciones: dos rankings con el mismo límite, uno por unidades y otro por
-  // facturación. Ambos desempatan por nombre.
-  const toTopProduct = (row: (typeof productRows)[number]): TopSellingProduct => ({
-    productName: row.producto,
-    category: row.categoria ? capitalize(row.categoria) : "Sin categoría",
-    unitsSold: Math.round(row.unidades),
-    revenue: toMillions(row.monto),
-    formattedRevenue: money(toMillions(row.monto)),
+    return {
+      month: month.id,
+      shortMonth: shortMonth(month),
+      income: point.income,
+      expense: point.expense,
+      result,
+      balance: point.balance,
+      formattedIncome: available ? money(point.income) : "—",
+      formattedExpense: available ? money(point.expense) : "—",
+      formattedResult: available ? money(result) : "—",
+      formattedBalance: point.balance === null ? "—" : money(point.balance),
+      isSelected: month.id === filters.month,
+    };
   });
-  const byName = (a: (typeof productRows)[number], b: (typeof productRows)[number]) => a.producto.localeCompare(b.producto);
-  const topSellingProducts = [...productRows]
-    .sort((a, b) => b.unidades - a.unidades || byName(a, b))
+  const selectedPoint = points[points.length - 1];
+  const kpis = buildKpis(selectedPoint, current > 0 ? points[points.length - 2] : undefined);
+
+  // Gastos administrativos del mes: sueldos y becas de `aggregates`, con su % sobre la suma; sólo los de total > 0.
+  const selectedGroups = selectedPoint.figures.aggregates?.groups ?? [];
+  const expenseAmounts = EXPENSE_CONCEPTS.map((concept) => ({
+    ...concept,
+    amount: selectedGroups.filter((group) => group.type === "CREDIT" && group.key === concept.key).reduce((total, group) => total + Number(group.total), 0),
+  })).filter((concept) => concept.amount > 0);
+  const totalExpenses = expenseAmounts.reduce((total, concept) => total + concept.amount, 0);
+  const administrativeExpenses: AdministrativeExpense[] = expenseAmounts.map(({ category, color, amount }) => ({
+    category,
+    percentage: percentage(amount, totalExpenses),
+    amount: toMillions(amount),
+    formattedAmount: money(toMillions(amount)),
+    color,
+  }));
+
+  // Productos del mes: dos rankings con el mismo límite, por unidades y por facturación; ambos desempatan por nombre.
+  const toTopProduct = (row: ProductRow): TopSellingProduct => ({
+    productName: row.productName,
+    category: row.category ? capitalize(row.category) : "Sin categoría",
+    unitsSold: Math.round(row.units),
+    revenue: toMillions(row.revenue),
+    formattedRevenue: money(toMillions(row.revenue)),
+  });
+  const byName = (a: ProductRow, b: ProductRow) => a.productName.localeCompare(b.productName, "es");
+  const topSellingProducts = productRows
+    .filter((row) => row.units > 0)
+    .sort((a, b) => b.units - a.units || byName(a, b))
     .slice(0, TOP_PRODUCTS_LIMIT)
     .map(toTopProduct);
-  const topRevenueProducts = [...productRows]
-    .sort((a, b) => b.monto - a.monto || byName(a, b))
+  const topRevenueProducts = productRows
+    .filter((row) => row.units > 0)
+    .sort((a, b) => b.revenue - a.revenue || byName(a, b))
     .slice(0, TOP_PRODUCTS_LIMIT)
     .map(toTopProduct);
 
-  // Comedores: una fila por sede definida. El filtro de sede solo resalta, no recorta. Una sede sin ninguna
+  // Comedores: una fila por sede de Backoffice. El filtro de sede sólo resalta, no recorta. Una sede sin ninguna
   // reserva registrada se muestra sin servicio.
   const withService = new Set(diningSites);
   const diningRevenues: DiningRevenue[] = context.sites
     .filter((candidate) => !candidate.isAggregate)
     .map((candidate): DiningRevenue => {
       const hasService = withService.has(candidate.id);
-      const forMonth = (ym: string) => diningRows.find((row) => row.sedeId === candidate.id && row.ym === ym);
+      const forMonth = (ym: string) => diningRows.find((row) => row.siteId === candidate.id && row.ym === ym);
       const now = forMonth(selected.ym);
       const before = previous === current ? undefined : forMonth(previousRange.ym);
       const revenue = now?.revenue ?? 0;
@@ -245,6 +281,8 @@ export async function buildFinancialStats(
     topSellingProducts,
     topRevenueProducts,
     diningRevenues,
+    siteScopeNote: site.isAggregate ? null : SITE_SCOPE_NOTE,
+    ...(warnings.warnings ? { warnings: warnings.warnings } : {}),
     ...context.meta,
   };
 }

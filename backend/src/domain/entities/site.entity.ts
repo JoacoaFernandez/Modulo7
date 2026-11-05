@@ -1,6 +1,6 @@
 // Domain entities: core business objects, independent of frameworks and infrastructure.
 
-// El catálogo de sedes sale de los eventos `sede.definida` de Backoffice; no hay métricas por sede acá.
+// El catálogo de sedes sale de Backoffice (GET sites, sólo las ACTIVE); el id es el siteId UUID.
 export interface Site {
   id: string;
   name: string;

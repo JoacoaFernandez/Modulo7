@@ -16,6 +16,8 @@ export function parseAcademicFilters(query: Query, options: FilterOptions): Acad
       "cuatrimestre",
       options.quarters.map((quarter) => quarter.id),
       options.defaults.quarter,
+      // Si Gestión Académica no respondió, el catálogo de cuatrimestres es sólo el actual: se acepta uno bien formado.
+      failed(options, "academic") && typeof query.cuatrimestre === "string" && /^\d{4}-[12]C$/.test(query.cuatrimestre),
     ),
     facultyId: pickFacultyId(query.facultad, options),
   };
@@ -53,6 +55,8 @@ function pickSiteId(raw: unknown, options: FilterOptions): string {
   if (raw === undefined) return AGGREGATE_SITE.id;
 
   const site = options.sites.find((candidate) => candidate.id === raw);
+  // Backoffice caído: el catálogo trae sólo "Todas las sedes"; se acepta el id y el tablero sale con aviso.
+  if (!site && failed(options, "backoffice") && typeof raw === "string" && raw !== "") return raw;
   if (!site) {
     throw new ValidationError(
       `Valor inválido para "sedeId". Opciones: ${options.sites.map((candidate) => candidate.id).join(" · ")}.`,
@@ -67,6 +71,7 @@ function pickFacultyId(raw: unknown, options: FilterOptions): string | null {
   if (raw === undefined) return null;
 
   const faculty = options.faculties.find((candidate) => candidate.id === raw);
+  if (!faculty && failed(options, "academic") && typeof raw === "string" && raw !== "") return raw;
   if (!faculty) {
     throw new ValidationError(
       `Valor inválido para "facultad". Opciones: ${options.faculties.map((candidate) => candidate.id).join(" · ") || "ninguna"}.`,
@@ -76,8 +81,14 @@ function pickFacultyId(raw: unknown, options: FilterOptions): string | null {
   return faculty.id;
 }
 
-function pickOption(raw: unknown, param: string, allowed: string[], fallback: string): string {
+// ¿Falló esa fuente al armar los catálogos? Entonces su lista de opciones viene reducida y no sirve para rechazar un valor.
+function failed(options: FilterOptions, source: "backoffice" | "academic"): boolean {
+  return options.warnings?.some((warning) => warning.source === source) ?? false;
+}
+
+function pickOption(raw: unknown, param: string, allowed: string[], fallback: string, accept = false): string {
   if (raw === undefined) return fallback;
+  if (accept) return raw as string;
 
   if (typeof raw !== "string" || !allowed.includes(raw)) {
     throw new ValidationError(

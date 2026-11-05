@@ -48,11 +48,10 @@ export function shortMonth(month: Period): string {
   return month.id.slice(0, 3);
 }
 
+// Sede del filtro. Un id que no está en el catálogo sólo llega acá si Backoffice no respondió (el validador lo acepta
+// con un aviso): se conserva el id y el nombre queda genérico, sin romper el tablero.
 export function findSite(sites: Site[], siteId: string): Site {
-  const site = sites.find((candidate) => candidate.id === siteId);
-  if (!site) throw new Error(`Sede desconocida: ${siteId}`);
-
-  return site;
+  return sites.find((candidate) => candidate.id === siteId) ?? { id: siteId, name: `Sede ${siteId.slice(0, 8)}`, isAggregate: false };
 }
 
 export function indexOfPeriod(periods: Period[], id: string, label: string): number {
