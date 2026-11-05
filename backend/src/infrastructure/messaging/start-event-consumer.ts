@@ -1,6 +1,7 @@
 // Arranca el consumer de RabbitMQ sólo si hay RABBITMQ_URL; sin ella no hay consumer (modo demo con Postman).
 import { RecordEventUseCase } from "../../application/use-cases/record-event.use-case";
 import { config } from "../../shared/config";
+import { backofficeGateway } from "../integrations/gateways";
 import { inboxRepository } from "../repositories/inbox-repository.provider";
 import { RabbitMqEventConsumer } from "./rabbitmq-event-consumer";
 
@@ -12,7 +13,10 @@ export function startEventConsumer(): RabbitMqEventConsumer | null {
     return null;
   }
 
-  const recordEvent = new RecordEventUseCase(inboxRepository, { storeUnknown: config.events.inboxStoreUnknown });
+  const recordEvent = new RecordEventUseCase(inboxRepository, {
+    storeUnknown: config.events.inboxStoreUnknown,
+    onUserChanged: (userId) => backofficeGateway.invalidateUser(userId),
+  });
   const consumer = new RabbitMqEventConsumer({ url, queue, prefetch, maxAttempts }, recordEvent);
   consumer.start();
   return consumer;

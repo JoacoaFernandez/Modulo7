@@ -47,6 +47,30 @@ function load() {
   if (rabbitUrl !== undefined) validateRabbitUrl(rabbitUrl);
 
   const coreBaseUrl = text("CORE_BASE_URL");
+  const mocks = {
+    core: bool("CORE_MOCK", true),
+    backoffice: bool("BACKOFFICE_MOCK", true),
+    academic: bool("ACADEMIC_MOCK", true),
+    dir: text("MOCKS_DIR") ?? "./mocks",
+  };
+
+  // Variables obligatorias según el modo de cada servicio (docs/INTEGRACION.md, sección 2).
+  const coreHint = "Con CORE_MOCK=false se usa el CORE real: definí CORE_BASE_URL, CORE_CLIENT_SECRET y CORE_JWT_ISSUER (o poné CORE_MOCK=true para usar backend/mocks/core).";
+  if (!mocks.core) {
+    required("CORE_BASE_URL", coreHint);
+    required("CORE_CLIENT_SECRET", coreHint);
+    required("CORE_JWT_ISSUER", coreHint);
+  }
+  if (!mocks.backoffice) {
+    required("BACKOFFICE_BASE_URL", "Con BACKOFFICE_MOCK=false se usa el backend real de Backoffice (o poné BACKOFFICE_MOCK=true).");
+  }
+  if (!mocks.academic) {
+    required("ACADEMIC_BASE_URL", "Con ACADEMIC_MOCK=false se usa el backend real de Gestión Académica (o poné ACADEMIC_MOCK=true).");
+  }
+  const sameSite = (text("AUTH_COOKIE_SAMESITE") ?? "lax").toLowerCase();
+  if (sameSite !== "lax" && sameSite !== "none" && sameSite !== "strict") {
+    throw new Error(`AUTH_COOKIE_SAMESITE debe ser lax, strict o none (vino "${sameSite}").`);
+  }
 
   return {
     port: int("PORT", 3000, 1),
@@ -69,12 +93,8 @@ function load() {
       maxAttempts: int("RABBITMQ_MAX_ATTEMPTS", 3, 1),
     },
 
-    mocks: {
-      core: bool("CORE_MOCK", true),
-      backoffice: bool("BACKOFFICE_MOCK", true),
-      academic: bool("ACADEMIC_MOCK", true),
-      dir: text("MOCKS_DIR") ?? "./mocks",
-    },
+    mocks,
+    production: process.env.NODE_ENV === "production",
     core: {
       baseUrl: coreBaseUrl,
       clientId: text("CORE_CLIENT_ID") ?? "analytics-service",
@@ -104,7 +124,7 @@ function load() {
       firstMonth: text("DASHBOARD_FIRST_MONTH") ?? "2026-03",
       diningRevenueNetOfAttendance: bool("DINING_REVENUE_NET_OF_ATTENDANCE", false),
     },
-    authCookieSameSite: (text("AUTH_COOKIE_SAMESITE") ?? "lax").toLowerCase() as "lax" | "none" | "strict",
+    authCookieSameSite: sameSite,
   };
 }
 

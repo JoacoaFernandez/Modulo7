@@ -1,0 +1,11 @@
+{
+  "items": [
+    { "siteId": "3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90", "code": "MONSERRAT", "name": "Sede Monserrat",
+      "address": "Lima 775", "city": "CABA", "province": null, "country": "Argentina",
+      "timezone": "America/Argentina/Buenos_Aires", "status": "ACTIVE", "updatedAt": "2026-09-10T13:00:00.000Z" },
+    { "siteId": "7a41c2d8-0b6e-4f53-8d19-5e2a9c0f1b37", "code": "PILAR", "name": "Sede Pilar",
+      "address": "Ruta 8 km 61", "city": "Pilar", "province": "Buenos Aires", "country": "Argentina",
+      "timezone": "America/Argentina/Buenos_Aires", "status": "ACTIVE", "updatedAt": "2026-09-10T13:00:00.000Z" }
+  ],
+  "nextCursor": null
+}

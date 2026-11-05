@@ -1,4 +1,5 @@
 // Domain entities: core business objects, independent of frameworks and infrastructure.
+import { DashboardWarning } from "./dashboard-warning.entity";
 import { Period } from "./period.entity";
 import { Site } from "./site.entity";
 
@@ -36,4 +37,6 @@ export interface FilterOptions {
   months: Period[];
   faculties: Faculty[];
   defaults: FilterDefaults;
+  // Fuentes que fallaron al armar los catálogos (la lista afectada va reducida).
+  warnings?: DashboardWarning[];
 }

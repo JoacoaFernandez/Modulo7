@@ -8,10 +8,10 @@ import { GetFinancialDashboardUseCase } from "../../../application/use-cases/get
 import { GetRolesUseCase } from "../../../application/use-cases/get-roles.use-case";
 import { ListEventsUseCase } from "../../../application/use-cases/list-events.use-case";
 import { RecordEventUseCase } from "../../../application/use-cases/record-event.use-case";
+import { backofficeGateway } from "../../../infrastructure/integrations/gateways";
 import { analyticsRepository } from "../../../infrastructure/repositories/analytics-repository.provider";
 import { inboxRepository } from "../../../infrastructure/repositories/inbox-repository.provider";
 import { config } from "../../../shared/config";
-import { EventValidationError } from "../../../shared/event-validation-error";
 import {
   parseAcademicFilters,
   parseEventsPage,
@@ -25,7 +25,10 @@ const getFiltersUseCase = new GetFiltersUseCase(analyticsRepository);
 const getRolesUseCase = new GetRolesUseCase();
 const getEventSourcesUseCase = new GetEventSourcesUseCase(analyticsRepository);
 const listEventsUseCase = new ListEventsUseCase(inboxRepository);
-const recordEventUseCase = new RecordEventUseCase(inboxRepository, { storeUnknown: config.events.inboxStoreUnknown });
+const recordEventUseCase = new RecordEventUseCase(inboxRepository, {
+  storeUnknown: config.events.inboxStoreUnknown,
+  onUserChanged: (userId) => backofficeGateway.invalidateUser(userId),
+});
 
 export class AnalyticsController {
   async getAcademicDashboard(req: Request, res: Response) {
@@ -65,21 +68,13 @@ export class AnalyticsController {
     res.json(await listEventsUseCase.execute(limit, cursor));
   }
 
-  // Recibe el envelope v1 crudo (la validación vive en el caso de uso).
+  // Recibe el envelope v1 crudo (la validación vive en el caso de uso; un EventValidationError sale como 400 con errors[]).
   async recordEvent(req: Request, res: Response) {
-    try {
-      const outcome = await recordEventUseCase.execute(req.body);
-      const eventId = (req.body as { eventId: string }).eventId;
+    const outcome = await recordEventUseCase.execute(req.body);
+    const eventId = (req.body as { eventId: string }).eventId;
 
-      if (outcome === "stored") res.status(201).json({ eventId, status: "STORED" });
-      else if (outcome === "duplicate") res.status(200).json({ eventId, status: "DUPLICATE" });
-      else res.status(202).json({ eventId, status: "IGNORED" });
-    } catch (error) {
-      if (error instanceof EventValidationError) {
-        res.status(400).json({ error: error.message, errors: error.problems });
-        return;
-      }
-      throw error;
-    }
+    if (outcome === "stored") res.status(201).json({ eventId, status: "STORED" });
+    else if (outcome === "duplicate") res.status(200).json({ eventId, status: "DUPLICATE" });
+    else res.status(202).json({ eventId, status: "IGNORED" });
   }
 }

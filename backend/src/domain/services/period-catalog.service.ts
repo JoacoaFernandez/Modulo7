@@ -66,3 +66,36 @@ export function buildMonthCatalog(yms: string[], now: Date): Period[] {
 export function periodWindow(periods: Period[], endIndex: number, size: number): Period[] {
   return periods.slice(Math.max(0, endIndex - size + 1), endIndex + 1);
 }
+
+// Meses (AAAA-MM) desde `firstYm` hasta el mes actual inclusive, con el id "Ago 2026" (DASHBOARD_FIRST_MONTH). Si
+// `firstYm` es inválido o futuro, devuelve sólo el mes actual.
+export function buildMonthRange(firstYm: string, now: Date): Period[] {
+  const current = currentMonthYm(now);
+  const yms: string[] = [];
+
+  if (monthIdFromYm(firstYm) !== null && firstYm <= current) {
+    let [year, month] = firstYm.split("-").map(Number);
+    for (;;) {
+      const ym = `${year}-${String(month).padStart(2, "0")}`;
+      yms.push(ym);
+      if (ym === current) break;
+      month++;
+      if (month > 12) {
+        month = 1;
+        year++;
+      }
+    }
+  }
+
+  return buildMonthCatalog(yms, now);
+}
+
+// Id de cuatrimestre de un período de Gestión Académica: { anio: 2026, numero: 1 } → "2026-1C".
+export function quarterIdOf(period: { anio: number; numero: number }): string {
+  return `${period.anio}-${period.numero}C`;
+}
+
+// Fecha (AAAA-MM-DD) de hoy en Argentina.
+export function argentinaToday(now: Date): string {
+  return now.toLocaleDateString("en-CA", { timeZone: ARGENTINA_TZ });
+}

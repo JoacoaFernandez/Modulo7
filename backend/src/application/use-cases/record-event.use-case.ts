@@ -9,6 +9,8 @@ export type RecordEventOutcome = "stored" | "duplicate" | "ignored";
 export interface RecordEventOptions {
   // Guardar también los eventType fuera del catálogo (result = UNKNOWN_TYPE).
   storeUnknown: boolean;
+  // Efecto lateral de backoffice.user.upserted/disabled: invalidar el nombre cacheado de ese userId.
+  onUserChanged?: (userId: string) => void;
 }
 
 export class RecordEventUseCase {
@@ -29,6 +31,11 @@ export class RecordEventUseCase {
     if (!entry) {
       if (!this.options.storeUnknown) return this.discard(envelope);
       return this.store(envelope, envelope.data, "UNKNOWN_TYPE");
+    }
+
+    if (entry.handling === "side-effect" && entry.eventType.startsWith("backoffice.user.")) {
+      const userId = envelope.data.userId;
+      if (typeof userId === "string") this.options.onUserChanged?.(userId);
     }
 
     if (entry.handling !== "persist") return this.discard(envelope);

@@ -5,15 +5,7 @@ import { FilterOptions } from "../../domain/entities/filters.entity";
 export class GetFiltersUseCase {
   constructor(private readonly analyticsRepository: AnalyticsRepository) {}
 
-  async execute(): Promise<FilterOptions> {
-    const [sites, quarters, months, faculties, defaults] = await Promise.all([
-      this.analyticsRepository.getSites(),
-      this.analyticsRepository.getQuarters(),
-      this.analyticsRepository.getMonths(),
-      this.analyticsRepository.getFaculties(),
-      this.analyticsRepository.getFilterDefaults(),
-    ]);
-
-    return { sites, quarters, months, faculties, defaults };
+  execute(): Promise<FilterOptions> {
+    return this.analyticsRepository.getFilterOptions();
   }
 }
