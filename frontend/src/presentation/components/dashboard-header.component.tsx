@@ -18,12 +18,12 @@ interface FilterSelectProps {
 
 function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
   return (
-    <label className="flex items-center gap-[7px] rounded-[7px] border border-[#DCE1E8] bg-[var(--app-bg)] px-2.5 py-[7px]">
+    <label className="flex max-w-full min-w-0 items-center gap-[7px] rounded-[7px] border border-[#DCE1E8] bg-[var(--app-bg)] px-2.5 py-[7px]">
       <span className="text-[10px] font-medium tracking-[0.1em] text-[#647188] uppercase">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="cursor-pointer border-0 bg-transparent text-[13px] font-medium text-[var(--navy)] outline-none"
+        className="min-w-0 cursor-pointer truncate border-0 bg-transparent text-[13px] font-medium text-[var(--navy)] outline-none"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -35,6 +35,13 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
   );
 }
 
+// Filtro de facultad: sólo lo pasa el tablero académico, así que no aparece en los demás.
+interface FacultyFilter {
+  value: string;
+  options: FilterOption[];
+  onChange: (value: string) => void;
+}
+
 interface DashboardHeaderProps {
   eyebrow: string;
   title: string;
@@ -43,6 +50,7 @@ interface DashboardHeaderProps {
   siteId: string;
   siteOptions: FilterOption[];
   onSiteChange: (value: string) => void;
+  facultyFilter?: FacultyFilter;
   // "Cuatrimestre" en el tablero académico, "Período" en el resto.
   periodLabel: string;
   periodValue: string;
@@ -66,6 +74,7 @@ export function DashboardHeader({
   siteId,
   siteOptions,
   onSiteChange,
+  facultyFilter,
   periodLabel,
   periodValue,
   periodOptions,
@@ -97,6 +106,14 @@ export function DashboardHeader({
         {showFilters && (
           <>
             <FilterSelect label="Sede" value={siteId} options={siteOptions} onChange={onSiteChange} />
+            {facultyFilter && (
+              <FilterSelect
+                label="Facultad"
+                value={facultyFilter.value}
+                options={facultyFilter.options}
+                onChange={facultyFilter.onChange}
+              />
+            )}
             <FilterSelect label={periodLabel} value={periodValue} options={periodOptions} onChange={onPeriodChange} />
           </>
         )}

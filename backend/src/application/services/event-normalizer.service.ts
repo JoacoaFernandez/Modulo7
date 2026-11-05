@@ -1,6 +1,6 @@
 // Services: absorbe los formatos que mandan los otros módulos hoy y los lleva al contrato
 // oficial de EVENTOS.md antes de validarlos. Es una única capa para los 9 módulos (ver
-// INTEGRACION-ACADEMICA.md): no hay un validador especial por emisor. Es pura: no hace I/O.
+// CONTEXTO-UADENET.md, sección 6.6): no hay un validador especial por emisor. Es pura: no hace I/O.
 import { createHash } from "node:crypto";
 import { Site } from "../../domain/entities/site.entity";
 

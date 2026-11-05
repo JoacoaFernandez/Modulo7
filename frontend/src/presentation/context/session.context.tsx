@@ -14,6 +14,7 @@ const initialState: SessionState = {
   auth: null,
   siteId: null,
   quarter: null,
+  facultyId: null,
   month: null,
   eventsSiteId: null,
   eventsMonth: null,
@@ -50,6 +51,7 @@ function readStoredState(): SessionState {
       auth,
       siteId: typeof parsed.siteId === "string" ? parsed.siteId : null,
       quarter: typeof parsed.quarter === "string" ? parsed.quarter : null,
+      facultyId: typeof parsed.facultyId === "string" ? parsed.facultyId : null,
       month: typeof parsed.month === "string" ? parsed.month : null,
       // Estados guardados con la forma vieja no los tienen: null → default del backend.
       eventsSiteId: typeof parsed.eventsSiteId === "string" ? parsed.eventsSiteId : null,
@@ -96,6 +98,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, quarter }));
   }, []);
 
+  const setFacultyId = useCallback((facultyId: string | null) => {
+    setState((prev) => ({ ...prev, facultyId }));
+  }, []);
+
   const setMonth = useCallback((month: string) => {
     setState((prev) => ({ ...prev, month }));
   }, []);
@@ -109,8 +115,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ ...state, user: state.auth?.user ?? null, login, logout, setSiteId, setQuarter, setMonth, setEventsSiteId, setEventsMonth }),
-    [state, login, logout, setSiteId, setQuarter, setMonth, setEventsSiteId, setEventsMonth],
+    () => ({ ...state, user: state.auth?.user ?? null, login, logout, setSiteId, setQuarter, setFacultyId, setMonth, setEventsSiteId, setEventsMonth }),
+    [state, login, logout, setSiteId, setQuarter, setFacultyId, setMonth, setEventsSiteId, setEventsMonth],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

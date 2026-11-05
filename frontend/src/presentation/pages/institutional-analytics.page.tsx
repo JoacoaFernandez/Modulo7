@@ -48,6 +48,14 @@ function resolvePeriodId(periods: Period[] | undefined, backendDefault: string |
   return ids[ids.length - 1] ?? "";
 }
 
+// Facultad efectiva: la guardada si sigue en el catálogo, si no todas (null).
+function resolveFacultyId(options: FilterOptions | null, stored: string | null): string | null {
+  return options?.faculties.find((faculty) => faculty.id === stored)?.id ?? null;
+}
+
+// Valor del <select> para "todas las facultades" (las facultades reales nunca son un texto vacío).
+const ALL_FACULTIES = "";
+
 export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
   const availableSections = user.roles.flatMap((role) => sectionsByRole[role]);
   const [activeSection, setActiveSection] = useState<AnalyticsSection>(availableSections[0]);
@@ -55,11 +63,13 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
   const {
     siteId: storedSiteId,
     quarter: storedQuarter,
+    facultyId: storedFacultyId,
     month: storedMonth,
     eventsSiteId: storedEventsSiteId,
     eventsMonth: storedEventsMonth,
     setSiteId,
     setQuarter,
+    setFacultyId,
     setMonth,
     setEventsSiteId,
     setEventsMonth,
@@ -76,6 +86,7 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
   // Eventos tiene sede y mes propios, independientes de los demás tableros.
   const siteId = resolveSiteId(filterOptions, isEventsSection ? storedEventsSiteId : storedSiteId);
   const quarter = resolvePeriodId(filterOptions?.quarters, filterOptions?.defaults.quarter, storedQuarter);
+  const facultyId = resolveFacultyId(filterOptions, storedFacultyId);
   const month = resolvePeriodId(
     filterOptions?.months,
     filterOptions?.defaults.month,
@@ -94,6 +105,7 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
     enabled: filterOptions !== null,
     siteId,
     quarter,
+    facultyId,
     month,
   });
   const { eyebrow, title } = sectionMeta[activeSection];
@@ -121,6 +133,13 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
       label: period.label,
     })) ?? loadingOption;
 
+  const facultyOptions = filterOptions
+    ? [
+        { value: ALL_FACULTIES, label: "Todas las facultades" },
+        ...filterOptions.faculties.map((faculty) => ({ value: faculty.id, label: faculty.name })),
+      ]
+    : loadingOption;
+
   return (
     <div className="flex min-h-screen w-full bg-[var(--app-bg)]">
       <Sidebar
@@ -139,6 +158,15 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
           siteId={siteId}
           siteOptions={siteOptions}
           onSiteChange={isEventsSection ? setEventsSiteId : setSiteId}
+          facultyFilter={
+            isAcademicSection
+              ? {
+                  value: facultyId ?? ALL_FACULTIES,
+                  options: facultyOptions,
+                  onChange: (value) => setFacultyId(value === ALL_FACULTIES ? null : value),
+                }
+              : undefined
+          }
           periodLabel={isAcademicSection ? "Cuatrimestre" : "Período"}
           periodValue={currentPeriod}
           periodOptions={periodOptions}

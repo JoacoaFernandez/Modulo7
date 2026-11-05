@@ -6,7 +6,7 @@
 
 /*
  * Sistema visual de «UADEnet Analítica Institucional» (diseño cerrado en Claude Design,
- * 765c19da-4ce2-463d-a247-6b5a76ceb465). Ver ANALISIS-DISENO.md, sección "Sistema visual".
+ * 765c19da-4ce2-463d-a247-6b5a76ceb465). Ver CONTEXTO-UADENET.md, sección 8.2 "Sistema visual".
  * El diseño no define modo oscuro: es una sola piel institucional, siempre clara.
  */
 :root {
@@ -26,7 +26,7 @@
   /*
    * 7 azules para la barra apilada de gastos administrativos (GASTO_COLORS del prototipo,
    * de más oscuro a más claro — así vienen ordenados en el array). Valores confirmados
-   * decodificando el bundle del prototipo (ver Paso 6 en ANALISIS-DISENO.md); reemplazan la
+   * decodificando el bundle del prototipo (ver CONTEXTO-UADENET.md, sección 8); reemplazan la
    * escala interpolada que se había usado como aproximación en el Paso 3. El backend ya sirve
    * estos mismos 7 valores por categoría (`AdministrativeExpense.color`, `analytics.dataset.ts`),
    * así que en la práctica el frontend no necesita este token — queda como referencia.

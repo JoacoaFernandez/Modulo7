@@ -1,6 +1,6 @@
 // Queries del tablero académico sobre inbox_events (gestion-academica, portal-estudiante, portal-docente y backoffice).
 import { Prisma, PrismaClient } from "@prisma/client";
-import { siteFilter } from "./query-helpers";
+import { facultyFilter, siteFilter } from "./query-helpers";
 
 export interface ApprovalRow {
   materia: string;
@@ -51,6 +51,7 @@ export async function queryActiveSubjectsCount(
   prisma: PrismaClient,
   quarter: string,
   sedeId: string | null,
+  facultad: string | null,
 ): Promise<number> {
   const rows = await prisma.$queryRaw<{ total: number }[]>`
     SELECT COUNT(DISTINCT e.payload->>'materia')::int AS total
@@ -59,6 +60,7 @@ export async function queryActiveSubjectsCount(
       AND e.event_type = 'curso.abierto'
       AND e.payload->>'cuatrimestre' = ${quarter}
       ${siteFilter(sedeId, Prisma.sql`e.payload->>'sedeId'`)}
+      ${facultad === null ? Prisma.empty : Prisma.sql`AND e.payload->>'facultad' = ${facultad}`}
       ${earlyClosure(false)}`;
 
   return rows[0]?.total ?? 0;
@@ -70,6 +72,7 @@ export async function queryActiveCommissionsCount(
   prisma: PrismaClient,
   quarter: string,
   sedeId: string | null,
+  facultad: string | null,
 ): Promise<number> {
   const rows = await prisma.$queryRaw<{ total: number }[]>`
     SELECT COUNT(DISTINCT (e.payload->>'sedeId', e.payload->>'cursoId'))::int AS total
@@ -78,6 +81,7 @@ export async function queryActiveCommissionsCount(
       AND e.event_type = 'curso.abierto'
       AND e.payload->>'cuatrimestre' = ${quarter}
       ${siteFilter(sedeId, Prisma.sql`e.payload->>'sedeId'`)}
+      ${facultad === null ? Prisma.empty : Prisma.sql`AND e.payload->>'facultad' = ${facultad}`}
       ${earlyClosure(true)}`;
 
   return rows[0]?.total ?? 0;
@@ -96,6 +100,7 @@ export async function queryActiveStudentsCount(
   prisma: PrismaClient,
   quarter: string,
   sedeId: string | null,
+  facultad: string | null,
 ): Promise<number> {
   const rows = await prisma.$queryRaw<{ total: number }[]>`
     SELECT COUNT(DISTINCT i.payload->>'alumnoId')::int AS total
@@ -104,6 +109,7 @@ export async function queryActiveStudentsCount(
       AND i.event_type = 'inscripcion.confirmada'
       AND i.payload->>'cuatrimestre' = ${quarter}
       ${siteFilter(sedeId, Prisma.sql`i.payload->>'sedeId'`)}
+      ${facultyFilter(facultad, Prisma.sql`i.payload->>'cursoId'`, Prisma.sql`i.payload->>'cuatrimestre'`)}
       AND NOT EXISTS (
         SELECT 1 FROM inbox_events c
         WHERE c.source_module = 'portal-estudiante'
@@ -123,6 +129,7 @@ export async function queryTeachersCount(
   prisma: PrismaClient,
   quarter: string,
   sedeId: string | null,
+  facultad: string | null,
 ): Promise<number> {
   const rows = await prisma.$queryRaw<{ total: number }[]>`
     SELECT COUNT(*)::int AS total FROM (
@@ -130,11 +137,13 @@ export async function queryTeachersCount(
       FROM inbox_events
       WHERE source_module = 'gestion-academica' AND event_type = 'resultado.publicado'
         AND payload->>'cuatrimestre' = ${quarter} ${siteFilter(sedeId)}
+        ${facultyFilter(facultad, Prisma.sql`payload->>'cursoId'`, Prisma.sql`payload->>'cuatrimestre'`)}
       UNION
       SELECT payload->>'docenteId'
       FROM inbox_events
       WHERE source_module = 'portal-docente' AND event_type = 'curso.creado'
         AND payload->>'cuatrimestre' = ${quarter} ${siteFilter(sedeId)}
+        ${facultyFilter(facultad, Prisma.sql`payload->>'cursoId'`, Prisma.sql`payload->>'cuatrimestre'`)}
     ) teachers
     WHERE docente_id IS NOT NULL`;
 
@@ -143,7 +152,7 @@ export async function queryTeachersCount(
 
 // Resultado vigente de cada (alumno, curso): el último publicado, corregido por la última
 // modificación si existe. Así un reenvío o una corrección no cuentan dos veces.
-function currentResults(quarters: string[], sedeId: string | null): Prisma.Sql {
+function currentResults(quarters: string[], sedeId: string | null, facultad: string | null): Prisma.Sql {
   return Prisma.sql`
     WITH published AS (
       SELECT DISTINCT ON (payload->>'alumnoId', payload->>'cursoId')
@@ -158,6 +167,7 @@ function currentResults(quarters: string[], sedeId: string | null): Prisma.Sql {
         AND event_type = 'resultado.publicado'
         AND payload->>'cuatrimestre' IN (${Prisma.join(quarters)})
         ${siteFilter(sedeId)}
+        ${facultyFilter(facultad, Prisma.sql`payload->>'cursoId'`, Prisma.sql`payload->>'cuatrimestre'`)}
       ORDER BY payload->>'alumnoId', payload->>'cursoId', occurred_at DESC
     ),
     results AS (
@@ -181,9 +191,10 @@ export async function querySubjectApprovals(
   prisma: PrismaClient,
   quarters: string[],
   sedeId: string | null,
+  facultad: string | null,
 ): Promise<ApprovalRow[]> {
   return prisma.$queryRaw<ApprovalRow[]>`
-    ${currentResults(quarters, sedeId)}
+    ${currentResults(quarters, sedeId, facultad)}
     SELECT r.materia, r.cuatrimestre,
       COUNT(*)::int AS total,
       (COUNT(*) FILTER (WHERE r.aprobado))::int AS approved,
@@ -203,11 +214,12 @@ export async function queryTeacherApprovals(
   prisma: PrismaClient,
   quarters: string[],
   sedeId: string | null,
+  facultad: string | null,
 ): Promise<TeacherApprovalRow[]> {
   const rows = await prisma.$queryRaw<
     { docente_id: string; cuatrimestre: string; total: number; approved: number; nombre: string | null; materia: string }[]
   >`
-    ${currentResults(quarters, sedeId)}
+    ${currentResults(quarters, sedeId, facultad)}
     SELECT r.docente_id, r.cuatrimestre,
       COUNT(*)::int AS total,
       (COUNT(*) FILTER (WHERE r.aprobado))::int AS approved,
@@ -237,9 +249,10 @@ export async function queryFacultyApprovals(
   prisma: PrismaClient,
   quarters: string[],
   sedeId: string | null,
+  facultad: string | null,
 ): Promise<FacultyApprovalRow[]> {
   return prisma.$queryRaw<FacultyApprovalRow[]>`
-    ${currentResults(quarters, sedeId)}
+    ${currentResults(quarters, sedeId, facultad)}
     SELECT f.facultad, r.cuatrimestre,
       COUNT(*)::int AS total,
       (COUNT(*) FILTER (WHERE r.aprobado))::int AS approved
@@ -255,15 +268,4 @@ export async function queryFacultyApprovals(
       ORDER BY a.occurred_at DESC LIMIT 1
     ) f ON true
     GROUP BY f.facultad, r.cuatrimestre`;
-}
-
-// Todas las facultades que informó algún curso, para asignarles un color estable entre filtros.
-export async function queryFacultyNames(prisma: PrismaClient): Promise<string[]> {
-  const rows = await prisma.$queryRaw<{ facultad: string }[]>`
-    SELECT DISTINCT payload->>'facultad' AS facultad
-    FROM inbox_events
-    WHERE source_module = 'gestion-academica' AND event_type = 'curso.abierto'
-      AND payload->>'facultad' IS NOT NULL`;
-
-  return rows.map((row) => row.facultad).sort((a, b) => a.localeCompare(b, "es"));
 }

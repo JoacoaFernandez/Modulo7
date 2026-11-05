@@ -4,7 +4,7 @@ import { AnalyticsRepository } from "../../domain/repositories/analytics.reposit
 import { AcademicStats } from "../../domain/entities/academic-stats.entity";
 import { EventSource, SOURCE_MODULE_LABELS, SOURCE_MODULES, SourceModule } from "../../domain/entities/event-source.entity";
 import { EventStats } from "../../domain/entities/event-stats.entity";
-import { AcademicFilters, FilterDefaults, FinancialFilters } from "../../domain/entities/filters.entity";
+import { AcademicFilters, Faculty, FilterDefaults, FinancialFilters } from "../../domain/entities/filters.entity";
 import { FinancialStats } from "../../domain/entities/financial-stats.entity";
 import { InstitutionalEvent } from "../../domain/entities/institutional-event.entity";
 import { Period } from "../../domain/entities/period.entity";
@@ -15,7 +15,7 @@ import { buildAcademicStats } from "./builders/academic-stats.builder";
 import { buildEventStats } from "./builders/event-stats.builder";
 import { buildFinancialStats } from "./builders/financial-stats.builder";
 import { buildSourceMeta } from "./builders/source-meta.builder";
-import { queryDefinedSites, queryEventMonths, queryModuleIngestions, queryQuarterIds } from "./queries/catalog.queries";
+import { queryDefinedSites, queryEventMonths, queryFacultyNames, queryModuleIngestions, queryQuarterIds } from "./queries/catalog.queries";
 
 export class AnalyticsRepositoryPrisma implements AnalyticsRepository {
   constructor(private readonly prisma: PrismaClient) {}
@@ -106,6 +106,11 @@ export class AnalyticsRepositoryPrisma implements AnalyticsRepository {
   // Meses (hora de Argentina) con eventos de los tableros mensuales (financiero y eventos); sin ninguno, el actual.
   async getMonths(): Promise<Period[]> {
     return buildMonthCatalog(await queryEventMonths(this.prisma), new Date());
+  }
+
+  // Facultades de los curso.abierto; el id es el nombre tal cual (no hay un id de facultad en el contrato).
+  async getFaculties(): Promise<Faculty[]> {
+    return (await queryFacultyNames(this.prisma)).map((name) => ({ id: name, name }));
   }
 
   // Por defecto, el período más reciente de cada catálogo y la sede agregada.

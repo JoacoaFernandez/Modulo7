@@ -43,7 +43,7 @@ Analítica agrega dos campos propios al guardarlo: `id` (UUID interno) y `receiv
 
 Son los 9 módulos de UADEnet que nos mandan eventos (el 7 es Analítica). Cualquier otro valor
 devuelve `400`. El detalle de qué datos le pedimos a cada uno está en
-[`../DATOS-POR-MODULO.md`](../DATOS-POR-MODULO.md).
+[`../CONTEXTO-UADENET.md`](../CONTEXTO-UADENET.md) (sección 6, matriz de brechas).
 
 ### Respuestas
 
@@ -67,7 +67,7 @@ curl -X POST http://localhost:3000/api/analytics/events \
   }'
 ```
 
-Consultar lo ingerido (solo para desarrollo, se pierde al reiniciar el servidor):
+Consultar lo ingerido (solo para desarrollo; se lee de la tabla `inbox_events` de Postgres):
 
 ```bash
 curl http://localhost:3000/api/analytics/events
@@ -407,7 +407,7 @@ Esta sección se genera con `npm run docs:payloads` desde
 ## Qué evento alimenta qué tablero
 
 Resumen del catálogo. Los payloads completos, con ejemplos, están en
-[`../DATOS-POR-MODULO.md`](../DATOS-POR-MODULO.md). Todo payload lleva `sedeId` (id del
+[`../CONTEXTO-UADENET.md`](../CONTEXTO-UADENET.md) (sección 6, matriz de brechas). Todo payload lleva `sedeId` (id del
 catálogo de sedes de Backoffice) y los IDs (`alumnoId`, `cursoId`, `docenteId`) van como
 string. Los eventos de anulación o corrección restan o reemplazan lo que contó el evento
 original.
@@ -422,7 +422,7 @@ original.
 | `portal-estudiante` | `inscripcion.confirmada` · `inscripcion.cancelada` | Estudiantes con cursada activa |
 | `portal-docente` | `curso.creado` · `acta.cerrada` (opcionales) | Respaldo del cruce curso → docente y de la aprobación |
 | `backoffice` | `docente.alta` | Nombre del docente |
-| `gestion-academica` | `curso.abierto` (`facultad`) | Tendencia por facultad |
+| `gestion-academica` | `curso.abierto` (`facultad`) | Tendencia por facultad · Catálogo y filtro `?facultad=` del tablero académico (el resto de los eventos se atribuye a una facultad por `cursoId` + `cuatrimestre` del `curso.abierto`) |
 
 ### Tablero financiero
 

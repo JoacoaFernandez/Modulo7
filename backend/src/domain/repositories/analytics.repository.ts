@@ -2,7 +2,7 @@
 import { AcademicStats } from "../entities/academic-stats.entity";
 import { EventSource } from "../entities/event-source.entity";
 import { EventStats } from "../entities/event-stats.entity";
-import { AcademicFilters, FilterDefaults, FinancialFilters } from "../entities/filters.entity";
+import { AcademicFilters, Faculty, FilterDefaults, FinancialFilters } from "../entities/filters.entity";
 import { FinancialStats } from "../entities/financial-stats.entity";
 import { InstitutionalEvent } from "../entities/institutional-event.entity";
 import { Period } from "../entities/period.entity";
@@ -15,6 +15,7 @@ export interface AnalyticsRepository {
   getSites(): Promise<Site[]>;
   getQuarters(): Promise<Period[]>;
   getMonths(): Promise<Period[]>;
+  getFaculties(): Promise<Faculty[]>;
   getFilterDefaults(): Promise<FilterDefaults>;
   getEventSources(): Promise<EventSource[]>;
   getEvents(): Promise<InstitutionalEvent[]>;

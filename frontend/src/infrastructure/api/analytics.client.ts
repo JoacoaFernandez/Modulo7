@@ -44,7 +44,7 @@ function toQueryString(params: Record<string, string | undefined>): string {
 export const analyticsClient = {
   getAcademicStats: (filters: AcademicFilters, signal?: AbortSignal) =>
     getJson<AcademicStats>(
-      `/analytics/dashboard/academic${toQueryString({ sedeId: filters.siteId, cuatrimestre: filters.quarter })}`,
+      `/analytics/dashboard/academic${toQueryString({ sedeId: filters.siteId, cuatrimestre: filters.quarter, facultad: filters.facultyId ?? undefined })}`,
       signal,
     ),
 

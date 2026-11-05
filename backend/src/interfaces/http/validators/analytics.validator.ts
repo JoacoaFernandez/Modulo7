@@ -20,6 +20,7 @@ export function parseAcademicFilters(query: Query, options: FilterOptions): Acad
       options.quarters.map((quarter) => quarter.id),
       options.defaults.quarter,
     ),
+    facultyId: pickFacultyId(query.facultad, options),
   };
 }
 
@@ -105,6 +106,20 @@ function pickSiteId(raw: unknown, options: FilterOptions): string {
   }
 
   return site.id;
+}
+
+// La facultad viaja como id del catálogo (?facultad=...); sin parámetro, todas (null).
+function pickFacultyId(raw: unknown, options: FilterOptions): string | null {
+  if (raw === undefined) return null;
+
+  const faculty = options.faculties.find((candidate) => candidate.id === raw);
+  if (!faculty) {
+    throw new ValidationError(
+      `Valor inválido para "facultad". Opciones: ${options.faculties.map((candidate) => candidate.id).join(" · ") || "ninguna"}.`,
+    );
+  }
+
+  return faculty.id;
 }
 
 function pickOption(raw: unknown, param: string, allowed: string[], fallback: string): string {

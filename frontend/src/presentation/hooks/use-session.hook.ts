@@ -9,6 +9,8 @@ export interface SessionState {
   // (los catálogos salen de los eventos): la página lo valida contra GET /filters.
   siteId: string | null;
   quarter: string | null;
+  // Facultad del tablero académico; null = todas. La página la valida contra el catálogo.
+  facultyId: string | null;
   month: string | null;
   // Filtros propios de la sección de eventos, independientes de los demás tableros.
   eventsSiteId: string | null;
@@ -22,6 +24,8 @@ export interface SessionContextValue extends SessionState {
   logout: () => void;
   setSiteId: (siteId: string) => void;
   setQuarter: (quarter: string) => void;
+  // null = todas las facultades.
+  setFacultyId: (facultyId: string | null) => void;
   setMonth: (month: string) => void;
   setEventsSiteId: (siteId: string) => void;
   setEventsMonth: (month: string) => void;

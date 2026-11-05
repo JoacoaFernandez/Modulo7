@@ -43,6 +43,8 @@ export interface TeacherApprovalRate {
 
 export interface AcademicStats {
   siteName: string;
+  // Facultad aplicada al tablero; null = todas las facultades.
+  facultyName: string | null;
   quarter: string;
   previousQuarter: string;
   // Etiquetas [t-2, t-1, t] para la leyenda de las barras agrupadas.

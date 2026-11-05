@@ -33,6 +33,18 @@ export async function queryDefinedSites(prisma: PrismaClient): Promise<DefinedSi
   return rows.map((row) => ({ id: row.sede_id, name: row.nombre }));
 }
 
+// Facultades que informó algún curso.abierto (`facultad` no vacía), ordenadas alfabéticamente. Es el catálogo del
+// filtro del tablero académico y fija el color estable de cada facultad en el gráfico de tendencias.
+export async function queryFacultyNames(prisma: PrismaClient): Promise<string[]> {
+  const rows = await prisma.$queryRaw<{ facultad: string }[]>`
+    SELECT DISTINCT payload->>'facultad' AS facultad
+    FROM inbox_events
+    WHERE source_module = 'gestion-academica' AND event_type = 'curso.abierto'
+      AND btrim(payload->>'facultad') <> ''`;
+
+  return rows.map((row) => row.facultad).sort((a, b) => a.localeCompare(b, "es"));
+}
+
 // Cuatrimestres que nombra cualquier evento: los de cuatrimestre.definido y los de todo payload que lo traiga.
 export async function queryQuarterIds(prisma: PrismaClient): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ cuatrimestre: string }[]>`

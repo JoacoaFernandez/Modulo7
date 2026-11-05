@@ -19,6 +19,8 @@ export interface InstitutionalAnalyticsFilters {
   enabled: boolean;
   siteId: string;
   quarter: string;
+  // Facultad del tablero académico; null = todas.
+  facultyId: string | null;
   month: string;
 }
 
@@ -34,7 +36,7 @@ interface Loaded {
 }
 
 // Refetchea el tablero visible cada vez que cambian sección o los filtros que le corresponden
-// (académico: sede/cuatrimestre; financiero y eventos: sede/mes, cada uno con la suya). Cada cambio
+// (académico: sede/cuatrimestre/facultad; financiero y eventos: sede/mes, cada uno con la suya). Cada cambio
 // cancela el pedido anterior con AbortController, para no pisar el estado con una respuesta
 // que llegó tarde y ya no corresponde a los filtros actuales. Se pide solo lo de la sección
 // activa (académico, financiero o eventos): el backend responde 403 si el usuario no tiene
@@ -43,9 +45,9 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
   const [loaded, setLoaded] = useState<Loaded | null>(null);
   // Se incrementa con reload(): refetchea con los mismos filtros sin vaciar lo que ya se ve.
   const [reloadToken, setReloadToken] = useState(0);
-  const { section, enabled, siteId, quarter, month } = filters;
+  const { section, enabled, siteId, quarter, facultyId, month } = filters;
   // Cada sección sólo depende de sus filtros: cambiar el cuatrimestre no refetchea eventos, etc.
-  const key = section === "academic" ? `${section}|${siteId}|${quarter}` : `${section}|${siteId}|${month}`;
+  const key = section === "academic" ? `${section}|${siteId}|${quarter}|${facultyId ?? ""}` : `${section}|${siteId}|${month}`;
 
   useEffect(() => {
     if (section === "sources" || !enabled) return;
@@ -56,7 +58,7 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
     const request =
       section === "academic"
         ? getAcademicDashboardUseCase
-            .execute({ siteId, quarter }, signal)
+            .execute({ siteId, quarter, facultyId }, signal)
             .then((academicStats) => ({ academicStats, financialStats: null, eventsStats: null }))
         : section === "events"
           ? getEventsStatsUseCase
@@ -84,7 +86,7 @@ export function useInstitutionalAnalytics(filters: InstitutionalAnalyticsFilters
       });
 
     return () => controller.abort();
-  }, [key, section, enabled, siteId, quarter, month, reloadToken]);
+  }, [key, section, enabled, siteId, quarter, facultyId, month, reloadToken]);
 
   const reload = useCallback(() => setReloadToken((token) => token + 1), []);
 

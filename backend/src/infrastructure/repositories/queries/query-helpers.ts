@@ -35,6 +35,20 @@ export function siteFilter(sedeId: string | null, column: Prisma.Sql = Prisma.sq
   return sedeId === null ? Prisma.empty : Prisma.sql`AND ${column} = ${sedeId}`;
 }
 
+// Filtro de facultad; null (todas) no filtra. La facultad sólo existe en curso.abierto, así que el resto de los
+// eventos se atribuye por (cursoId, cuatrimestre) del curso que abrió esa facultad. `cursoId` y `cuatrimestre`
+// son las columnas del evento que se filtra; el nombre viaja bindeado, nunca concatenado.
+export function facultyFilter(facultad: string | null, cursoId: Prisma.Sql, cuatrimestre: Prisma.Sql): Prisma.Sql {
+  return facultad === null
+    ? Prisma.empty
+    : Prisma.sql`AND (${cursoId}, ${cuatrimestre}) IN (
+        SELECT fa.payload->>'cursoId', fa.payload->>'cuatrimestre'
+        FROM inbox_events fa
+        WHERE fa.source_module = 'gestion-academica' AND fa.event_type = 'curso.abierto'
+          AND fa.payload->>'facultad' = ${facultad}
+      )`;
+}
+
 // Mes calendario (AAAA-MM, hora de Argentina) de occurred_at.
 export function argentinaMonth(column: Prisma.Sql = Prisma.sql`occurred_at`): Prisma.Sql {
   return Prisma.sql`to_char((${column} AT TIME ZONE 'UTC') AT TIME ZONE ${ARGENTINA_TZ}, 'YYYY-MM')`;

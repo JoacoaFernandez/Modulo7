@@ -33,6 +33,8 @@ export interface Period {
 export interface AcademicFilters {
   siteId: string;
   quarter: string;
+  // Id de la facultad del catálogo; null = todas las facultades.
+  facultyId: string | null;
 }
 
 export interface FinancialFilters {
@@ -46,10 +48,17 @@ export interface FilterDefaults {
   month: string;
 }
 
+// Facultad del catálogo de filtros; hoy el id es el propio nombre.
+export interface Faculty {
+  id: string;
+  name: string;
+}
+
 export interface FilterOptions {
   sites: Site[];
   quarters: Period[];
   months: Period[];
+  faculties: Faculty[];
   defaults: FilterDefaults;
 }
 
@@ -136,6 +145,8 @@ export interface TeacherApprovalRate {
 
 export interface AcademicStats {
   siteName: string;
+  // Facultad aplicada al tablero; null = todas las facultades.
+  facultyName: string | null;
   quarter: string;
   previousQuarter: string;
   comparedQuarters: string[];

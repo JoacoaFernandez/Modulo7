@@ -18,11 +18,11 @@ import {
   queryActiveStudentsCount,
   queryActiveSubjectsCount,
   queryFacultyApprovals,
-  queryFacultyNames,
   querySubjectApprovals,
   queryTeacherApprovals,
   queryTeachersCount,
 } from "../queries/academic.queries";
+import { queryFacultyNames } from "../queries/catalog.queries";
 import { count, findSite, growth, indexOfPeriod, percentage } from "./format";
 import { SourceMeta } from "./source-meta.builder";
 
@@ -56,6 +56,7 @@ export async function buildAcademicStats(
   const site = findSite(context.sites, filters.siteId);
   const sedeId = site.isAggregate ? null : site.id;
   const { quarters } = context;
+  const facultad = filters.facultyId;
 
   const current = indexOfPeriod(quarters, filters.quarter, "cuatrimestre");
   // Sin cuatrimestre anterior en el catálogo no hay contra qué comparar: todos los deltas quedan neutros.
@@ -81,16 +82,16 @@ export async function buildAcademicStats(
     facultyRows,
     facultyNames,
   ] = await Promise.all([
-    queryActiveSubjectsCount(prisma, quarter, sedeId),
-    inPrevious((id) => queryActiveSubjectsCount(prisma, id, sedeId)),
-    queryActiveCommissionsCount(prisma, quarter, sedeId),
-    inPrevious((id) => queryActiveCommissionsCount(prisma, id, sedeId)),
-    queryActiveStudentsCount(prisma, quarter, sedeId),
-    inPrevious((id) => queryActiveStudentsCount(prisma, id, sedeId)),
-    queryTeachersCount(prisma, quarter, sedeId),
-    querySubjectApprovals(prisma, compared, sedeId),
-    queryTeacherApprovals(prisma, compared, sedeId),
-    queryFacultyApprovals(prisma, trendQuarters, sedeId),
+    queryActiveSubjectsCount(prisma, quarter, sedeId, facultad),
+    inPrevious((id) => queryActiveSubjectsCount(prisma, id, sedeId, facultad)),
+    queryActiveCommissionsCount(prisma, quarter, sedeId, facultad),
+    inPrevious((id) => queryActiveCommissionsCount(prisma, id, sedeId, facultad)),
+    queryActiveStudentsCount(prisma, quarter, sedeId, facultad),
+    inPrevious((id) => queryActiveStudentsCount(prisma, id, sedeId, facultad)),
+    queryTeachersCount(prisma, quarter, sedeId, facultad),
+    querySubjectApprovals(prisma, compared, sedeId, facultad),
+    queryTeacherApprovals(prisma, compared, sedeId, facultad),
+    queryFacultyApprovals(prisma, trendQuarters, sedeId, facultad),
     queryFacultyNames(prisma),
   ]);
 
@@ -207,6 +208,7 @@ export async function buildAcademicStats(
 
   return {
     siteName: site.name,
+    facultyName: facultad,
     quarter,
     previousQuarter: previousId ?? quarter,
     comparedQuarters: compared,
