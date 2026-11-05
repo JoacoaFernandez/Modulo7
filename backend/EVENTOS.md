@@ -1,57 +1,56 @@
 # Ingesta de eventos — Analítica Institucional
 
-Este documento es el contrato que tienen que implementar los módulos de UADEnet para
-mandarnos eventos. Está **abierto a cambios**: la ingesta real todavía no se definió entre
-los equipos, así que lo de acá es una propuesta funcional, ya implementada y validada en el
-backend, para que sirva de punto de partida.
+Este documento describe cómo Analítica (Módulo 7) recibe los eventos de los demás módulos de
+UADEnet. El contrato es el **envelope v1 de CORE** (`Recursos IA/CORE-contrato-integracion-v1.md`,
+§9 a §11, más las novedades del 2026-11-04): Analítica no define un formato propio. Qué `eventType`
+consume y con qué `data` está en el catálogo
+[`src/domain/entities/event-catalog.ts`](src/domain/entities/event-catalog.ts), que es la **fuente de
+verdad**: la tabla de tipos de este documento y la colección de Postman se generan de ahí con
+`npm run docs` (en `backend/`).
 
-> **Estado actual:** los eventos se guardan en Postgres (tabla `inbox_events`, `DATABASE_URL`
-> obligatoria) y **todos** los tableros, KPIs y catálogos (sedes, cuatrimestres, meses) se
-> calculan desde ellos: no hay datos mock. Lo que no tiene eventos se ve vacío o en cero. Se
-> pueden consultar con `GET /api/analytics/events`.
+Contexto, decisiones y pendientes con cada equipo: [`../CONTEXTO-UADENET.md`](../CONTEXTO-UADENET.md) y
+[`../docs/INTEGRACION.md`](../docs/INTEGRACION.md).
+
+> **Estado actual:** los eventos se guardan en Postgres (tabla `inbox_events`) y los tableros se
+> calculan desde ahí más las consultas REST a CORE, Backoffice y Gestión Académica (o sus mocks).
+> Varios tipos que Analítica necesita todavía no los emite ningún módulo (por ejemplo
+> `academic.course-result.published.v1`, propuesto por nosotros): en la tabla de tipos figuran como
+> «propuesto, pendiente de registrar en CORE».
 
 ---
 
-## Endpoint
+## Cómo llegan los eventos
 
-```
-POST /api/analytics/events
-Content-Type: application/json
-```
+| Transporte | Cuándo | Cómo |
+|---|---|---|
+| **Cola de CORE (real)** | Con `RABBITMQ_URL` definida | El backend consume la cola `analytics.all-events.v1` (`RABBITMQ_QUEUE`), que crea CORE y recibe todo el bus (binding `#`). Ack manual, `RABBITMQ_PREFETCH` mensajes en vuelo. La cola no se declara desde el código: si no existe, el consumer loguea el error y reintenta con backoff (hasta 30 s) sin tirar el servidor |
+| **`POST /api/analytics/events` (simulado)** | Con `EVENTS_HTTP_INGEST=true` | Mock de la cola para probar con Postman o `curl`: el body es el mismo envelope que CORE entregaría. Sin autenticación, igual que la cola. Con el flag apagado (por defecto), `POST` y `GET /api/analytics/events` dan `404` |
+
+Los dos caminos pasan por el mismo caso de uso (`RecordEventUseCase`), así que validan, descartan e
+insertan exactamente igual. El `POST` también responde bajo `/api/v1/events` (el gateway de CORE
+reescribe `/api/v1/analytics/*` a `/api/v1/*`).
 
 ### Envelope
 
-Todo evento, venga del módulo que venga, tiene la misma envoltura. Lo propio de cada
-módulo va adentro de `payload`, que tiene un esquema por tipo de evento (ver
-[Esquema de payloads](#esquema-de-payloads)).
-
-| Campo | Tipo | Obligatorio | Descripción |
+| Campo | Tipo | Obligatorio | Validación |
 |---|---|---|---|
-| `eventId` | `string` no vacío | sí | Identificador del evento **en el módulo emisor**. Es la clave de idempotencia: reenviar el mismo `eventId` se ignora (no duplica ni pisa el evento original) y responde `201` igual que la primera vez. |
-| `sourceModule` | enum (9 valores) | sí | Módulo que emite. Ver tabla de abajo. |
-| `eventType` | `string` no vacío | sí | Qué pasó, en notación `sustantivo.verbo`: `inscripcion.confirmada`. |
-| `occurredAt` | ISO 8601 | sí | Cuándo ocurrió el hecho, según el reloj del emisor. **No** es la fecha de envío. |
-| `payload` | objeto JSON | sí | Datos del hecho, según el esquema de su `eventType`. |
+| `specVersion` | string | sí | `"1.0"` |
+| `eventId` | UUID | sí | Clave de idempotencia (se guarda en minúsculas) |
+| `eventType` | string | sí | `{source}.{entidad}.{acción}.v{n}`; el prefijo debe coincidir con `source` |
+| `source` | string | sí | `student`, `teacher`, `library`, `dining`, `store`, `events`, `academic`, `backoffice` o `core` |
+| `occurredAt` | datetime | sí | ISO 8601 UTC con `Z` (`2026-09-30T18:12:03.511Z`). Cuándo pasó el hecho, no cuándo se envió |
+| `subject` | string | no | `tipo/id` |
+| `correlationId` | UUID | no | Se loguea |
+| `causationId` | UUID \| null | no | |
+| `actor` | `{ type, id }` | no | |
+| `data` | objeto | sí | Se valida contra la entrada del catálogo (ver la tabla de tipos) |
 
-Analítica agrega dos campos propios al guardarlo: `id` (UUID interno) y `receivedAt`
-(cuándo lo recibimos). El emisor no los manda.
+Reglas de `data`: los UUID van como UUID; el dinero es un **string decimal con dos decimales**
+(`"1500.00"`, nunca un número) más `currency`; los ids numéricos de Gestión Académica viajan **como texto**
+(`"42"`); las fechas de negocio sin hora son `AAAA-MM-DD`; los `datetime` son UTC con `Z`. Sólo se exigen
+los campos que una métrica necesita; los campos que el catálogo no declara se aceptan y se ignoran.
 
-### Módulos admitidos
-
-`portal-estudiante` (1) · `portal-docente` (2) · `biblioteca` (3) · `comedor` (4) ·
-`tienda` (5) · `eventos` (6) · `backoffice` (8) · `gestion-academica` (9) · `core` (10)
-
-Son los 9 módulos de UADEnet que nos mandan eventos (el 7 es Analítica). Cualquier otro valor
-devuelve `400`. El detalle de qué datos le pedimos a cada uno está en
-[`../CONTEXTO-UADENET.md`](../CONTEXTO-UADENET.md) (sección 6, matriz de brechas).
-
-### Respuestas
-
-| Código | Cuerpo | Cuándo |
-|---|---|---|
-| `201` | `{ "eventId": "...", "status": "accepted", "warnings": [...] }` | Evento aceptado. `warnings` solo aparece si hubo que normalizar el formato o faltan campos (ver [Formatos tolerados](#formatos-tolerados)). |
-| `400` | `{ "error": "mensaje en castellano" }` | Falta un campo, `sourceModule` no existe, `eventType` no existe para ese módulo, `occurredAt` no es una fecha válida o el `payload` no cumple el esquema de abajo (campo faltante o de otro tipo). |
-| `500` | `{ "error": "Error interno del servidor" }` | Error nuestro. Reintentar. |
+`receivedAt` y el resto de las columnas internas los agrega Analítica al guardar; el emisor no los manda.
 
 ### Ejemplo
 
@@ -59,68 +58,113 @@ devuelve `400`. El detalle de qué datos le pedimos a cada uno está en
 curl -X POST http://localhost:3000/api/analytics/events \
   -H "Content-Type: application/json" \
   -d '{
-    "eventId": "est-insc-alumno-456-curso-42",
-    "sourceModule": "portal-estudiante",
-    "eventType": "inscripcion.confirmada",
-    "occurredAt": "2026-08-02T10:00:00.000-03:00",
-    "payload": { "alumnoId": "alumno-456", "cursoId": "curso-42", "materia": "BDD-310", "sedeId": "montserrat", "cuatrimestre": "2026-2C" }
+    "specVersion": "1.0",
+    "eventId": "7b1f6d20-3a54-4c0e-9d11-4e8a2f6c9b01",
+    "eventType": "academic.course-result.published.v1",
+    "source": "academic",
+    "occurredAt": "2026-09-30T18:12:03.511Z",
+    "subject": "course/42",
+    "data": {
+      "studentId": "ba310c57-a684-4dbf-a4a4-905fcfbefa08",
+      "courseId": "42",
+      "subjectId": "15",
+      "periodId": "8",
+      "siteId": "3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90",
+      "status": "APROBADO",
+      "finalGrade": 8,
+      "resultDate": "2026-09-30"
+    }
   }'
 ```
 
-Consultar lo ingerido (solo para desarrollo; se lee de la tabla `inbox_events` de Postgres):
+Consultar lo guardado (depuración; sólo con `EVENTS_HTTP_INGEST=true`, paginado de más nuevo a más
+viejo con `?limit=` y `?cursor=`):
 
 ```bash
-curl http://localhost:3000/api/analytics/events
+curl "http://localhost:3000/api/analytics/events?limit=5"
 ```
 
 ---
 
-## Formatos tolerados
+## Respuestas del `POST`
 
-El formato oficial es el de arriba y es **estricto**. Mientras los otros módulos ajustan sus
-eventos, la ingesta absorbe estas diferencias con una única capa de normalización
-(`src/application/services/event-normalizer.service.ts`), la misma para los 9 módulos. Es una
-tolerancia temporal: cada emisor tiene que migrar al formato oficial.
+| Código | Cuerpo | Cuándo |
+|---|---|---|
+| `201` | `{ "eventId": "...", "status": "STORED" }` | El evento se validó y se guardó |
+| `200` | `{ "eventId": "...", "status": "DUPLICATE" }` | Ya existía un evento con ese `eventId`: no se inserta ni se pisa |
+| `202` | `{ "eventId": "...", "status": "IGNORED" }` | Es válido pero no se guarda: tipo fuera del catálogo, de efecto lateral o de los que se descartan (ver abajo) |
+| `400` | `application/problem+json` con `code: "INVALID_EVENT"` | El envelope o el `data` no cumplen el contrato |
 
-| Llega | Se interpreta como |
-|---|---|
-| `tipo: "academica.resultado.publicado"` | `sourceModule: "gestion-academica"` + `eventType: "resultado.publicado"` (el prefijo antes del primer punto es el módulo; admite alias como `academica`, `estudiante`, `docente`) |
-| `ocurridoEn` | `occurredAt` |
-| Campos sueltos en la raíz del evento | `payload` |
-| Sin `eventId` | Se deriva uno determinístico (`derivado-<hash>`), igual para el mismo hecho reenviado, y se avisa en `warnings` |
-| Ids numéricos (`cursoId: 42`) | String (`"42"`), en cualquier campo que termine en `Id` |
-| `cuatrimestre: "2026-2Q"` | `"2026-2C"` |
-| `sede: "Sede Centro"` (nombre o id) | `sedeId`, buscado en el catálogo de Backoffice. Si no existe en el catálogo no se inventa |
-| `estado: "APROBADO"` sin `aprobado` | `aprobado: true`; cualquier otro estado, `false` |
-
-Qué cambia según el formato en que llegue el evento:
-
-- **Formato oficial:** falta un campo obligatorio o hay uno de otro tipo → `400`.
-- **Formato viejo (`tipo`):** un campo obligatorio faltante **no corta** la ingesta: responde
-  `201` con `warnings`, y el evento no sirve a los tableros hasta que el emisor lo complete
-  (por ejemplo, `materia` o `sedeId`). Un campo con el tipo equivocado sí devuelve `400`.
-
-La respuesta `201` incluye `warnings` cuando hubo normalización o campos faltantes:
+El `400` sigue el formato de errores de CORE (`type`, `title`, `status`, `code`, `detail`, `instance`,
+`correlationId`) y suma `errors[]` con un texto por cada problema; `error` repite `detail`:
 
 ```json
-{ "eventId": "derivado-822daf2a1a6e3b1b47e4738a", "status": "accepted", "warnings": ["..."] }
+{
+  "type": "urn:uadenet:problem:invalid-event",
+  "title": "Solicitud inválida",
+  "status": 400,
+  "code": "INVALID_EVENT",
+  "detail": "data.studentId debe ser un UUID.",
+  "instance": "/api/analytics/events",
+  "correlationId": "…",
+  "errors": ["data.studentId debe ser un UUID."]
+}
 ```
+
+Un cuerpo que no es JSON también da `400` (`code: "BAD_REQUEST"`). Un error nuestro (por ejemplo, la base
+caída) da `500` (`INTERNAL_ERROR`): el emisor debe reintentar.
+
+Por la cola la semántica es la equivalente: guardado, duplicado o descartado se confirman con `ack`; un
+evento inválido o un mensaje que no es JSON se rechaza con `nack` sin reencolar y va a la DLQ de CORE; un
+error transitorio (base caída) se reintenta en proceso `RABBITMQ_MAX_ATTEMPTS` veces (esperas de 1, 5 y 30 s)
+y, si persiste, también va a la DLQ. `GET /health/ready` informa si el consumer está conectado.
 
 ---
 
-## Esquema de payloads
+## Idempotencia
 
-`eventType` es único por módulo emisor, no global: `inscripcion.confirmada` lo mandan
-`portal-estudiante` y `eventos`, y se distinguen por `sourceModule`.
+`eventId` es la clave primaria del inbox: se inserta con `ON CONFLICT DO NOTHING`, así que reenviar el mismo
+evento (entrega al menos una vez de la cola, o un reintento del emisor) no duplica ni pisa nada y no suma a los
+contadores. Si llega el mismo `eventId` con otro `eventType` u `occurredAt`, se ignora el nuevo y se loguea
+un aviso. Para corregir un hecho (por ejemplo, una nota) se publica un evento **nuevo** con otro `eventId`: los
+tableros toman el último por `occurredAt`.
 
-Cada módulo solo puede mandar los eventos de esta tabla. El backend valida el `payload`
-contra ella y responde `400` con el detalle si falta un campo obligatorio, si un tipo no
-coincide o si el `eventType` no existe para ese módulo. Los campos extra se aceptan y se
-ignoran. Tipos: `string`, `number` (montos en ARS, sin formato de texto), `boolean`, fecha
-`AAAA-MM-DD` (sin hora, hora de Argentina), `object` y `array`.
+---
 
-Esta sección se genera con `npm run docs:payloads` desde
-`src/domain/entities/event-catalog.ts`. **No editar a mano**: cambiar el catálogo y regenerar.
+## Qué se guarda, qué se descarta y qué se redacta
+
+Cada entrada del catálogo tiene un tratamiento (`handling`):
+
+| Tratamiento | Qué pasa | Respuesta |
+|---|---|---|
+| `persist` | Se valida `data` y se guarda en `inbox_events` (envelope completo, `result = OK`) | `201` |
+| `side-effect` | Se valida y se procesa, pero no se guarda. Hoy: `backoffice.user.upserted.v1` y `backoffice.user.disabled.v1` invalidan el nombre cacheado de ese `userId` (llevan mail y permisos) | `202` |
+| `ignore` | Se descarta sin validar el contenido (`ack`) | `202` |
+| Fuera del catálogo | Se descarta, siempre que el `eventType` esté bien formado. Con `INBOX_STORE_UNKNOWN=true` se guarda con `result = UNKNOWN_TYPE` | `202` (o `201` con el flag) |
+
+- Con binding `#` llega todo el bus; descartar no pierde nada definitivo, porque CORE conserva los eventos y
+  permite releerlos (`GET /internal/v1/events`, replay). Para una carga histórica: `npm run backfill:core` (ver
+  `docs/INTEGRACION.md`, Fase B).
+- **Redacción (`redact`):** algunos tipos borran campos de `data` antes de guardar. Hoy, `userId` en las
+  reservas de comedor y en las compras de tienda: no se guarda el usuario de ninguna compra. Cada tipo de la
+  tabla lo indica en «No se guarda».
+- **Siempre se cuenta:** aunque el evento se descarte, se actualiza `source_ingestions` (último evento recibido
+  y contadores de guardados y descartados por módulo), que alimenta «Fuentes de datos» y el pie de cada tablero.
+- Un `400` ocurre si el envelope es inválido, si el prefijo del `eventType` no coincide con `source`, si un
+  tipo del catálogo se publica con otro `source`, o si falta o tiene un tipo equivocado un campo obligatorio de
+  `data` (los tipos que se descartan no se validan).
+
+---
+
+## Esquema de los tipos de evento
+
+Los campos de `data` van con prefijo `data.`. «Obligatorio» es lo que Analítica necesita para una métrica:
+los campos que CORE lista y no usamos figuran como opcionales. Estado: **CORE oficial** (figura en el
+catálogo de CORE v1), **declarado por el equipo emisor** o **propuesto, pendiente de registrar en CORE**
+(lo propusimos nosotros y nadie lo emite todavía).
+
+Esta sección se genera con `npm run docs` desde `src/domain/entities/event-catalog.ts`.
+**No editar a mano**: cambiar el catálogo y regenerar.
 
 <!-- payloads:start -->
 
@@ -376,58 +420,43 @@ Esta sección se genera con `npm run docs:payloads` desde
 
 ## Qué evento alimenta qué tablero
 
-Resumen del catálogo. Los payloads completos, con ejemplos, están en
-[`../CONTEXTO-UADENET.md`](../CONTEXTO-UADENET.md) (sección 6, matriz de brechas). Todo payload lleva `sedeId` (id del
-catálogo de sedes de Backoffice) y los IDs (`alumnoId`, `cursoId`, `docenteId`) van como
-string. Los eventos de anulación o corrección restan o reemplazan lo que contó el evento
-original.
-
-### Tablero académico
-
-| Módulo | `eventType` | Alimenta |
+| Tablero | Eventos que lee | Qué más usa |
 |---|---|---|
-| `gestion-academica` | `resultado.publicado` · `resultado.modificado` | Tasa de aprobación general · por materia · por cuatrimestre · por docente |
-| `gestion-academica` | `curso.abierto` · `curso.cerrado` | Materias en curso · Comisiones activas (un curso cuenta en su cuatrimestre salvo que `curso.cerrado` llegue antes del `fin` de `cuatrimestre.definido`; sin definición, antes de hoy) · Tendencia por facultad |
-| `gestion-academica` | `cuatrimestre.definido` | Catálogo de cuatrimestres (también se arma con el `cuatrimestre` de cualquier otro evento) |
-| `portal-estudiante` | `inscripcion.confirmada` · `inscripcion.cancelada` | Estudiantes con cursada activa |
-| `portal-docente` | `curso.creado` · `acta.cerrada` (opcionales) | Respaldo del cruce curso → docente y de la aprobación |
-| `backoffice` | `docente.alta` | Nombre del docente |
-| `gestion-academica` | `curso.abierto` (`facultad`) | Tendencia por facultad · Catálogo y filtro `?facultad=` del tablero académico (el resto de los eventos se atribuye a una facultad por `cursoId` + `cuatrimestre` del `curso.abierto`) |
+| Académico | `academic.course-result.published.v1` (tasa de aprobación por materia, facultad y docente) | Cursos, períodos, catálogo de asignaturas y docentes de Gestión Académica; sedes y nombres de Backoffice |
+| Estadísticas de eventos | `events.event.created.v1`, `events.registration.completed.v1`, `events.attendance.recorded.v1`, `backoffice.location.upserted.v1` (la sede de un evento sale de su `locationId`) | Sedes de Backoffice |
+| Financiero | `store.purchase.completed.v1` (productos más vendidos), `dining.reservation.created.v1`, `dining.reservation.cancelled.v1`, `dining.attendance.recorded.v1` (comedores por sede) | `wallets/aggregates` de CORE (saldo, ingresos, egresos, sueldos) y los snapshots mensuales del saldo |
 
-### Tablero financiero
+Los tipos de efecto lateral y los descartados no alimentan ningún tablero. El detalle de cada métrica y su
+fuente está en `docs/INTEGRACION.md`, sección 6.
 
-| Módulo | `eventType` | Alimenta |
-|---|---|---|
-| `core` | `saldo.movimiento` | Saldo acumulado · Ingresos · Egresos · Resultado |
-| `backoffice` | `sueldos.liquidados` · `gasto.registrado` | Gastos administrativos |
-| `tienda` | `compra.realizada` · `compra.devuelta` | Productos más vendidos |
-| `comedor` | `reserva.confirmada` · `reserva.asistida` · `reserva.cancelada` | Comedores por sede (facturación, tickets, ticket promedio) |
+---
 
-### Estadísticas de eventos
+## Probar con la colección de Postman
 
-| Módulo | `eventType` | Alimenta |
-|---|---|---|
-| `eventos` | `evento.realizado` · `evento.cancelado` | Eventos realizados · Frecuencia por mes · Ocupación de cupo |
-| `eventos` | `inscripcion.confirmada` · `inscripcion.cancelada` | Inscriptos · Ingresos por inscripción paga |
-| `eventos` | `asistencia.registrada` | Concurrencia · Presentismo por tipo |
+[`../docs/postman/UADEnet-Analitica.postman_collection.json`](../docs/postman/UADEnet-Analitica.postman_collection.json)
+se genera con `npm run docs` desde el mismo catálogo. Pasos:
 
-### Datos maestros
-
-| Módulo | `eventType` | Para qué |
-|---|---|---|
-| `backoffice` | `sede.definida` | Catálogo de sedes (`sedeId` → nombre): sin este evento no hay sedes para filtrar |
-
-`biblioteca` está habilitado como emisor (`prestamo.realizado` · `prestamo.devuelto`), pero
-hoy ningún tablero consume sus eventos.
+1. En `backend/.env`: `EVENTS_HTTP_INGEST=true` y `CORE_MOCK=true` (valores de `.env.example`); levantar el
+   backend y cargar el demo con `npm run db:demo`.
+2. Importar la colección, correr un login de la carpeta **Auth (mock de CORE)** (la contraseña de demo está
+   en `backend/mocks/README.md`); el token se guarda solo.
+3. En **Cola (simulación)** hay una request por cada `eventType` que se guarda, una por cada descarte
+   (`202 IGNORED`), los casos borde (corrección de un resultado, duplicado) y los errores de contrato (`400`).
+   Cada envío usa un `eventId` y un `occurredAt` nuevos y datos coherentes con el demo
+   (`backend/demo/ids.ts`), así que impactan en los tableros.
+4. Volver a pedir un tablero en **Tableros** para ver el efecto.
 
 ---
 
 ## Cosas a definir entre los equipos
 
-1. **Idempotencia.** Resuelta: `eventId` es único en la base y un reenvío se ignora. Falta
-   acordar que cada módulo mantenga el mismo `eventId` en los reintentos.
-2. **Versionado del esquema.** Los payloads ya se validan por tipo de evento; falta definir
-   cómo se versiona un cambio de campos sin romper a los módulos que ya emiten.
-3. **Envío por lotes.** Si el volumen lo pide, agregar `POST /api/analytics/events/batch`.
-4. **Autenticación entre módulos.** No hay ninguna: el endpoint está abierto.
-5. **Reintentos y orden.** Analítica no asume orden de llegada; `occurredAt` manda.
+El contrato todavía no se cerró con todos los emisores (detalle en `docs/INTEGRACION.md`, sección 9):
+
+1. **Quién emite qué.** Varios tipos de la tabla están «propuestos» o los emisores los declaran con otro nombre
+   (por ejemplo, Eventos declara `evento.creado`). Falta que registren los del catálogo.
+2. **Resultado final de curso.** `academic.course-result.published.v1` no existe en CORE v1: lo necesita el
+   tablero académico y hay que acordarlo con Gestión Académica.
+3. **Tienda.** `items[]` de `store.purchase.completed.v1` no está especificado en v1: confirmar los campos.
+4. **Autenticación del `POST`.** No tiene (es el mock de la cola); la cola real se autentica con una
+   credencial de sólo lectura que entrega CORE.
+5. **Envío por lotes.** No hay; CORE entrega de a un evento.

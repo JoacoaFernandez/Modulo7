@@ -1,10 +1,12 @@
 # Contexto UADEnet — referencia única del TP y del ecosistema (Módulo 7 · Analítica)
 
 > Reemplaza a `TPOUADENET.md`, `DATOS-POR-MODULO.md`, `ANALISIS-DISENO.md`, `prototipo.md` y
-> `backend/INTEGRACION-ACADEMICA.md`. Consolidado el **2026-11-04** a partir de lo que hay en
-> `Recursos IA/`. El README sigue siendo la documentación de nuestro módulo; el contrato de
-> ingesta que implementa hoy el backend está en [`backend/EVENTOS.md`](backend/EVENTOS.md)
-> (parte generada por script desde `backend/src/domain/entities/event-schemas.ts`).
+> `backend/INTEGRACION-ACADEMICA.md` (ya borrados). Consolidado el **2026-11-04** a partir de lo que hay en
+> `Recursos IA/`; la sección «Estado de implementación» se agregó el **2026-11-05**. El README sigue siendo
+> la documentación de nuestro módulo; el contrato de ingesta que implementa el backend está en
+> [`backend/EVENTOS.md`](backend/EVENTOS.md) (tabla de tipos generada por script desde
+> `backend/src/domain/entities/event-catalog.ts`) y la especificación técnica de la integración en
+> [`docs/INTEGRACION.md`](docs/INTEGRACION.md).
 
 ## Cómo leer este documento
 
@@ -29,6 +31,8 @@ cuando no hay comentario con fecha se usa la fecha de la última actividad de la
 
 ## Índice
 
+**[Estado de implementación (2026-11-05)](#estado-de-implementación-2026-11-05)**
+
 1. [Consigna del TP](#1-consigna-del-tp)
 2. [Qué nos pide la consigna a nosotros (Módulo 7)](#2-qué-nos-pide-la-consigna-a-nosotros-módulo-7)
 3. [Contrato de CORE vigente (v1 + novedades 04/11)](#3-contrato-de-core-vigente-v1--novedades-0411)
@@ -38,6 +42,49 @@ cuando no hay comentario con fecha se usa la fecha de la última actividad de la
 7. [Impacto en Analítica: qué tendríamos que cambiar](#7-impacto-en-analítica-qué-tendríamos-que-cambiar)
 8. [Diseño y prototipo vigente](#8-diseño-y-prototipo-vigente)
 9. [Pendientes y preguntas abiertas](#9-pendientes-y-preguntas-abiertas)
+
+---
+
+## Estado de implementación (2026-11-05)
+
+La integración con CORE y los demás módulos se implementó en cinco fases (commits `917fcde`, `8aa6f41`,
+`fc0d831`, `2f026a5` y `4c8359c`) siguiendo [`docs/INTEGRACION.md`](docs/INTEGRACION.md). Qué hay hoy, y qué
+depende de terceros:
+
+**Hecho**
+- **Ingesta v1 de CORE.** Envelope v1 validado contra `event-catalog.ts` (9 tipos que se guardan, 2 de efecto
+  lateral, 11 descartados), inbox idempotente por `eventId` en Postgres (migración `inbox_v1`), contadores por
+  módulo en `source_ingestions`. Dos transportes: consumer RabbitMQ de la cola `analytics.all-events.v1` (sólo
+  con `RABBITMQ_URL`; ack manual, reintentos, DLQ, reconexión) y `POST /api/analytics/events` como mock de la
+  cola (sólo con `EVENTS_HTTP_INGEST=true`). El contrato propio (`sourceModule` + `payload`) y su normalizador
+  se retiraron. Detalle: [`backend/EVENTOS.md`](backend/EVENTOS.md).
+- **Gateways con mocks por flag** (`CORE_MOCK`, `BACKOFFICE_MOCK`, `ACADEMIC_MOCK`): interfaces en
+  `domain/gateways/`, implementación HTTP (token de servicio, caché TTL, reintentos, `problem+json`) e
+  implementación mock que lee `backend/mocks/**.json` en cada llamada, editables a mano
+  ([`backend/mocks/README.md`](backend/mocks/README.md)).
+- **Auth real contra CORE** (o su mock): proxy `/api/auth/{login,refresh,logout,me}` con cookie de refresh
+  `HttpOnly`, verificación del JWT por JWKS (o clave local en modo mock) y mapeo de roles de CORE a secciones
+  (`ACADEMIC_ADMIN` → académica, `FINANCE_ADMIN` → financiera, `ADMIN` → ambas).
+- **Tableros reescritos** sobre el inbox y los gateways: académico (resultados + cursos, catálogo y docentes de
+  Gestión Académica + nombres de Backoffice), financiero (`wallets/aggregates` de CORE por mes, snapshots del
+  saldo, tienda y comedor desde eventos) y eventos (sede por `locationId`). Si un gateway falla, el bloque
+  afectado sale vacío con un `warnings[]` (200, nunca números inventados); `siteScopeNote` avisa que el
+  financiero de CORE no se abre por sede.
+- **Job de snapshots** del saldo de CORE (`WALLET_SNAPSHOT_*`) y `npm run backfill:core` para la carga histórica.
+- **Rutas y operación:** `/api/v1/*` además de `/api/analytics/*`, `problem+json`, `X-Correlation-Id`,
+  `/health/live` y `/health/ready`, CORS con credenciales.
+- **Demo y herramientas:** `npm run db:demo` (~34,6 mil envelopes v1 coherentes con los mocks), `mocks:generate` y
+  `mocks:check`, colección de Postman generada desde el catálogo.
+- **Frontend:** sesión con el token sólo en memoria y refresh silencioso, avisos de `warnings` y `siteScopeNote`,
+  `note` en las tarjetas, saldo `null` como hueco.
+
+**Pendiente de terceros** (todo corre con mocks hasta que respondan; preguntas en la sección 9):
+cola y credencial de lectura de G10; permiso `wallet:read:aggregates` y `backoffice:read` para `analytics-service`;
+evento de resultado final de curso y rutas `/internal/v1` de G9; nombres del catálogo y `category` en G6;
+`items[]` de G5; identidades de prueba `ACADEMIC_ADMIN` y `FINANCE_ADMIN`.
+
+**No hecho:** tests automatizados (no hay ninguno configurado), documentación OpenAPI/Swagger propia, envío por
+lotes.
 
 ---
 
@@ -339,7 +386,7 @@ Los xlsx son de fechas distintas; cuando Trello los corrige, prevalece Trello. F
 ### Módulo 9 · Gestión Académica (xlsx M9, hoja «Flujo de Datos»)
 - **Solo REST con ids numéricos:** carreras (con `facultad`), planes, asignaturas, correlatividades, sedes y aulas, asignaciones y agenda, **períodos** (`{id, anio, numero, fechaInicio, fechaFin}`), turnos de examen, validación de regularidad.
 - **No hay eventos ni referencia a Analítica ni a CORE.** Nuestro xlsx M7 supone `GET /api/planificacion/cursos?periodoId=`, `/cursos/{cursoId}`, y que `GET /planificacion/sedes` devuelve `backofficeSiteId`: **ninguna de esas rutas ni ese campo figuran en el xlsx de G9**.
-- **Formato real observado** de lo que envía Gestión Académica a nuestro endpoint (de `INTEGRACION-ACADEMICA.md`, sin fecha, ~2026-10-12): `{"tipo":"academica.resultado.publicado","ocurridoEn","alumnoId","cursoId":42,"notaFinal","estado":"APROBADO","fechaResultado","enlace"}`: sin `eventId`, sin `sourceModule`, sin `materia`, sin sede, sin `docenteId`, sin `cuatrimestre`. Nuestro xlsx M7 dice que G9 "hoy" lo publica como `resultado.publicado` en su propia cola y debe pasar a `POST /internal/v1/events` de CORE (xlsx M7, fila `academic.course-result.published.v1`).
+- **Formato real observado** de lo que envía Gestión Académica a nuestro endpoint (del documento viejo de integración con Gestión Académica, ya absorbido; sin fecha, ~2026-10-12): `{"tipo":"academica.resultado.publicado","ocurridoEn","alumnoId","cursoId":42,"notaFinal","estado":"APROBADO","fechaResultado","enlace"}`: sin `eventId`, sin `sourceModule`, sin `materia`, sin sede, sin `docenteId`, sin `cuatrimestre`. Nuestro xlsx M7 dice que G9 "hoy" lo publica como `resultado.publicado` en su propia cola y debe pasar a `POST /internal/v1/events` de CORE (xlsx M7, fila `academic.course-result.published.v1`).
 
 ### Módulo 10 · CORE (xlsx M10, hoja «Hoja1», v5)
 - Auth (`login`, `refresh`, `logout`, `me`, `forgot/reset`), JWKS, `service-auth/token`, `introspect`, identidades (`PUT`, `PATCH status`), wallet (`top-ups`, `me`, `debits`, `reversals`, `credits`), `POST /internal/v1/events`, `subscriptions` (webhooks, challenge, firma `X-UADEnet-Signature`), notificaciones (REST y WebSocket `notification.created`).
@@ -357,11 +404,13 @@ Es el diseño objetivo, alineado a CORE v1:
 
 ## 6. Matriz de brechas
 
-Se compara, evento por evento, **tres cosas**: lo que implementa hoy nuestro backend
-(`event-schemas.ts` / `EVENTOS.md`), el catálogo vigente de CORE (v1 §11 + novedades) y lo que
-publica cada equipo según su xlsx y Trello. Nuestro contrato propio difiere de v1 en lo estructural:
+Se compara, evento por evento, **tres cosas**: lo que implementaba nuestro backend hasta el 2026-11-05
+(contrato propio, ya **retirado**: hoy el backend sólo acepta el envelope v1, ver «Estado de implementación»),
+el catálogo vigente de CORE (v1 §11 + novedades) y lo que publica cada equipo según su xlsx y Trello. Las
+filas de «Nuestro evento» de 6.1 a 6.3 son el diseño anterior y se conservan como histórico: el catálogo
+vigente está en `backend/src/domain/entities/event-catalog.ts`. El contrato propio difería de v1 en lo estructural:
 
-| | Contrato propio (hoy) | CORE vigente |
+| | Contrato propio (retirado el 2026-11-05) | CORE vigente (implementado) |
 |---|---|---|
 | Envoltura | `{eventId, sourceModule, eventType, occurredAt, payload}` | `{specVersion, eventId, eventType, source, occurredAt, subject, correlationId, causationId, actor, data}` |
 | `eventType` | `sustantivo.verbo`, único por módulo, **sin versión** (`resultado.publicado`) | `{source}.{entidad}.{acción}.v{n}` (`teacher.exam-result.published.v1`) |
@@ -415,7 +464,9 @@ transformación o consulta REST; **Sin fuente** = ningún módulo lo emite; **Ro
 | `eventos · evento.cancelado` / `inscripcion.cancelada` | No existen | G6: cancelación de inscripción "fuera del alcance del TP" | Sacar del contrato (o dejar como opcionales) | Sin fuente |
 | `events.reminder.requested.v1` | Lo consume CORE Notificaciones | G6 emite `evento.recordatorio` | No lo usamos | No usado |
 
-### 6.4 Eventos de v1 que hoy no usamos o sin equivalente en nuestro contrato
+### 6.4 Eventos de v1 que no usamos o sin equivalente en nuestro contrato
+
+*Estado (2026-11-05):* resuelto. Cada uno figura en `event-catalog.ts` con su tratamiento: `backoffice.location.upserted.v1` se guarda; `backoffice.user.*` es de efecto lateral (invalida el nombre cacheado); el resto se descarta con ack. Los eventos del contrato propio sin emisor (`sede.definida`, `prestamo.*`) ya no existen en el backend.
 
 | Evento CORE | Uso posible en Analítica |
 |---|---|
@@ -430,7 +481,9 @@ transformación o consulta REST; **Sin fuente** = ningún módulo lo emite; **Ro
 
 ### 6.5 Lo que pedíamos a cada módulo (contrato propio) que sigue valiendo
 
-Del pedido original (`DATOS-POR-MODULO.md`) sigue vigente:
+*Estado (2026-11-05):* el pedido común y las reglas de interpretación están implementados con el contrato v1 (ver `backend/EVENTOS.md`); la carga histórica se resuelve con `npm run backfill:core` (necesita CORE real y `events:read`, pendiente de G10: pregunta 11) y la definición de "facturación" quedó como flag `DINING_REVENUE_NET_OF_ATTENDANCE` (pendiente de G4: pregunta 25).
+
+Del pedido original (documento viejo de datos por módulo, ya absorbido) sigue vigente:
 
 - **Pedido común:** `eventId` estable por hecho (si se reenvía, el mismo id); `occurredAt` con el momento del hecho (no del envío); ids consistentes entre módulos (`alumnoId`, `cursoId`, `docenteId`, sede); montos numéricos en ARS; fechas de negocio sin hora interpretadas en hora de Argentina (si existen, mandan para asignar un hecho a día/mes/cuatrimestre). *Con CORE vigente se traduce a:* `eventId` UUID v4, `occurredAt` UTC, `userId` UUID, `siteId` UUID, dinero string.
 - **Carga histórica única:** al conectarse, cada módulo manda una sola vez sus eventos desde el inicio de **2026-1C** con el `occurredAt` original, para poder comparar contra el período anterior. Como el `eventId` es estable, la carga se puede repetir. **No hay constancia de que se lo hayamos pedido a nadie**, y con la cola de CORE habría que resolverlo con `GET /internal/v1/events?type=&source=&from=&to=` (consulta para IT) o con el replay de CORE (`POST /internal/v1/events/{eventId}/replay`, lo hace IT) (CORE v1, §9; Trello, «G8→G10 · Dudas del Swagger…», 2026-11-04). Abierto.
@@ -438,10 +491,9 @@ Del pedido original (`DATOS-POR-MODULO.md`) sigue vigente:
 - **A decidir:** si "facturación" del comedor es lo cobrado, lo cobrado menos lo restituido por asistencia, o solo las reservas no usadas (la consigna dice que el costo se restituye si el usuario se presenta; Consigna, p. 3).
 - **Hueco:** categorías de gasto distintas de sueldos (mantenimiento, licencias): ningún módulo las emite; si Backoffice no las manda el tablero se recorta (confirmado por Trello, 2026-10-22).
 
-### 6.6 Gestión Académica: diferencias del evento real y qué se absorbe (de `INTEGRACION-ACADEMICA.md`)
+### 6.6 Gestión Académica: diferencias del evento real (histórico)
 
-El evento real de G9 (6.1) no cumple nuestro contrato. Hoy lo absorbe una única capa de normalización
-(`backend/src/application/services/event-normalizer.service.ts`, aplicada en `POST /api/analytics/events` antes de validar; ver *Formatos tolerados* en [`backend/EVENTOS.md`](backend/EVENTOS.md)):
+*Estado (2026-11-05):* el normalizador (`event-normalizer.service.ts`) y los «Formatos tolerados» **se eliminaron**. El evento real de G9 (6.1) ya no se absorbe: sin `specVersion`, `source` ni `eventId` UUID responde `400` (`INVALID_EVENT`), y por la cola va a la DLQ. Se espera que G9 publique el evento propuesto del catálogo (`academic.course-result.published.v1`, pregunta 17); mientras tanto el tablero académico no tiene tasas de aprobación. La tabla muestra cómo se trataba cada diferencia con el contrato propio:
 
 | # | Ellos mandan | Nosotros esperamos | Cómo se trata |
 |---|---|---|---|
@@ -456,48 +508,48 @@ El evento real de G9 (6.1) no cumple nuestro contrato. Hoy lo absorbe una única
 | 9 | `resultado.publicado` | catálogo propio | Con CORE vigente deja de ser un problema de nombre: no existe resultado de curso en el catálogo v1 (6.1) |
 | 10 | `enlace`, `notaFinal`, `fechaResultado` | extra | Viajan en el `payload` sin molestar |
 
-Tal como llega, el evento se acepta con `201` y `warnings` (formato no oficial, `eventId` derivado, faltan `materia`, `docenteId`, `sedeId` y `cuatrimestre`), pero **no alimenta los tableros**.
+Con el contrato propio el evento se aceptaba con `201` y `warnings`, pero **no alimentaba los tableros**; hoy se rechaza.
 **Pendiente con G9:** `eventId`, `materia`, sede, `docenteId`, `cuatrimestre` o, mejor, el evento propuesto con el catálogo de CORE.
 
-### 6.7 Brechas del xlsx M7 contra el código actual
+### 6.7 Brechas del xlsx M7 contra el código (resueltas el 2026-11-05)
 
-Nuestro xlsx M7 (21/10) y lo que dijimos en Trello (22/10: "`POST /api/analytics/events` ya no existe") **no coinciden con el código**, que sigue ingiriendo por `POST /api/analytics/events` con el contrato propio y logueando contra un mock de CORE:
+Al 2026-11-04 nuestro xlsx M7 (21/10) y lo que dijimos en Trello (22/10: "`POST /api/analytics/events` ya no existe") no coincidían con el código, que ingería por `POST /api/analytics/events` con el contrato propio. Estado hoy:
 
-| Tema | xlsx M7 / Trello | Código hoy |
-|---|---|---|
-| Ingesta | Cola `analytics.all-events.v1` + envelope v1 | `POST /api/analytics/events` público, envelope propio |
-| Prefijo de API | `/api/v1/analytics/...` vía gateway | `/api/analytics/...` y `/api/auth/...` |
-| Filtros | `siteId`, `termId` (UUID), `month` | `sedeId`, `cuatrimestre` (`2026-2C`), `facultad`, `periodo` (mes) |
-| Permisos | `analytics:academic:read`, `analytics:finance:read` | Roles `academica`/`financiera` del mock |
-| Roles de CORE | `ACADEMIC_ADMIN`, `FINANCE_ADMIN` | Sin mapeo |
-| Sedes | `GET /internal/v1/sites` | Evento propio `sede.definida` |
-| Financiero | `aggregates` + `transaction-posted` | `saldo.movimiento` |
-| Facultad | `facultyTrends` | Filtro `?facultad=` |
+| Tema | xlsx M7 / Trello | Estado | Dónde |
+|---|---|---|---|
+| Ingesta | Cola `analytics.all-events.v1` + envelope v1 | **Resuelto**: consumer (con `RABBITMQ_URL`) y `POST` como mock de la cola (con `EVENTS_HTTP_INGEST=true`). **Pendiente de G10**: que la cola y la credencial existan | `infrastructure/messaging/`, `backend/EVENTOS.md` |
+| Prefijo de API | `/api/v1/analytics/...` vía gateway | **Resuelto**: las rutas también se montan bajo `/api/v1` (se conserva `/api/analytics` para el frontend) | `index.ts` |
+| Filtros | `siteId`, `termId` (UUID), `month` | **Decidido distinto**: se mantienen `sedeId` (ahora el `siteId` UUID de Backoffice), `cuatrimestre` (`2026-2C`), `facultad` y `periodo` (mes); el frontend ya los usa. Si G10/la cátedra exigen los del xlsx, es un cambio de validators | `interfaces/http/validators/analytics.validator.ts` |
+| Permisos | `analytics:academic:read`, `analytics:finance:read` | **Pendiente de G10** (no existen): se otorga por rol; el código ya aceptaría esos permisos | `domain/entities/role.entity.ts` |
+| Roles de CORE | `ACADEMIC_ADMIN`, `FINANCE_ADMIN` | **Resuelto**: `ACADEMIC_ADMIN` → académica, `FINANCE_ADMIN` → financiera, `ADMIN` → ambas | `domain/entities/role.entity.ts` |
+| Sedes | `GET /internal/v1/sites` | **Resuelto** con `BackofficeGateway` (mock o HTTP). **Pendiente de CORE**: `backoffice:read` para `analytics-service` | `infrastructure/integrations/backoffice/` |
+| Financiero | `aggregates` + `transaction-posted` | **Resuelto**: sólo `aggregates` (los `core.wallet.*` se descartan). **Pendiente de G10**: `wallet:read:aggregates` y semántica de `outstandingBalance` | `financial-stats.builder.ts`, `wallet-snapshot.job.ts` |
+| Facultad | `facultyTrends` | **Resuelto**: tendencia y filtro por facultad desde las carreras de Gestión Académica | `academic-stats.builder.ts` |
 
 ---
 
 ## 7. Impacto en Analítica: qué tendríamos que cambiar
 
-Lista priorizada, **solo documentación** (no se tocó código). Cada punto indica si fuentes posteriores a v1 ya lo cambiaron.
+Lista priorizada. Cada punto indica si fuentes posteriores a v1 ya lo cambiaron.
 
-| # | Cambio | Por qué | ¿Modificado por fuentes posteriores a v1? |
-|---|---|---|---|
-| 1 | **Decidir la vía de ingesta** y pedir la cola. Opciones: (a) consumir `analytics.all-events.v1` de RabbitMQ con inbox; (b) webhooks por `eventType` (no sirven para wallet); (c) mantener `POST /api/analytics/events` como entrada paralela y mapear envelope v1. Pedir a G10 la cola con dueño, `eventTypes`, entorno y responsable, y credenciales de **lectura** | Es la dependencia de todo lo demás. Hoy no hay constancia de que la cola exista | **Sí.** Trello (2026-10-20): se pide por canal y no por PR; credenciales de consumo de solo lectura; el NACK no reintenta solo; wallet no por webhook |
-| 2 | **Adaptar el envelope y los nombres**: aceptar `source`/`eventType` con `.v1`/`data`; mapear los eventos de v1 a los de nuestras queries (6.1-6.3); montos string; ids UUID; `siteId` | Nuestro contrato difiere en todo (sección 6). Un mapeo en el normalizador existente evita reescribir las queries | No |
-| 3 | **Financiero desde `GET /internal/v1/wallets/aggregates`**: saldo = `outstandingBalance`; ingresos/egresos y sueldos por `concept`. Guardar cada consulta mensual (el endpoint da una foto, no una serie). Pedir `wallet:read:aggregates` para `analytics-service`. **Se pierde el filtro por sede del financiero** salvo comedor y tienda (que sí traen sede) | Cambia cómo se calculan saldo acumulado, ingresos y egresos | **Parcial.** Trello (2026-10-22) fija que sueldos salen de `PAYROLL`; las Novedades (04/11) confirman que `FINANCE_ADMIN` tiene `wallet:read:aggregates`, pero **no dicen nada del cliente de servicio de Analítica** |
-| 4 | **Login real contra CORE**: validar JWT con JWKS (RS256, `iss` = URL de Railway, `aud` = `uadenet`, `exp`), autorizar con `permissions`, leer `X-User-*`; reemplazar el mock. Mapear roles: académica ← `ACADEMIC_ADMIN`; financiera ← `FINANCE_ADMIN` (o permisos `analytics:*` si CORE los crea). Pedir identidades de prueba con esos roles | CORE ya está en Railway y tiene usuarios de prueba solo `ADMIN`/`STUDENT`/`TEACHER` | **Sí.** Novedades 04/11: cambió `iss`; no hay permisos de analítica ni usuarios de prueba académico/financiero |
-| 5 | **Sedes por REST**: `GET /internal/v1/sites` (carga inicial + cache) con `backoffice:read`, `sedeId` UUID, `timezone` para agrupar por mes local; resolver `locationId`→`siteId` con `backoffice.location.upserted.v1`. Retirar `sede.definida` | Backoffice no emite `sede.definida` ni eventos de sede | **Sí.** Trello (2026-10-20/27, 2026-11-04) cambió `/api/v1/sites` a `/internal/v1/sites` y exige `backoffice:read` (pendiente de CORE) |
-| 6 | **Académico: pedir a G9** el evento de resultado final de curso y las rutas `/cursos`, `/cursos/{id}`, `/sedes` (con `backofficeSiteId`) bajo `/internal/v1` + permiso a `analytics-service`. Mientras tanto la tasa de aprobación por materia, docente y sede no tiene fuente confirmada | El xlsx de G9 no tiene esas rutas ni emite eventos | No (no hay respuesta de G9) |
-| 7 | **Eventos académicos**: pedir a G6 `tipoEvento` (o definir otro criterio de agrupación), `amount` en la inscripción y los nombres v1 (`events.*.v1`); G6 aún no emite | Las estadísticas por tipo no se pueden calcular | No |
-| 8 | **Estudiantes con cursada activa**: sin fuente (nadie emite `inscripcion.*`); evaluar `inscriptosActivos` de `/cursos` o pedir a G1 | — | No |
-| 9 | **Gateway y rutas**: servir bajo `/api/v1/analytics/*` (el gateway reescribe a `/api/v1/*`), pasar a CORE la URL base por entorno y el secreto de firma | CORE v1, §6 | **Sí.** Trello (2026-10-20/11-04): el secreto va por privado; `X-Core-Signature` HMAC-SHA256 documentado |
-| 10 | **Errores `problem+json`**, `GET /health/live` y `/health/ready`, propagar `X-Correlation-Id` | CORE v1, §6 y §13 | Solo se agregan los códigos de gateway (Trello 2026-10-20) |
-| 11 | **Inbox**: llevar `inbox_events` a la estructura de CORE (`event_id` UUID PK, ack tras persistir, DLQ para esquema inválido) y decidir qué hacer con eventos que no usamos (ack y descartar, según nuestro xlsx M7) | CORE v1, §10 | **Sí.** Trello (2026-10-20): cada módulo implementa su retry |
-| 12 | **Dinero y tipos**: pasar a string decimal + `currency` en la validación y las queries | CORE v1, §2 | No (Trello 2026-10-20 lo reafirma) |
-| 13 | **Retirar del contrato propio** los eventos sin emisor posible: `sede.definida`, `docente.alta`, `sueldos.liquidados`, `gasto.registrado`, `prestamo.*`, `compra.devuelta`, `evento.cancelado`, `inscripcion.cancelada` (eventos) | Backoffice, Biblioteca, Tienda y Eventos dijeron o muestran que no los emiten | **Sí** (xlsx M8, Trello 2026-10-22, xlsx M6) |
-| 14 | **Documentar la API** con OpenAPI/Swagger además de Postman, y actualizar el diagrama de arquitectura | Consigna, pp. 1 y 6 | No |
+| # | Cambio | Por qué | ¿Modificado por fuentes posteriores a v1? | Estado (2026-11-05) |
+|---|---|---|---|---|
+| 1 | **Decidir la vía de ingesta** y pedir la cola. Opciones: (a) consumir `analytics.all-events.v1` de RabbitMQ con inbox; (b) webhooks por `eventType` (no sirven para wallet); (c) mantener `POST /api/analytics/events` como entrada paralela y mapear envelope v1. Pedir a G10 la cola con dueño, `eventTypes`, entorno y responsable, y credenciales de **lectura** | Es la dependencia de todo lo demás. Hoy no hay constancia de que la cola exista | **Sí.** Trello (2026-10-20): se pide por canal y no por PR; credenciales de consumo de solo lectura; el NACK no reintenta solo; wallet no por webhook | **Resuelto**: consumer RabbitMQ y POST mock (`infrastructure/messaging/`). **Pendiente de G10**: cola, credencial de lectura y entorno (pregunta 1) |
+| 2 | **Adaptar el envelope y los nombres**: aceptar `source`/`eventType` con `.v1`/`data`; mapear los eventos de v1 a los de nuestras queries (6.1-6.3); montos string; ids UUID; `siteId` | Nuestro contrato difiere en todo (sección 6). Un mapeo en el normalizador existente evita reescribir las queries | No | **Resuelto**: `event-catalog.ts` y `event-envelope-validator.service.ts`; sin normalizador |
+| 3 | **Financiero desde `GET /internal/v1/wallets/aggregates`**: saldo = `outstandingBalance`; ingresos/egresos y sueldos por `concept`. Guardar cada consulta mensual (el endpoint da una foto, no una serie). Pedir `wallet:read:aggregates` para `analytics-service`. **Se pierde el filtro por sede del financiero** salvo comedor y tienda (que sí traen sede) | Cambia cómo se calculan saldo acumulado, ingresos y egresos | **Parcial.** Trello (2026-10-22) fija que sueldos salen de `PAYROLL`; las Novedades (04/11) confirman que `FINANCE_ADMIN` tiene `wallet:read:aggregates`, pero **no dicen nada del cliente de servicio de Analítica** | **Resuelto**: `financial-stats.builder.ts`, `CoreWalletGateway`, `wallet-snapshot.job.ts`. **Pendiente de G10**: `wallet:read:aggregates`, Swagger, `siteId`, semántica de `outstandingBalance` (preguntas 2, 7, 8) |
+| 4 | **Login real contra CORE**: validar JWT con JWKS (RS256, `iss` = URL de Railway, `aud` = `uadenet`, `exp`), autorizar con `permissions`, leer `X-User-*`; reemplazar el mock. Mapear roles: académica ← `ACADEMIC_ADMIN`; financiera ← `FINANCE_ADMIN` (o permisos `analytics:*` si CORE los crea). Pedir identidades de prueba con esos roles | CORE ya está en Railway y tiene usuarios de prueba solo `ADMIN`/`STUDENT`/`TEACHER` | **Sí.** Novedades 04/11: cambió `iss`; no hay permisos de analítica ni usuarios de prueba académico/financiero | **Resuelto**: proxy `/api/auth`, `jwks-token-verifier.ts`, mapeo en `role.entity.ts`. **Pendiente de G10**: identidades de prueba, permisos `analytics:*`, `iss` real (preguntas 3, 4, 32) |
+| 5 | **Sedes por REST**: `GET /internal/v1/sites` (carga inicial + cache) con `backoffice:read`, `sedeId` UUID, `timezone` para agrupar por mes local; resolver `locationId`→`siteId` con `backoffice.location.upserted.v1`. Retirar `sede.definida` | Backoffice no emite `sede.definida` ni eventos de sede | **Sí.** Trello (2026-10-20/27, 2026-11-04) cambió `/api/v1/sites` a `/internal/v1/sites` y exige `backoffice:read` (pendiente de CORE) | **Resuelto**: `BackofficeGateway` y `backoffice.location.upserted.v1`. **Pendiente de G8/G10**: `backoffice:read` y histórico de locaciones (preguntas 13, 34) |
+| 6 | **Académico: pedir a G9** el evento de resultado final de curso y las rutas `/cursos`, `/cursos/{id}`, `/sedes` (con `backofficeSiteId`) bajo `/internal/v1` + permiso a `analytics-service`. Mientras tanto la tasa de aprobación por materia, docente y sede no tiene fuente confirmada | El xlsx de G9 no tiene esas rutas ni emite eventos | No (no hay respuesta de G9) | **Pedido hecho, pendiente de G9** (evento y rutas, preguntas 17 y 18). Implementado contra la ruta propuesta y mocks; sin el evento el tablero no muestra tasas |
+| 7 | **Eventos académicos**: pedir a G6 `tipoEvento` (o definir otro criterio de agrupación), `amount` en la inscripción y los nombres v1 (`events.*.v1`); G6 aún no emite | Las estadísticas por tipo no se pueden calcular | No | **Resuelto de nuestro lado**: catálogo `events.*.v1`, `category` opcional y, sin ella, tipo aproximado por clase de precio con un `warning`. **Pendiente de G6**: que emita (preguntas 21 y 22) |
+| 8 | **Estudiantes con cursada activa**: sin fuente (nadie emite `inscripcion.*`); evaluar `inscriptosActivos` de `/cursos` o pedir a G1 | — | No | **Resuelto en parte**: se usa `inscriptosActivos` de `/cursos` con la nota «Cuenta inscripciones activas, no alumnos distintos». **Pendiente de G1/G9** (pregunta 27) |
+| 9 | **Gateway y rutas**: servir bajo `/api/v1/analytics/*` (el gateway reescribe a `/api/v1/*`), pasar a CORE la URL base por entorno y el secreto de firma | CORE v1, §6 | **Sí.** Trello (2026-10-20/11-04): el secreto va por privado; `X-Core-Signature` HMAC-SHA256 documentado | **Resuelto en parte**: rutas montadas bajo `/api/v1`. **Pendiente de G10**: URL base y secreto de firma; la autorización sale del JWT, no de `X-Core-Signature` |
+| 10 | **Errores `problem+json`**, `GET /health/live` y `/health/ready`, propagar `X-Correlation-Id` | CORE v1, §6 y §13 | Solo se agregan los códigos de gateway (Trello 2026-10-20) | **Resuelto**: `problem-json.ts`, `health.routes.ts`, `correlation.middleware.ts` |
+| 11 | **Inbox**: llevar `inbox_events` a la estructura de CORE (`event_id` UUID PK, ack tras persistir, DLQ para esquema inválido) y decidir qué hacer con eventos que no usamos (ack y descartar, según nuestro xlsx M7) | CORE v1, §10 | **Sí.** Trello (2026-10-20): cada módulo implementa su retry | **Resuelto**: `inbox.repository.prisma.ts`, migración `inbox_v1`, ack / `nack` a DLQ y reintentos en el consumer |
+| 12 | **Dinero y tipos**: pasar a string decimal + `currency` en la validación y las queries | CORE v1, §2 | No (Trello 2026-10-20 lo reafirma) | **Resuelto**: el validador exige dinero como string con 2 decimales y ids UUID |
+| 13 | **Retirar del contrato propio** los eventos sin emisor posible: `sede.definida`, `docente.alta`, `sueldos.liquidados`, `gasto.registrado`, `prestamo.*`, `compra.devuelta`, `evento.cancelado`, `inscripcion.cancelada` (eventos) | Backoffice, Biblioteca, Tienda y Eventos dijeron o muestran que no los emiten | **Sí** (xlsx M8, Trello 2026-10-22, xlsx M6) | **Resuelto**: el catálogo sólo tiene eventos v1; se borró el contrato propio |
+| 14 | **Documentar la API** con OpenAPI/Swagger además de Postman, y actualizar el diagrama de arquitectura | Consigna, pp. 1 y 6 | No | **Pendiente**: sólo hay colección de Postman (`docs/postman/`); no hay OpenAPI |
 
-Mientras no se cambie nada, lo que sí funciona hoy: ingesta con el contrato propio, tableros 100% desde eventos, login mock.
+Lista original del 2026-11-04 (cuando todavía no se había tocado código); la última columna refleja lo implementado el 2026-11-05. Lo que funciona hoy: ingesta v1 por cola o POST mock, tableros desde el inbox y los gateways (con mocks hasta que los otros módulos estén listos) y login contra CORE o su mock.
 
 ---
 
@@ -527,8 +579,8 @@ El prototipo se autodescribe como "datos de ejemplo, sin backend" y define 4 pan
 
 ### 8.3 Decisiones vigentes de comportamiento
 
-- Todo número sale de eventos; sin datos para un recorte, ceros y listas vacías. Los deltas son neutros si no hay período anterior con datos.
-- Sede viaja como `sedeId`; "Todas las sedes" (`todas-las-sedes`) siempre primera. Cuatrimestres desde `payload.cuatrimestre`, meses desde `occurred_at` en hora de Argentina; facultad desde `curso.abierto.facultad` (el id es el nombre).
+- Los números salen de eventos (inbox) y de las consultas a CORE, Backoffice y Gestión Académica; sin datos para un recorte, ceros y listas vacías, y si una fuente falla el bloque sale vacío con un aviso. Los deltas son neutros si no hay período anterior con datos.
+- Sede viaja como `sedeId`; "Todas las sedes" (`todas-las-sedes`) siempre primera. Cuatrimestres desde `periodos` de Gestión Académica, meses desde `DASHBOARD_FIRST_MONTH` (hora de Argentina); facultad desde las carreras de Gestión Académica (el id es el nombre).
 - Cada rol ve solo sus secciones; "Fuentes de datos" es la única que no depende del rol. Los permisos los asigna Backoffice/CORE, no Analítica.
 
 ### 8.4 Historial de decisiones
@@ -538,19 +590,22 @@ El prototipo se autodescribe como "datos de ejemplo, sin backend" y define 4 pan
 | 2026-08-27 | Auditoría contra el prototipo y plan de 8 pasos (entidades, backend, sistema visual, sesión, shell, gráficos, tableros); backend con datasets mock 1:1 con el diseño y sin base |
 | 2026-10-12/14 | Login `@uade.edu.ar` contra mock de CORE (reemplaza el selector de rol "Acceso simulado"); sedes por `sedeId`; payloads validados por tipo; Fuentes de datos como pantalla real; se quita "Permisos por rol" del menú |
 | 2026-11-04 | Postgres + Prisma; se elimina el dataset mock; períodos dinámicos; comisiones activas desde `curso.abierto`/`curso.cerrado`; dataset de demo (`npm run db:demo`); Eventos académicos pasa a sección propia (antes ancla dentro del financiero); botón Actualizar por sección; selector Unidades/Facturación en productos; filtro de facultad en el académico |
+| 2026-11-05 | Integración con CORE v1 implementada (fases A a E): envelope v1, consumer RabbitMQ, gateways con mocks por flag, auth contra CORE, tableros sobre inbox y gateways, demo y Postman en formato v1; se retira el contrato propio |
 | 2026-10-22 / 11-04 | Se documenta el diseño objetivo alineado a CORE v1 (xlsx M7 del 21/10) y se reúnen las fuentes de `Recursos IA/` en este documento |
 
 ---
 
 ## 9. Pendientes y preguntas abiertas
 
+La lista vigente, con la prioridad de cada pregunta (B bloquea, C condiciona lo que se puede probar con mocks) y las preguntas nuevas (32 a 39), está en [`docs/INTEGRACION.md`, sección 9](docs/INTEGRACION.md#9-preguntas-abiertas): usa **esta misma numeración**. Acá se conserva el texto original de cada pregunta; las marcadas **Resuelto (2026-11-05)** se cerraron con la implementación y las demás siguen **pendientes de terceros**.
+
 ### Para CORE (G10)
 1. ¿Existe la cola `analytics.all-events.v1` (owner analytics, `#`, DLQ, `maxRetries 3`)? ¿Con qué entorno, credenciales de lectura y responsable? (Trello no registra ninguna card nuestra; el xlsx M7 la pide "a G10".)
 2. ¿Tiene `analytics-service` el permiso para `GET /internal/v1/wallets/aggregates` (`wallet:read:aggregates`)? Las Novedades del 04/11 solo lo asignan a `FINANCE_ADMIN`. ¿Cuál es la respuesta exacta en el Swagger?
 3. ¿Se crean permisos `analytics:academic:read` y `analytics:finance:read`? Si no, ¿qué roles/permisos usamos para los tableros: `ACADEMIC_ADMIN` / `FINANCE_ADMIN`? El catálogo de las Novedades (p. 4) no los incluye.
 4. ¿Pueden crear identidades de prueba con `ACADEMIC_ADMIN` y `FINANCE_ADMIN`? Hoy solo hay `ADMIN`, `STUDENT` y `TEACHER` (Novedades CORE 04/11, p. 2).
-5. ¿Recibimos los eventos `core.wallet.*` por la cola con `#`, dado que los webhooks de wallet están frenados por el aislamiento de movimientos ajenos? ¿Y alguno trae sede?
-6. ¿Registran en el catálogo un evento de resultado final de curso (`academic.course-result.published.v1`, nombre propuesto en nuestro xlsx) y los eventos de Gestión Académica de `curso`? (No figura ninguno en v1.)
+5. **Resuelto (2026-11-05):** se reciben por la cola pero se descartan con ack (`event-catalog.ts`); los totales salen de `aggregates`. ¿Recibimos los eventos `core.wallet.*` por la cola con `#`, dado que los webhooks de wallet están frenados por el aislamiento de movimientos ajenos? ¿Y alguno trae sede?
+6. **Pendiente de G10/G9 (ver 17):** ¿Registran en el catálogo un evento de resultado final de curso (`academic.course-result.published.v1`, nombre propuesto en nuestro xlsx) y los eventos de Gestión Académica de `curso`? (No figura ninguno en v1.)
 7. ¿Se agrega `siteId` a los eventos de wallet, o al menos a `aggregates`? Hoy el financiero por sede solo se puede para comedor y tienda.
 8. ¿`GET /internal/v1/wallets/aggregates` devuelve una foto a la fecha (`outstandingBalance`) o puede devolver el saldo a fin de cada mes del rango? Las Novedades no lo aclaran.
 9. Credenciales de prueba en texto plano en la card «G6 --> G10 #34» del Trello (2026-11-04): rotarlas.
@@ -560,20 +615,20 @@ El prototipo se autodescribe como "datos de ejemplo, sin backend" y define 4 pan
 
 ### Para Backoffice (G8)
 13. Confirmar que `analytics-service` tiene `backoffice:read` (G8 lo aprobó el 04/11; falta CORE).
-14. Respuesta nuestra pendiente: el cambio aditivo de `careers` en `GET /internal/v1/users/{userId}` (Trello, «G8→G7 · ¿Consumen eventos…», 2026-11-03) no nos afecta porque solo usamos el nombre.
-15. Respuesta nuestra pendiente a «G8→Todos»: no publicamos eventos; consumimos los cuatro de Backoffice y consultamos sedes y usuarios por REST.
-16. `timezone` de la sede para agrupar por mes local; confirmar que está en `GET /internal/v1/sites` (sí, según xlsx M8).
+14. **Resuelto:** el cambio aditivo de `careers` en `GET /internal/v1/users/{userId}` (Trello, «G8→G7 · ¿Consumen eventos…», 2026-11-03) no nos afecta porque solo usamos el nombre.
+15. Respuesta nuestra a «G8→Todos» (implementado, falta contestar la card): no publicamos eventos; consumimos `location.upserted`, `user.upserted` y `user.disabled` de Backoffice y consultamos sedes y usuarios por REST.
+16. **Pendiente de G8:** `timezone` de la sede para agrupar por mes local; confirmar que está en `GET /internal/v1/sites` (sí, según xlsx M8).
 
 ### Para Gestión Académica (G9)
 17. Evento de resultado final de curso con `eventId` UUID, `courseId`, `subjectId`, `periodId`, sede, docente, nota y estado (hoy mandan `academica.resultado.publicado` sin `eventId`, `materia`, sede ni `docenteId`).
 18. Rutas `GET /internal/v1/cursos?periodoId=`, `/cursos/{id}` (con docentes), `/periodos`, `/sedes` con `backofficeSiteId`, carreras, planes y asignaturas, con token de servicio y autorización del `clientId` `analytics-service`. G9 hoy solo autoriza `backoffice-service` y todavía no expone los alias `/internal/v1`.
 19. Ids numéricos (Long) en todo: confirmar cómo viajan en eventos (CORE exige UUID).
-20. Publicar `academic.term-defined.v1` o confirmar que usamos `GET /periodos` para el cuatrimestre.
+20. **Resuelto (2026-11-05):** el cuatrimestre sale de `GET /periodos`; `academic.term-defined.v1` se descarta. Falta que G9 exponga la ruta `/internal/v1/periodos`.
 
 ### Para Eventos (G6)
 21. `tipoEvento`: no está en `events.event.created.v1` ni en `evento.creado`; ¿lo agregan (campo opcional en el catálogo) o agrupamos por `categoriaPrecio`/`esPago`?
 22. Emitir los nombres del catálogo (`events.event.created.v1`, `events.registration.completed.v1`, `events.attendance.recorded.v1`) con `amount` en la inscripción y `present`; hoy declaran que aún no emiten ninguno y "falta que Analítica confirme los tres eventos" (xlsx M6): **respuesta nuestra pendiente**.
-23. Sede: `locationId` + `backoffice.location.upserted.v1`, no el nombre de sede en texto.
+23. **Resuelto de nuestro lado:** la sede de un evento sale de `locationId` + `backoffice.location.upserted.v1`; falta que G6 lo emita así.
 
 ### Para Tienda (G5), Comedor (G4), Biblioteca (G3), Portales (G1, G2)
 24. **Tienda:** confirmar `items[]` (`productId`, `productName`, `category`, `quantity`, `subtotal`) y `siteId` opcional; cerrar las cinco cards «G5→G7 #26–#30» que están «En revisión». No hay xlsx de G5 en la carpeta.
@@ -583,8 +638,8 @@ El prototipo se autodescribe como "datos de ejemplo, sin backend" y define 4 pan
 
 ### Para la cátedra / equipo
 28. ¿La entrega del 11/11 y la final del 2/12 admiten integraciones mockeadas, como dijo G8 que dijo la cátedra? La consigna pide integración real en la final (Consigna, p. 6). ¿Qué criterios de evaluación se aplican? La consigna no los trae.
-29. Decidir internamente la vía de ingesta (punto 1 de la sección 7) y alinear código, xlsx M7 y respuestas dadas en Trello (el 2026-10-22 dijimos que `POST /api/analytics/events` no existe más y el código todavía lo usa).
-30. **Contradicciones internas por resolver:** (a) el README viejo y `role.entity.ts` (`ROLES`) dicen que eventos pertenece al rol financiero, el frontend y la ruta `GET /events/stats` lo asignan al rol académico, como el xlsx M7; (b) `backend/EVENTOS.md` todavía dice que lo ingerido "se pierde al reiniciar el servidor", pero ahora está en Postgres.
+29. **Resuelto (2026-11-05):** vía de ingesta decidida: cola de CORE (consumer) más `POST /api/analytics/events` sólo como mock de la cola (`EVENTS_HTTP_INGEST`), que en producción debe quedar apagado, como dijimos en Trello.
+30. **Contradicciones internas (resueltas el 2026-11-05):** (a) eventos pertenece al rol académico en `role.entity.ts`, la ruta, el frontend y el README; (b) `backend/EVENTOS.md` se reescribió para el envelope v1 y la persistencia en Postgres.
 
 ### Contradicciones entre fuentes (y cuál manda)
 
@@ -598,5 +653,5 @@ El prototipo se autodescribe como "datos de ejemplo, sin backend" y define 4 pan
 | Caché de revocación del gateway | doc CORE (Trello 2026-10-20 cita 30 s) | CORE 2026-10-20: consulta en cada request |
 | Evento de resultado de curso | xlsx M7 (propuesto) vs. G9 real vs. catálogo v1 (no existe) | **Abierta** |
 | Entrega final integrada | Consigna p. 6 vs. G8 citando a la cátedra (2/12 mockeado) | **Abierta**, confirmar con la cátedra |
-| Rol que ve eventos | README viejo/`ROLES` (financiero) vs. frontend, ruta y xlsx M7 (académico) | Código y xlsx M7; corregir `ROLES` |
+| Rol que ve eventos | README viejo/`ROLES` (financiero) vs. frontend, ruta y xlsx M7 (académico) | Código y xlsx M7 (**resuelto**: `ROLES` ya dice académico) |
 | Credenciales de prueba "por privado" | Novedades 04/11, p. 2 | Trello 2026-11-04 las muestra en texto plano |

@@ -1,6 +1,18 @@
 # Integración de Analítica (Módulo 7) con los demás grupos de UADEnet
 
-Especificación técnica para implementar. Redactada el 2026-11-05 sobre la rama `feature/db-postgres`. **No hay código tocado**: todo lo que dice "se crea", "se reescribe" o "se borra" es trabajo pendiente.
+Especificación técnica para implementar. Redactada el 2026-11-05 sobre la rama `feature/db-postgres`. El texto de las secciones 1 a 9 está escrito en futuro ("se crea", "se reescribe", "se borra"): es la spec original, ya implementada (ver la nota siguiente).
+
+> **Implementado el 2026-11-05** (commits `917fcde` Fase A, `8aa6f41` Fase B, `fc0d831` Fase C, `2f026a5` Fase D, `4c8359c` Fase E; la Fase F es la documentación). Para ver qué existe hoy: `backend/EVENTOS.md`, `README.md`, `CONTEXTO-UADENET.md` («Estado de implementación») y `CLAUDE.md`. **Desvíos respecto de esta spec** (lo que dice el código manda sobre el resto del documento):
+> - **Tipo de evento aproximado.** G6 no informa `category`: el tipo sale de la clase de precio (Pago / Gratuito) y el tablero de eventos lo avisa con un `warning` (`source: "events"`).
+> - **Feeders.** `EVENTS_FEEDERS` suma `backoffice` (`["eventos", "backoffice"]`, por `location.upserted`); `ACADEMIC_FEEDERS` es `["gestion-academica", "backoffice"]` y `FINANCIAL_FEEDERS` `["core", "backoffice", "tienda", "comedor"]`.
+> - **Validators tolerantes.** Si Backoffice o Gestión Académica fallan al armar los catálogos, `parseAcademicFilters` y `parseFinancialFilters` aceptan un `sedeId`, `facultad` o `cuatrimestre` bien formado aunque no esté en la lista reducida, y el tablero sale con aviso; con las fuentes sanas un valor desconocido sigue dando `400`.
+> - **Seed mínimo eliminado.** `prisma/seed.ts` y `npm run db:seed` se borraron (usaban el contrato viejo): el único seed es el demo (`npm run db:demo`).
+> - **Demo.** Son 9 tipos persistidos (no 8), ~34,6 mil envelopes v1 con `eventId` estables (prefijo `de0de0de`), y `wallets-aggregates` de marzo a noviembre de 2026 (nueve meses, no seis). `db:demo` también carga los snapshots de saldo desde los mocks; `db:demo:clear` los borra junto con los eventos del demo.
+> - **Respuestas del POST.** Los 400 llevan `code: "INVALID_EVENT"` y `errors[]`; los códigos del POST son `201 STORED`, `200 DUPLICATE`, `202 IGNORED`.
+> - **Backfill.** `npm run backfill:core` exige `CORE_MOCK=false`: con el mock no existe `CoreEventsGateway`.
+> - **Snapshots.** Un mes sin datos (`walletCount: 0`) no se guarda; el ciclo siempre revisa el mes anterior y, con `WALLET_SNAPSHOT_BACKFILL_MONTHS=N`, los N anteriores.
+> - **Mocks.** `core/wallets-aggregates/_empty.json` es opcional y no existe en el repo (sin él, respuesta vacía); los mocks de períodos (ids 3 a 8), sedes (una `INACTIVE`) y cursos son más ricos que los ejemplos de la sección 5.
+> - **Tests.** No se agregó `backend/test/` ni el script `test`: sigue sin haber tests automatizados.
 
 **Objetivo.** Pasar de nuestro contrato propio (`sourceModule` + `payload`) al contrato de CORE (envelope v1 y catálogo de eventos), consultar en vivo a los módulos dueños de cada dato y, **mientras los otros grupos no estén listos**, simularlos con una capa de mocks apagable por flag: los eventos de cola con Postman y las respuestas REST con archivos `.json` editables a mano.
 

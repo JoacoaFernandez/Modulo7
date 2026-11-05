@@ -28,7 +28,7 @@
    * de más oscuro a más claro — así vienen ordenados en el array). Valores confirmados
    * decodificando el bundle del prototipo (ver CONTEXTO-UADENET.md, sección 8); reemplazan la
    * escala interpolada que se había usado como aproximación en el Paso 3. El backend ya sirve
-   * estos mismos 7 valores por categoría (`AdministrativeExpense.color`, `analytics.dataset.ts`),
+   * estos mismos 7 valores por categoría (`AdministrativeExpense.color`, `EXPENSE_CONCEPTS` en `dashboard.config.ts`),
    * así que en la práctica el frontend no necesita este token — queda como referencia.
    */
   --gasto-color-1: #1a2b48;
