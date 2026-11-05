@@ -1,0 +1,59 @@
+{
+  "range": {
+    "from": "2026-05-01",
+    "to": "2026-05-31"
+  },
+  "currency": "ARS",
+  "outstandingBalance": "6954500.00",
+  "walletCount": 1570,
+  "groups": [
+    {
+      "key": "TOP_UP",
+      "type": "CREDIT",
+      "count": 1455,
+      "total": "20366000.00"
+    },
+    {
+      "key": "PAYROLL",
+      "type": "CREDIT",
+      "count": 491,
+      "total": "9326900.00"
+    },
+    {
+      "key": "SCHOLARSHIP",
+      "type": "CREDIT",
+      "count": 148,
+      "total": "1854400.00"
+    },
+    {
+      "key": "STORE_PURCHASE",
+      "type": "DEBIT",
+      "count": 419,
+      "total": "11411750.00"
+    },
+    {
+      "key": "DINING_RESERVATION",
+      "type": "DEBIT",
+      "count": 764,
+      "total": "1986400.00"
+    },
+    {
+      "key": "LIBRARY_FINE",
+      "type": "DEBIT",
+      "count": 67,
+      "total": "160700.00"
+    },
+    {
+      "key": "EVENT_REGISTRATION",
+      "type": "DEBIT",
+      "count": 578,
+      "total": "4231000.00"
+    },
+    {
+      "key": "REFUND",
+      "type": "REVERSAL",
+      "count": 63,
+      "total": "319300.00"
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "curso": {
+    "id": 8055,
+    "asignatura": {
+      "id": 115,
+      "codigo": "MKT-201",
+      "nombre": "Marketing Digital"
+    },
+    "periodo": {
+      "id": 8,
+      "anio": 2026,
+      "numero": 2
+    },
+    "sedeId": 4,
+    "estado": "FINALIZADO"
+  },
+  "docentes": [
+    {
+      "docenteId": "02d00000-0000-4000-8000-00000000000c",
+      "rol": "TITULAR"
+    }
+  ]
+}

@@ -1,19 +1,40 @@
-// Regenera la sección "Esquema de payloads" de EVENTOS.md a partir de EVENT_SCHEMAS.
+// Regenera la sección de payloads de EVENTOS.md (entre los marcadores payloads:start / payloads:end) a partir de
+// EVENT_CATALOG (domain/entities/event-catalog.ts, docs/INTEGRACION.md, 3). El resto de EVENTOS.md se edita a mano.
 // Uso: npm run docs:payloads
 import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
+import { EVENT_CATALOG, EventCatalogEntry, EventHandling, EventOrigin } from "../src/domain/entities/event-catalog";
 import { FieldSpec } from "../src/domain/entities/event-schema.entity";
-import { EVENT_SCHEMAS } from "../src/domain/entities/event-schemas";
-import { SOURCE_MODULES } from "../src/domain/entities/event-source.entity";
+import { CORE_SOURCES } from "../src/domain/entities/event-source.entity";
 
 const START = "<!-- payloads:start -->";
 const END = "<!-- payloads:end -->";
 
+const HANDLING: Record<EventHandling, string> = {
+  persist: "se guarda",
+  "side-effect": "efecto lateral (se procesa y no se guarda)",
+  ignore: "se recibe y se descarta (ack)",
+};
+const ORIGIN: Record<EventOrigin, string> = {
+  core: "CORE oficial",
+  declared: "declarado por el equipo emisor",
+  proposed: "propuesto, pendiente de registrar en CORE",
+};
+
 function typeLabel(field: FieldSpec): string {
   if (field.oneOf) return `enum (${field.oneOf.map((value) => `\`${value}\``).join(", ")})`;
-  if (field.type === "date") return "`string` AAAA-MM-DD";
-  if (field.type === "array") return "`array` de objetos";
-  return `\`${field.type}\``;
+  switch (field.type) {
+    case "date":
+      return "`date` AAAA-MM-DD";
+    case "datetime":
+      return "`datetime` ISO 8601 UTC con `Z`";
+    case "money":
+      return "`money` texto con 2 decimales";
+    case "array":
+      return "`array` de objetos";
+    default:
+      return `\`${field.type}\``;
+  }
 }
 
 function rows(fields: readonly FieldSpec[], prefix = ""): string[] {
@@ -25,25 +46,31 @@ function rows(fields: readonly FieldSpec[], prefix = ""): string[] {
   });
 }
 
-const sections = SOURCE_MODULES.flatMap((module) => {
-  const schemas = EVENT_SCHEMAS.filter((schema) => schema.sourceModule === module);
-  if (schemas.length === 0) return [];
-
-  return [
-    `#### \`${module}\``,
-    ...schemas.flatMap((schema) => [
-      "",
-      `**\`${schema.eventType}\`**`,
-      "",
-      "| Campo | Tipo | Obligatorio | Descripción |",
-      "|---|---|---|---|",
-      ...rows(schema.fields),
-    ]),
+function section(entry: EventCatalogEntry): string[] {
+  const lines = [
+    `**\`${entry.eventType}\`**${entry.declaredBy ? ` · ${entry.declaredBy}` : ""}`,
     "",
+    `- Estado: ${ORIGIN[entry.origin]}.`,
+    `- Tratamiento: ${HANDLING[entry.handling]}.`,
+    `- Alimenta: ${entry.feeds}.`,
   ];
+  if (entry.redact?.length) lines.push(`- No se guarda: ${entry.redact.map((field) => `\`data.${field}\``).join(", ")} (redact).`);
+  if (entry.handling === "ignore") return [...lines, ""];
+
+  return [...lines, "", "| Campo | Tipo | Obligatorio | Descripción |", "|---|---|---|---|", ...rows(entry.fields, "data."), ""];
+}
+
+const sections = CORE_SOURCES.flatMap((source) => {
+  const entries = EVENT_CATALOG.filter((entry) => entry.source === source);
+  if (entries.length === 0) return [];
+
+  // Primero los que se guardan, después efecto lateral y descartados.
+  const order: Record<EventHandling, number> = { persist: 0, "side-effect": 1, ignore: 2 };
+  const sorted = [...entries].sort((a, b) => order[a.handling] - order[b.handling]);
+  return [`#### \`source: ${source}\``, "", ...sorted.flatMap(section)];
 });
 
-const generated = [START, "", ...sections, END].join("\n");
+const generated = [START, "", "<!-- Generado por `npm run docs` desde event-catalog.ts: no editar a mano. -->", "", ...sections, END].join("\n");
 
 const file = path.join(__dirname, "..", "EVENTOS.md");
 const current = readFileSync(file, "utf8");

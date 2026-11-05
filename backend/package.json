@@ -14,10 +14,11 @@
     "backfill:core": "tsx scripts/backfill-from-core.ts",
     "db:up": "docker compose up -d",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed",
     "db:demo": "tsx prisma/demo-seed.ts",
     "db:demo:clear": "tsx prisma/demo-seed.ts --clear",
-    "postinstall": "prisma generate"
+    "postinstall": "prisma generate",
+    "mocks:generate": "tsx scripts/generate-demo-mocks.ts",
+    "mocks:check": "tsx scripts/check-mocks.ts"
   },
   "keywords": [],
   "author": "",
@@ -35,8 +36,5 @@
     "prisma": "^6.19.3",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2"
-  },
-  "prisma": {
-    "seed": "tsx prisma/seed.ts"
   }
 }

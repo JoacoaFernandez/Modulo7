@@ -120,285 +120,255 @@ ignoran. Tipos: `string`, `number` (montos en ARS, sin formato de texto), `boole
 `AAAA-MM-DD` (sin hora, hora de Argentina), `object` y `array`.
 
 Esta sección se genera con `npm run docs:payloads` desde
-`src/domain/entities/event-schemas.ts`. **No editar a mano**: cambiar el esquema y regenerar.
+`src/domain/entities/event-catalog.ts`. **No editar a mano**: cambiar el catálogo y regenerar.
 
 <!-- payloads:start -->
 
-#### `portal-estudiante`
+<!-- Generado por `npm run docs` desde event-catalog.ts: no editar a mano. -->
 
-**`inscripcion.confirmada`**
+#### `source: teacher`
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `materia` | `string` | sí | Código de la materia. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
+**`teacher.exam-result.published.v1`**
 
-**`inscripcion.cancelada`**
+- Estado: declarado por el equipo emisor.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: Es por examen, no resultado final de curso.
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
-| `motivo` | `string` | no | Motivo de la baja. |
+**`teacher.attendance.recorded.v1`**
 
-#### `portal-docente`
+- Estado: declarado por el equipo emisor.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: Es por clase; ningún tablero lo usa.
 
-**`curso.creado`**
+#### `source: library`
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `docenteId` | `string` | sí | Id del docente (el mismo de `docente.alta`). |
-| `materia` | `string` | sí | Código de la materia. |
-| `comision` | `string` | no | Comisión. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
+**`library.penalty.applied.v1`**
 
-**`acta.cerrada`**
+- Estado: CORE oficial.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: Ningún tablero lo usa (las multas ya están en aggregates).
+
+#### `source: dining`
+
+**`dining.reservation.created.v1`** · G4
+
+- Estado: CORE oficial.
+- Tratamiento: se guarda.
+- Alimenta: Facturación y tickets por sede.
+- No se guarda: `data.userId` (redact).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `nota` | `number` | no | Nota. |
-| `aprobado` | `boolean` | sí | Si aprobó. |
+| `data.reservationId` | `uuid` | sí | Id de la reserva. |
+| `data.userId` | `uuid` | no | Id del usuario. No se guarda (redact). |
+| `data.siteId` | `uuid` | sí | Id de la sede. |
+| `data.slotAt` | `datetime` ISO 8601 UTC con `Z` | no | Turno reservado. |
+| `data.amount` | `money` texto con 2 decimales | sí | Importe. |
+| `data.currency` | `string` | no | Moneda (ISO 4217). |
 
-#### `biblioteca`
+**`dining.reservation.cancelled.v1`** · G4
 
-**`prestamo.realizado`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `prestamoId` | `string` | sí | Id del préstamo. |
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `materialId` | `string` | sí | Id del material (ISBN). |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fechaVencimiento` | `string` AAAA-MM-DD | no | Fecha límite de devolución. |
-
-**`prestamo.devuelto`**
+- Estado: CORE oficial.
+- Tratamiento: se guarda.
+- Alimenta: Descuenta la reserva cancelada.
+- No se guarda: `data.userId` (redact).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `prestamoId` | `string` | sí | Id del préstamo. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `conDemora` | `boolean` | no | Si se devolvió después del vencimiento. |
+| `data.reservationId` | `uuid` | sí | Id de la reserva. |
+| `data.userId` | `uuid` | no | Id del usuario. No se guarda (redact). |
+| `data.slotAt` | `datetime` ISO 8601 UTC con `Z` | no | Turno reservado. |
+| `data.cancelledAt` | `datetime` ISO 8601 UTC con `Z` | no | Momento de la cancelación. |
 
-#### `comedor`
+**`dining.attendance.recorded.v1`** · G4
 
-**`reserva.confirmada`**
-
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `reservaId` | `string` | sí | Id de la reserva. |
-| `monto` | `number` | sí | Costo cobrado en ARS. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `turno` | `string` | no | Horario del turno. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha del turno. |
-
-**`reserva.asistida`**
+- Estado: CORE oficial.
+- Tratamiento: se guarda.
+- Alimenta: Sólo con DINING_REVENUE_NET_OF_ATTENDANCE=true.
+- No se guarda: `data.userId` (redact).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `reservaId` | `string` | sí | Id de la reserva. |
-| `montoRestituido` | `number` | sí | Monto restituido en ARS. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
+| `data.reservationId` | `uuid` | sí | Id de la reserva. |
+| `data.userId` | `uuid` | no | Id del usuario. No se guarda (redact). |
+| `data.attendedAt` | `datetime` ISO 8601 UTC con `Z` | no | Momento de la asistencia. |
 
-**`reserva.cancelada`**
+#### `source: store`
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `reservaId` | `string` | sí | Id de la reserva. |
-| `montoDevuelto` | `number` | sí | Monto devuelto en ARS. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
+**`store.purchase.completed.v1`** · G5
 
-#### `tienda`
-
-**`compra.realizada`**
+- Estado: CORE oficial.
+- Tratamiento: se guarda.
+- Alimenta: Productos más vendidos (unidades y facturación).
+- No se guarda: `data.userId` (redact).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `compraId` | `string` | sí | Id de la compra. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha de la compra. |
-| `total` | `number` | sí | Total de la compra en ARS (suma de los montos de los ítems). |
-| `items` | `array` de objetos | sí | Ítems de la compra. |
-| `items[].producto` | `string` | sí | Nombre del producto. |
-| `items[].categoria` | `string` | no | Categoría del producto. |
-| `items[].unidades` | `number` | sí | Unidades. |
-| `items[].monto` | `number` | sí | Monto total de la línea en ARS (unidades × precio unitario), no el precio unitario. |
+| `data.purchaseId` | `uuid` | sí | Id de la compra. |
+| `data.userId` | `uuid` | no | Id del usuario. No se guarda (redact). |
+| `data.total` | `money` texto con 2 decimales | no | Total de la compra. |
+| `data.currency` | `string` | no | Moneda (ISO 4217). |
+| `data.siteId` | `uuid` | no | Id de la sede (opcional). |
+| `data.items` | `array` de objetos | sí | Ítems de la compra (propuesto: no está en CORE v1). |
+| `data.items[].productId` | `uuid` | sí | Id del producto. |
+| `data.items[].productName` | `string` | sí | Nombre del producto al momento de la compra. |
+| `data.items[].category` | `string` | no | Categoría. |
+| `data.items[].quantity` | `integer` | sí | Unidades. |
+| `data.items[].unitPrice` | `money` texto con 2 decimales | no | Precio unitario. |
+| `data.items[].subtotal` | `money` texto con 2 decimales | sí | Importe de la línea. |
 
-**`compra.devuelta`**
+#### `source: events`
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `compraId` | `string` | sí | Id de la compra original. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha de la devolución. |
-| `items` | `array` de objetos | sí | Ítems de la compra. |
-| `items[].producto` | `string` | sí | Nombre del producto. |
-| `items[].categoria` | `string` | no | Categoría del producto. |
-| `items[].unidades` | `number` | sí | Unidades. |
-| `items[].monto` | `number` | sí | Monto total de la línea en ARS (unidades × precio unitario), no el precio unitario. |
+**`events.event.created.v1`** · G6
 
-#### `eventos`
-
-**`evento.realizado`**
+- Estado: CORE oficial.
+- Tratamiento: se guarda.
+- Alimenta: Frecuencia, ocupación de cupo y tipo de evento.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `tipoEvento` | `string` | sí | Tipo (charla, taller, ...). |
-| `locacion` | `string` | no | Locación. |
-| `cupo` | `number` | sí | Cupo máximo. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha del evento. |
-| `costo` | `number` | no | Costo de inscripción en ARS (0 si es gratis). |
+| `data.eventId` | `uuid` | sí | Id del evento. |
+| `data.title` | `string` | no | Título. |
+| `data.locationId` | `uuid` | sí | Id de la locación en Backoffice. |
+| `data.startAt` | `datetime` ISO 8601 UTC con `Z` | no | Inicio. |
+| `data.endAt` | `datetime` ISO 8601 UTC con `Z` | sí | Fin. |
+| `data.capacity` | `integer` | sí | Cupo. |
+| `data.price` | `money` texto con 2 decimales | no | Precio (puede ser null). |
+| `data.currency` | `string` | no | Moneda (ISO 4217). |
+| `data.category` | `string` | no | Tipo de evento (propuesto, opcional). |
 
-**`inscripcion.confirmada`**
+**`events.registration.completed.v1`** · G6
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `personaId` | `string` | sí | Id de la persona. |
-| `monto` | `number` | sí | Monto pagado en ARS (0 si es gratis). |
-
-**`asistencia.registrada`**
+- Estado: CORE oficial.
+- Tratamiento: se guarda.
+- Alimenta: Inscriptos y presentismo.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `personaId` | `string` | sí | Id de la persona. |
-| `presente` | `boolean` | sí | Si asistió. |
+| `data.eventId` | `uuid` | sí | Id del evento. |
+| `data.registrationId` | `uuid` | sí | Id de la inscripción. |
+| `data.userId` | `uuid` | sí | Id del usuario inscripto. |
+| `data.amount` | `money` texto con 2 decimales | no | Importe cobrado. |
+| `data.currency` | `string` | no | Moneda (ISO 4217). |
 
-**`evento.cancelado`**
+**`events.attendance.recorded.v1`** · G6
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `motivo` | `string` | no | Motivo. |
-
-**`inscripcion.cancelada`**
+- Estado: CORE oficial.
+- Tratamiento: se guarda.
+- Alimenta: Concurrencia y presentismo.
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `eventoId` | `string` | sí | Id del evento. |
-| `personaId` | `string` | sí | Id de la persona. |
-| `montoDevuelto` | `number` | no | Monto devuelto en ARS. |
+| `data.eventId` | `uuid` | sí | Id del evento. |
+| `data.userId` | `uuid` | sí | Id del usuario. |
+| `data.present` | `boolean` | sí | Si estuvo presente. |
+| `data.checkedAt` | `datetime` ISO 8601 UTC con `Z` | no | Momento del registro. |
 
-#### `backoffice`
+**`events.reminder.requested.v1`**
 
-**`sueldos.liquidados`**
+- Estado: CORE oficial.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: No es de Analítica.
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `periodo` | `string` | sí | Mes liquidado, formato AAAA-MM. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `monto` | `number` | sí | Total liquidado en ARS. |
-| `desglose` | `object` | no | Desglose del total. |
-| `desglose.docentes` | `number` | no | Sueldos docentes en ARS. |
-| `desglose.administrativos` | `number` | no | Sueldos administrativos en ARS. |
+#### `source: academic`
 
-**`gasto.registrado`**
+**`academic.course-result.published.v1`** · G9
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `categoria` | `string` | sí | Categoría del gasto. |
-| `monto` | `number` | sí | Monto en ARS. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha del gasto. |
-
-**`docente.alta`**
+- Estado: propuesto, pendiente de registrar en CORE.
+- Tratamiento: se guarda.
+- Alimenta: Tasa de aprobación (KPI, por materia, por facultad, por docente).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `docenteId` | `string` | sí | Id del docente (el mismo de `docente.alta`). |
-| `nombre` | `string` | sí | Nombre completo. |
-| `facultad` | `string` | no | Facultad. |
+| `data.studentId` | `uuid` | sí | Id del alumno. |
+| `data.courseId` | `string` | sí | Id del curso (texto). |
+| `data.subjectId` | `string` | sí | Id de la asignatura (texto). |
+| `data.periodId` | `string` | sí | Id del período (texto). |
+| `data.siteId` | `uuid` | sí | Id de la sede en Backoffice (backofficeSiteId). |
+| `data.status` | enum (`APROBADO`, `DESAPROBADO`) | sí | Resultado final. |
+| `data.finalGrade` | `number` | no | Nota final (0 a 10). |
+| `data.resultDate` | `date` AAAA-MM-DD | no | Fecha del resultado (AAAA-MM-DD). |
 
-**`sede.definida`**
+**`academic.term-defined.v1`**
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `nombre` | `string` | sí | Nombre de la sede. |
+- Estado: CORE oficial.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: Los cuatrimestres salen de GET periodos.
 
-#### `gestion-academica`
+**`academic.exam-scheduled.v1`**
 
-**`resultado.publicado`**
+- Estado: CORE oficial.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: No es de Analítica.
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `materia` | `string` | sí | Código de la materia. |
-| `comision` | `string` | no | Comisión. |
-| `docenteId` | `string` | sí | Id del docente (el mismo de `docente.alta`). |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
-| `notaFinal` | `number` | no | Nota final. |
-| `estado` | `string` | no | Situación de la materia (`APROBADO`, `DESAPROBADO`, ...). |
-| `aprobado` | `boolean` | sí | Si aprobó la cursada. |
-| `fechaResultado` | `string` AAAA-MM-DD | no | Fecha del resultado, hora de Argentina. |
+#### `source: backoffice`
 
-**`resultado.modificado`**
+**`backoffice.location.upserted.v1`** · G8
+
+- Estado: CORE oficial.
+- Tratamiento: se guarda.
+- Alimenta: Resolver la sede de un evento (locationId a siteId).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `alumnoId` | `string` | sí | Id del alumno. |
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `notaFinal` | `number` | no | Nota corregida. |
-| `estado` | `string` | no | Situación corregida. |
-| `aprobado` | `boolean` | sí | Si aprobó, con la corrección. |
-| `motivo` | `string` | no | Motivo de la corrección. |
+| `data.locationId` | `uuid` | sí | Id de la locación. |
+| `data.siteId` | `uuid` | sí | Id de la sede. |
+| `data.name` | `string` | no | Nombre de la locación. |
+| `data.capacity` | `integer` | no | Capacidad. |
+| `data.status` | enum (`ACTIVE`, `INACTIVE`, `MAINTENANCE`) | no | Estado. |
+| `data.type` | `string` | no | Tipo de locación (pedido de G8, opcional). |
 
-**`curso.abierto`**
+**`backoffice.user.upserted.v1`** · G8
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `materia` | `string` | sí | Código de la materia. |
-| `nombreMateria` | `string` | no | Nombre de la materia. |
-| `facultad` | `string` | no | Facultad. |
-| `comision` | `string` | no | Comisión. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
-| `cupo` | `number` | no | Cupo máximo. |
-
-**`curso.cerrado`**
+- Estado: CORE oficial.
+- Tratamiento: efecto lateral (se procesa y no se guarda).
+- Alimenta: Invalida el nombre cacheado del usuario (no se guarda: lleva mail y permisos).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `cursoId` | `string` | sí | Id del curso (string). |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
+| `data.userId` | `uuid` | sí | Id del usuario. |
 
-**`cuatrimestre.definido`**
+**`backoffice.user.disabled.v1`** · G8
 
-| Campo | Tipo | Obligatorio | Descripción |
-|---|---|---|---|
-| `cuatrimestre` | `string` | sí | Formato AAAA-NC, por ejemplo `2026-2C`. |
-| `inicio` | `string` AAAA-MM-DD | sí | Primer día del cuatrimestre. |
-| `fin` | `string` AAAA-MM-DD | sí | Último día del cuatrimestre. |
-
-#### `core`
-
-**`saldo.movimiento`**
+- Estado: CORE oficial.
+- Tratamiento: efecto lateral (se procesa y no se guarda).
+- Alimenta: Invalida el nombre cacheado del usuario (no se guarda: lleva mail y permisos).
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `cuentaId` | `string` | sí | Id de la cuenta institucional. |
-| `tipo` | enum (`carga`, `cobro`, `acreditacion`, `multa`, `restitucion`) | sí | Tipo de movimiento. |
-| `monto` | `number` | sí | Monto en ARS. |
-| `origen` | enum (`comedor`, `tienda`, `evento`, `biblioteca`) | sí | Módulo que originó el movimiento. |
-| `sedeId` | `string` | sí | Id de la sede en el catálogo de Backoffice. |
-| `fecha` | `string` AAAA-MM-DD | sí | Fecha del movimiento. |
-| `saldoPosterior` | `number` | no | Saldo de la cuenta después del movimiento. |
+| `data.userId` | `uuid` | sí | Id del usuario. |
+
+**`backoffice.rate.changed.v1`**
+
+- Estado: CORE oficial.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: No es de Analítica.
+
+#### `source: core`
+
+**`core.wallet.transaction-posted.v1`**
+
+- Estado: CORE oficial.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: Los totales oficiales salen de aggregates.
+
+**`core.wallet.transaction-reversed.v1`**
+
+- Estado: CORE oficial.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: Los totales oficiales salen de aggregates.
+
+**`core.wallet.transaction-rejected.v1`**
+
+- Estado: CORE oficial.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: Los totales oficiales salen de aggregates.
+
+**`core.notification.created.v1`**
+
+- Estado: CORE oficial.
+- Tratamiento: se recibe y se descarta (ack).
+- Alimenta: No es de Analítica.
 
 <!-- payloads:end -->
 

@@ -4,7 +4,7 @@
     "codigo": "LAE-2026",
     "nombre": "Plan de Estudios 2026",
     "vigenciaDesde": "2026-03-01",
-    "cantidadAsignaturas": 4,
+    "cantidadAsignaturas": 7,
     "estado": "ACTIVO",
     "carreraId": 2
   }

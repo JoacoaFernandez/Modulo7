@@ -1,59 +1,53 @@
 {
   "range": {
     "from": "2026-11-01",
-    "to": "2026-11-05"
+    "to": "2026-11-04"
   },
   "currency": "ARS",
-  "outstandingBalance": "9150000.00",
-  "walletCount": 1825,
+  "outstandingBalance": "8490400.00",
+  "walletCount": 1840,
   "groups": [
     {
       "key": "TOP_UP",
       "type": "CREDIT",
-      "count": 80,
-      "total": "1193400.00"
-    },
-    {
-      "key": "PAYROLL",
-      "type": "CREDIT",
-      "count": 41,
-      "total": "468000.00"
+      "count": 175,
+      "total": "2451600.00"
     },
     {
       "key": "SCHOLARSHIP",
       "type": "CREDIT",
-      "count": 7,
-      "total": "87750.00"
+      "count": 162,
+      "total": "2027700.00"
     },
     {
       "key": "STORE_PURCHASE",
       "type": "DEBIT",
-      "count": 184,
-      "total": "360262.50"
+      "count": 51,
+      "total": "1727200.00"
     },
     {
       "key": "DINING_RESERVATION",
       "type": "DEBIT",
-      "count": 242,
-      "total": "362700.00"
+      "count": 89,
+      "total": "267000.00"
     },
     {
       "key": "LIBRARY_FINE",
       "type": "DEBIT",
-      "count": 11,
-      "total": "26812.50"
+      "count": 9,
+      "total": "20400.00"
     },
     {
       "key": "EVENT_REGISTRATION",
       "type": "DEBIT",
-      "count": 41,
-      "total": "73710.00"
+      "count": 19,
+      "total": "143000.00"
     },
     {
       "key": "REFUND",
       "type": "REVERSAL",
-      "count": 125,
-      "total": "187200.00"
+      "count": 10,
+      "total": "52600.00"
     }
   ]
 }
