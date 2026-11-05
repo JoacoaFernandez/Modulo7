@@ -28,8 +28,12 @@ dirección académica, dirección financiera y estadísticas de eventos.
   datos de tableros. El token viaja como Bearer y el rol (académica / financiera) lo define
   CORE; los tableros exigen sesión y el rol correcto.
 - Sedes: toda sede viaja como `sedeId` (`?sedeId=sede-centro`), nunca como nombre.
-- Antes de asumir que algo falta o está desactualizado, releer `ANALISIS-DISENO.md` — es
-  la auditoría viva del proyecto y puede tener notas más recientes que esta guía.
+- Facultades: el tablero académico filtra con `?facultad=` (catálogo en `GET /filters` → `faculties`, sale de
+  `curso.abierto.facultad`; el id es el nombre). Sin param = todas; valor fuera del catálogo = 400.
+- Antes de asumir que algo falta o está desactualizado, releer `CONTEXTO-UADENET.md` — es
+  la referencia consolidada del TP y del ecosistema (consigna, contrato de CORE vigente,
+  flujos de los otros equipos, brechas y preguntas abiertas) y puede tener notas más recientes
+  que esta guía.
 
 ## Estructura del repo
 
