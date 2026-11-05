@@ -2,7 +2,7 @@
 import { Prisma } from "@prisma/client";
 import { ARGENTINA_TZ, MONTH_LABELS } from "../../../domain/services/period-catalog.service";
 
-// Las fechas de los tableros son hora de Argentina; occurred_at se guarda en UTC (timestamp sin zona).
+// Las fechas de los tableros son hora de Argentina; occurred_at es timestamptz (se guarda en UTC).
 const ARGENTINA_UTC_OFFSET_HOURS = 3;
 
 export interface MonthRange {
@@ -31,7 +31,7 @@ export function parseMonthId(id: string): MonthRange | null {
 }
 
 // Filtro de sede; null (sede agregada) no filtra. `column` permite calificar el alias en los joins.
-export function siteFilter(sedeId: string | null, column: Prisma.Sql = Prisma.sql`payload->>'sedeId'`): Prisma.Sql {
+export function siteFilter(sedeId: string | null, column: Prisma.Sql = Prisma.sql`data->>'sedeId'`): Prisma.Sql {
   return sedeId === null ? Prisma.empty : Prisma.sql`AND ${column} = ${sedeId}`;
 }
 
@@ -42,14 +42,14 @@ export function facultyFilter(facultad: string | null, cursoId: Prisma.Sql, cuat
   return facultad === null
     ? Prisma.empty
     : Prisma.sql`AND (${cursoId}, ${cuatrimestre}) IN (
-        SELECT fa.payload->>'cursoId', fa.payload->>'cuatrimestre'
+        SELECT fa.data->>'cursoId', fa.data->>'cuatrimestre'
         FROM inbox_events fa
-        WHERE fa.source_module = 'gestion-academica' AND fa.event_type = 'curso.abierto'
-          AND fa.payload->>'facultad' = ${facultad}
+        WHERE fa.source = 'gestion-academica' AND fa.event_type = 'curso.abierto'
+          AND fa.data->>'facultad' = ${facultad}
       )`;
 }
 
 // Mes calendario (AAAA-MM, hora de Argentina) de occurred_at.
 export function argentinaMonth(column: Prisma.Sql = Prisma.sql`occurred_at`): Prisma.Sql {
-  return Prisma.sql`to_char((${column} AT TIME ZONE 'UTC') AT TIME ZONE ${ARGENTINA_TZ}, 'YYYY-MM')`;
+  return Prisma.sql`to_char(${column} AT TIME ZONE ${ARGENTINA_TZ}, 'YYYY-MM')`;
 }

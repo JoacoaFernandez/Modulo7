@@ -1,6 +1,6 @@
 // Queries de catálogos sobre inbox_events: sedes, períodos con actividad y última ingesta por módulo.
 import { PrismaClient } from "@prisma/client";
-import { SourceModule } from "../../../domain/entities/event-source.entity";
+import { isCoreSource, SOURCE_BY_CORE, SourceModule } from "../../../domain/entities/event-source.entity";
 import { argentinaMonth } from "./query-helpers";
 
 export interface DefinedSite {
@@ -19,14 +19,14 @@ export interface ModuleIngestion {
 export async function queryDefinedSites(prisma: PrismaClient): Promise<DefinedSite[]> {
   const rows = await prisma.$queryRaw<{ sede_id: string; nombre: string }[]>`
     SELECT sede_id, nombre FROM (
-      SELECT DISTINCT ON (payload->>'sedeId')
-        payload->>'sedeId' AS sede_id,
-        payload->>'nombre' AS nombre,
-        MIN(occurred_at) OVER (PARTITION BY payload->>'sedeId') AS first_at
+      SELECT DISTINCT ON (data->>'sedeId')
+        data->>'sedeId' AS sede_id,
+        data->>'nombre' AS nombre,
+        MIN(occurred_at) OVER (PARTITION BY data->>'sedeId') AS first_at
       FROM inbox_events
-      WHERE source_module = 'backoffice' AND event_type = 'sede.definida'
-        AND payload->>'sedeId' IS NOT NULL AND payload->>'nombre' IS NOT NULL
-      ORDER BY payload->>'sedeId', occurred_at DESC
+      WHERE source = 'backoffice' AND event_type = 'sede.definida'
+        AND data->>'sedeId' IS NOT NULL AND data->>'nombre' IS NOT NULL
+      ORDER BY data->>'sedeId', occurred_at DESC
     ) latest
     ORDER BY first_at, sede_id`;
 
@@ -37,10 +37,10 @@ export async function queryDefinedSites(prisma: PrismaClient): Promise<DefinedSi
 // filtro del tablero académico y fija el color estable de cada facultad en el gráfico de tendencias.
 export async function queryFacultyNames(prisma: PrismaClient): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ facultad: string }[]>`
-    SELECT DISTINCT payload->>'facultad' AS facultad
+    SELECT DISTINCT data->>'facultad' AS facultad
     FROM inbox_events
-    WHERE source_module = 'gestion-academica' AND event_type = 'curso.abierto'
-      AND btrim(payload->>'facultad') <> ''`;
+    WHERE source = 'gestion-academica' AND event_type = 'curso.abierto'
+      AND btrim(data->>'facultad') <> ''`;
 
   return rows.map((row) => row.facultad).sort((a, b) => a.localeCompare(b, "es"));
 }
@@ -48,9 +48,9 @@ export async function queryFacultyNames(prisma: PrismaClient): Promise<string[]>
 // Cuatrimestres que nombra cualquier evento: los de cuatrimestre.definido y los de todo payload que lo traiga.
 export async function queryQuarterIds(prisma: PrismaClient): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ cuatrimestre: string }[]>`
-    SELECT DISTINCT payload->>'cuatrimestre' AS cuatrimestre
+    SELECT DISTINCT data->>'cuatrimestre' AS cuatrimestre
     FROM inbox_events
-    WHERE payload->>'cuatrimestre' IS NOT NULL`;
+    WHERE data->>'cuatrimestre' IS NOT NULL`;
 
   return rows.map((row) => row.cuatrimestre);
 }
@@ -62,7 +62,7 @@ export async function queryEventMonths(prisma: PrismaClient): Promise<string[]> 
   const rows = await prisma.$queryRaw<{ ym: string }[]>`
     SELECT DISTINCT ${argentinaMonth()} AS ym
     FROM inbox_events
-    WHERE (source_module, event_type) IN (
+    WHERE (source, event_type) IN (
       ('core', 'saldo.movimiento'),
       ('backoffice', 'sueldos.liquidados'),
       ('backoffice', 'gasto.registrado'),
@@ -77,15 +77,14 @@ export async function queryEventMonths(prisma: PrismaClient): Promise<string[]> 
   return rows.map((row) => row.ym);
 }
 
-// Última recepción por módulo emisor; los módulos que nunca mandaron nada no aparecen.
+// Última recepción por módulo emisor (source_ingestions, incluye los eventos descartados); los módulos que nunca
+// mandaron nada no aparecen. `source` de CORE se traduce al módulo de nuestro dominio.
 export async function queryModuleIngestions(prisma: PrismaClient): Promise<ModuleIngestion[]> {
-  const rows = await prisma.$queryRaw<{ source_module: string; last_received_at: Date }[]>`
-    SELECT source_module, MAX(received_at) AS last_received_at
-    FROM inbox_events
-    GROUP BY source_module`;
+  const rows = await prisma.sourceIngestion.findMany();
 
-  return rows.map((row) => ({
-    module: row.source_module as SourceModule,
-    lastReceivedAt: row.last_received_at.toISOString(),
-  }));
+  return rows.flatMap((row) =>
+    isCoreSource(row.source)
+      ? [{ module: SOURCE_BY_CORE[row.source], lastReceivedAt: row.lastReceivedAt.toISOString() }]
+      : [],
+  );
 }

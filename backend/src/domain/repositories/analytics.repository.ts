@@ -4,7 +4,6 @@ import { EventSource } from "../entities/event-source.entity";
 import { EventStats } from "../entities/event-stats.entity";
 import { AcademicFilters, Faculty, FilterDefaults, FinancialFilters } from "../entities/filters.entity";
 import { FinancialStats } from "../entities/financial-stats.entity";
-import { InstitutionalEvent } from "../entities/institutional-event.entity";
 import { Period } from "../entities/period.entity";
 import { Site } from "../entities/site.entity";
 
@@ -18,6 +17,4 @@ export interface AnalyticsRepository {
   getFaculties(): Promise<Faculty[]>;
   getFilterDefaults(): Promise<FilterDefaults>;
   getEventSources(): Promise<EventSource[]>;
-  getEvents(): Promise<InstitutionalEvent[]>;
-  recordEvent(event: InstitutionalEvent): Promise<void>;
 }

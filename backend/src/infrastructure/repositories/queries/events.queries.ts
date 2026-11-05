@@ -24,33 +24,33 @@ export async function queryHeldEvents(
     { ym: string; tipo_evento: string; cupo: number; registered: number; present: number }[]
   >`
     WITH held AS (
-      SELECT DISTINCT ON (payload->>'eventoId')
-        payload->>'eventoId' AS evento_id,
+      SELECT DISTINCT ON (data->>'eventoId')
+        data->>'eventoId' AS evento_id,
         ${argentinaMonth()} AS ym,
-        payload->>'tipoEvento' AS tipo_evento,
-        COALESCE((payload->>'cupo')::numeric, 0) AS cupo
+        data->>'tipoEvento' AS tipo_evento,
+        COALESCE((data->>'cupo')::numeric, 0) AS cupo
       FROM inbox_events
-      WHERE source_module = 'eventos' AND event_type = 'evento.realizado'
-        AND occurred_at >= ${from}::timestamp AND occurred_at < ${to}::timestamp
+      WHERE source = 'eventos' AND event_type = 'evento.realizado'
+        AND occurred_at >= ${from}::timestamptz AND occurred_at < ${to}::timestamptz
         ${siteFilter(sedeId)}
-      ORDER BY payload->>'eventoId', occurred_at DESC
+      ORDER BY data->>'eventoId', occurred_at DESC
     )
     SELECT h.ym, h.tipo_evento, h.cupo::float8 AS cupo,
-      (SELECT COUNT(DISTINCT i.payload->>'personaId')::int
+      (SELECT COUNT(DISTINCT i.data->>'personaId')::int
        FROM inbox_events i
-       WHERE i.source_module = 'eventos' AND i.event_type = 'inscripcion.confirmada'
-         AND i.payload->>'eventoId' = h.evento_id
+       WHERE i.source = 'eventos' AND i.event_type = 'inscripcion.confirmada'
+         AND i.data->>'eventoId' = h.evento_id
          AND NOT EXISTS (
            SELECT 1 FROM inbox_events c
-           WHERE c.source_module = 'eventos' AND c.event_type = 'inscripcion.cancelada'
-             AND c.payload->>'eventoId' = h.evento_id
-             AND c.payload->>'personaId' = i.payload->>'personaId'
+           WHERE c.source = 'eventos' AND c.event_type = 'inscripcion.cancelada'
+             AND c.data->>'eventoId' = h.evento_id
+             AND c.data->>'personaId' = i.data->>'personaId'
              AND c.occurred_at >= i.occurred_at)) AS registered,
-      (SELECT COUNT(DISTINCT a.payload->>'personaId')::int
+      (SELECT COUNT(DISTINCT a.data->>'personaId')::int
        FROM inbox_events a
-       WHERE a.source_module = 'eventos' AND a.event_type = 'asistencia.registrada'
-         AND a.payload->>'eventoId' = h.evento_id
-         AND (a.payload->>'presente')::boolean) AS present
+       WHERE a.source = 'eventos' AND a.event_type = 'asistencia.registrada'
+         AND a.data->>'eventoId' = h.evento_id
+         AND (a.data->>'presente')::boolean) AS present
     FROM held h`;
 
   return rows.map((row) => ({

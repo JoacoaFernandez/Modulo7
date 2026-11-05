@@ -13,5 +13,13 @@
     "resolveJsonModule": true
   },
   "include": ["**/*.ts"],
-  "exclude": ["node_modules", "dist"]
+  // Seeds y generadores de docs: asumen el contrato viejo (sourceModule/payload) y no compilan hasta la Fase D de docs/INTEGRACION.md.
+  "exclude": [
+    "node_modules",
+    "dist",
+    "prisma/seed.ts",
+    "prisma/demo-seed.ts",
+    "scripts/generate-payload-docs.ts",
+    "scripts/generate-postman.ts"
+  ]
 }

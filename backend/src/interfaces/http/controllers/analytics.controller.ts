@@ -5,16 +5,17 @@ import { GetEventSourcesUseCase } from "../../../application/use-cases/get-event
 import { GetEventsStatsUseCase } from "../../../application/use-cases/get-events-stats.use-case";
 import { GetFiltersUseCase } from "../../../application/use-cases/get-filters.use-case";
 import { GetFinancialDashboardUseCase } from "../../../application/use-cases/get-financial-dashboard.use-case";
-import { GetSitesUseCase } from "../../../application/use-cases/get-sites.use-case";
 import { GetRolesUseCase } from "../../../application/use-cases/get-roles.use-case";
 import { ListEventsUseCase } from "../../../application/use-cases/list-events.use-case";
 import { RecordEventUseCase } from "../../../application/use-cases/record-event.use-case";
-import { normalizeIncomingEvent } from "../../../application/services/event-normalizer.service";
 import { analyticsRepository } from "../../../infrastructure/repositories/analytics-repository.provider";
+import { inboxRepository } from "../../../infrastructure/repositories/inbox-repository.provider";
+import { config } from "../../../shared/config";
+import { EventValidationError } from "../../../shared/event-validation-error";
 import {
   parseAcademicFilters,
+  parseEventsPage,
   parseFinancialFilters,
-  parseRecordEventDto,
 } from "../validators/analytics.validator";
 
 const getAcademicDashboardUseCase = new GetAcademicDashboardUseCase(analyticsRepository);
@@ -22,10 +23,9 @@ const getFinancialDashboardUseCase = new GetFinancialDashboardUseCase(analyticsR
 const getEventsStatsUseCase = new GetEventsStatsUseCase(analyticsRepository);
 const getFiltersUseCase = new GetFiltersUseCase(analyticsRepository);
 const getRolesUseCase = new GetRolesUseCase();
-const getSitesUseCase = new GetSitesUseCase(analyticsRepository);
 const getEventSourcesUseCase = new GetEventSourcesUseCase(analyticsRepository);
-const listEventsUseCase = new ListEventsUseCase(analyticsRepository);
-const recordEventUseCase = new RecordEventUseCase(analyticsRepository);
+const listEventsUseCase = new ListEventsUseCase(inboxRepository);
+const recordEventUseCase = new RecordEventUseCase(inboxRepository, { storeUnknown: config.events.inboxStoreUnknown });
 
 export class AnalyticsController {
   async getAcademicDashboard(req: Request, res: Response) {
@@ -60,19 +60,26 @@ export class AnalyticsController {
     res.json(await getEventSourcesUseCase.execute());
   }
 
-  async listEvents(_req: Request, res: Response) {
-    res.json(await listEventsUseCase.execute());
+  async listEvents(req: Request, res: Response) {
+    const { limit, cursor } = parseEventsPage(req.query);
+    res.json(await listEventsUseCase.execute(limit, cursor));
   }
 
+  // Recibe el envelope v1 crudo (la validación vive en el caso de uso).
   async recordEvent(req: Request, res: Response) {
-    // Primero se absorben los formatos viejos de los emisores, después se valida el contrato.
-    const normalized = normalizeIncomingEvent(req.body, await getSitesUseCase.execute());
-    const { dto, warnings: validationWarnings } = parseRecordEventDto(normalized.body, {
-      isLegacyFormat: normalized.isLegacyFormat,
-    });
-    await recordEventUseCase.execute(dto);
+    try {
+      const outcome = await recordEventUseCase.execute(req.body);
+      const eventId = (req.body as { eventId: string }).eventId;
 
-    const warnings = [...normalized.warnings, ...validationWarnings];
-    res.status(201).json({ eventId: dto.eventId, status: "accepted", ...(warnings.length > 0 && { warnings }) });
+      if (outcome === "stored") res.status(201).json({ eventId, status: "STORED" });
+      else if (outcome === "duplicate") res.status(200).json({ eventId, status: "DUPLICATE" });
+      else res.status(202).json({ eventId, status: "IGNORED" });
+    } catch (error) {
+      if (error instanceof EventValidationError) {
+        res.status(400).json({ error: error.message, errors: error.problems });
+        return;
+      }
+      throw error;
+    }
   }
 }

@@ -1,12 +1,11 @@
-// Repositorio sobre Postgres (Prisma): persiste la ingesta y arma catálogos y tableros 100% desde inbox_events.
-import { Prisma, PrismaClient } from "@prisma/client";
+// Repositorio sobre Postgres (Prisma): arma catálogos y tableros desde la bandeja de entrada (la ingesta vive en InboxRepository).
+import { PrismaClient } from "@prisma/client";
 import { AnalyticsRepository } from "../../domain/repositories/analytics.repository";
 import { AcademicStats } from "../../domain/entities/academic-stats.entity";
-import { EventSource, SOURCE_MODULE_LABELS, SOURCE_MODULES, SourceModule } from "../../domain/entities/event-source.entity";
+import { EventSource, SOURCE_MODULE_LABELS, SOURCE_MODULES } from "../../domain/entities/event-source.entity";
 import { EventStats } from "../../domain/entities/event-stats.entity";
 import { AcademicFilters, Faculty, FilterDefaults, FinancialFilters } from "../../domain/entities/filters.entity";
 import { FinancialStats } from "../../domain/entities/financial-stats.entity";
-import { InstitutionalEvent } from "../../domain/entities/institutional-event.entity";
 import { Period } from "../../domain/entities/period.entity";
 import { AGGREGATE_SITE, Site } from "../../domain/entities/site.entity";
 import { buildMonthCatalog, buildQuarterCatalog } from "../../domain/services/period-catalog.service";
@@ -19,34 +18,6 @@ import { queryDefinedSites, queryEventMonths, queryFacultyNames, queryModuleInge
 
 export class AnalyticsRepositoryPrisma implements AnalyticsRepository {
   constructor(private readonly prisma: PrismaClient) {}
-
-  // Idempotente: un eventId repetido no duplica ni pisa la fila original.
-  async recordEvent(event: InstitutionalEvent): Promise<void> {
-    await this.prisma.inboxEvent.upsert({
-      where: { eventId: event.eventId },
-      update: {},
-      create: {
-        eventId: event.eventId,
-        sourceModule: event.sourceModule,
-        eventType: event.eventType,
-        occurredAt: new Date(event.occurredAt),
-        payload: event.payload as Prisma.InputJsonObject,
-      },
-    });
-  }
-
-  async getEvents(): Promise<InstitutionalEvent[]> {
-    const rows = await this.prisma.inboxEvent.findMany({ orderBy: { receivedAt: "desc" } });
-    return rows.map((row) => ({
-      id: row.id,
-      eventId: row.eventId,
-      sourceModule: row.sourceModule as SourceModule,
-      eventType: row.eventType,
-      payload: row.payload as Record<string, unknown>,
-      occurredAt: row.occurredAt.toISOString(),
-      receivedAt: row.receivedAt.toISOString(),
-    }));
-  }
 
   // Tableros: cada request lee de la base los catálogos (sedes, períodos) y las métricas del recorte pedido.
   // Si la DB falla la excepción sube al error handler (500): nunca se devuelven números inventados.

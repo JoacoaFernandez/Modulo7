@@ -38,12 +38,12 @@ export async function queryMonthlyFlows(
 ): Promise<MonthlyFlowRow[]> {
   return prisma.$queryRaw<MonthlyFlowRow[]>`
     SELECT ${argentinaMonth()} AS ym,
-      COALESCE(SUM(CASE WHEN payload->>'tipo' = 'carga' THEN (payload->>'monto')::numeric ELSE 0 END), 0)::float8 AS income,
-      COALESCE(SUM(CASE WHEN payload->>'tipo' <> 'carga' THEN (payload->>'monto')::numeric ELSE 0 END), 0)::float8 AS expense
+      COALESCE(SUM(CASE WHEN data->>'tipo' = 'carga' THEN (data->>'monto')::numeric ELSE 0 END), 0)::float8 AS income,
+      COALESCE(SUM(CASE WHEN data->>'tipo' <> 'carga' THEN (data->>'monto')::numeric ELSE 0 END), 0)::float8 AS expense
     FROM inbox_events
-    WHERE source_module = 'core'
+    WHERE source = 'core'
       AND event_type = 'saldo.movimiento'
-      AND occurred_at >= ${from}::timestamp AND occurred_at < ${to}::timestamp
+      AND occurred_at >= ${from}::timestamptz AND occurred_at < ${to}::timestamptz
       ${siteFilter(sedeId)}
     GROUP BY ym`;
 }
@@ -56,31 +56,31 @@ export async function queryAdministrativeExpenses(
 ): Promise<ExpenseRow[]> {
   return prisma.$queryRaw<ExpenseRow[]>`
     SELECT 'sueldos-docentes' AS category,
-      COALESCE(SUM((payload->'desglose'->>'docentes')::numeric), 0)::float8 AS total
+      COALESCE(SUM((data->'desglose'->>'docentes')::numeric), 0)::float8 AS total
     FROM inbox_events
-    WHERE source_module = 'backoffice' AND event_type = 'sueldos.liquidados'
-      AND payload->>'periodo' = ${month.ym} ${siteFilter(sedeId)}
+    WHERE source = 'backoffice' AND event_type = 'sueldos.liquidados'
+      AND data->>'periodo' = ${month.ym} ${siteFilter(sedeId)}
     UNION ALL
     SELECT 'sueldos-administrativos',
-      COALESCE(SUM((payload->'desglose'->>'administrativos')::numeric), 0)::float8
+      COALESCE(SUM((data->'desglose'->>'administrativos')::numeric), 0)::float8
     FROM inbox_events
-    WHERE source_module = 'backoffice' AND event_type = 'sueldos.liquidados'
-      AND payload->>'periodo' = ${month.ym} ${siteFilter(sedeId)}
+    WHERE source = 'backoffice' AND event_type = 'sueldos.liquidados'
+      AND data->>'periodo' = ${month.ym} ${siteFilter(sedeId)}
     UNION ALL
     SELECT 'sueldos-sin-desglose',
-      COALESCE(SUM((payload->>'monto')::numeric
-        - COALESCE((payload->'desglose'->>'docentes')::numeric, 0)
-        - COALESCE((payload->'desglose'->>'administrativos')::numeric, 0)), 0)::float8
+      COALESCE(SUM((data->>'monto')::numeric
+        - COALESCE((data->'desglose'->>'docentes')::numeric, 0)
+        - COALESCE((data->'desglose'->>'administrativos')::numeric, 0)), 0)::float8
     FROM inbox_events
-    WHERE source_module = 'backoffice' AND event_type = 'sueldos.liquidados'
-      AND payload->>'periodo' = ${month.ym} ${siteFilter(sedeId)}
+    WHERE source = 'backoffice' AND event_type = 'sueldos.liquidados'
+      AND data->>'periodo' = ${month.ym} ${siteFilter(sedeId)}
     UNION ALL
-    SELECT payload->>'categoria', SUM((payload->>'monto')::numeric)::float8
+    SELECT data->>'categoria', SUM((data->>'monto')::numeric)::float8
     FROM inbox_events
-    WHERE source_module = 'backoffice' AND event_type = 'gasto.registrado'
-      AND occurred_at >= ${month.start}::timestamp AND occurred_at < ${month.end}::timestamp
+    WHERE source = 'backoffice' AND event_type = 'gasto.registrado'
+      AND occurred_at >= ${month.start}::timestamptz AND occurred_at < ${month.end}::timestamptz
       ${siteFilter(sedeId)}
-    GROUP BY payload->>'categoria'`;
+    GROUP BY data->>'categoria'`;
 }
 
 // Productos del mes: ventas de compra.realizada menos lo devuelto en compra.devuelta.
@@ -93,16 +93,16 @@ export async function queryTopProducts(
     WITH lines AS (
       SELECT item->>'producto' AS producto, item->>'categoria' AS categoria,
         (item->>'unidades')::numeric AS unidades, (item->>'monto')::numeric AS monto
-      FROM inbox_events, jsonb_array_elements(payload->'items') AS item
-      WHERE source_module = 'tienda' AND event_type = 'compra.realizada'
-        AND occurred_at >= ${month.start}::timestamp AND occurred_at < ${month.end}::timestamp
+      FROM inbox_events, jsonb_array_elements(data->'items') AS item
+      WHERE source = 'tienda' AND event_type = 'compra.realizada'
+        AND occurred_at >= ${month.start}::timestamptz AND occurred_at < ${month.end}::timestamptz
         ${siteFilter(sedeId)}
       UNION ALL
       SELECT item->>'producto', item->>'categoria',
         -(item->>'unidades')::numeric, -(item->>'monto')::numeric
-      FROM inbox_events, jsonb_array_elements(payload->'items') AS item
-      WHERE source_module = 'tienda' AND event_type = 'compra.devuelta'
-        AND occurred_at >= ${month.start}::timestamp AND occurred_at < ${month.end}::timestamp
+      FROM inbox_events, jsonb_array_elements(data->'items') AS item
+      WHERE source = 'tienda' AND event_type = 'compra.devuelta'
+        AND occurred_at >= ${month.start}::timestamptz AND occurred_at < ${month.end}::timestamptz
         ${siteFilter(sedeId)}
     )
     SELECT producto, MAX(categoria) AS categoria,
@@ -121,12 +121,12 @@ export async function queryDiningRevenue(
   to: string,
 ): Promise<DiningRow[]> {
   const rows = await prisma.$queryRaw<{ sede_id: string; ym: string; revenue: number; tickets: number }[]>`
-    SELECT payload->>'sedeId' AS sede_id, ${argentinaMonth()} AS ym,
-      COALESCE(SUM((payload->>'monto')::numeric), 0)::float8 AS revenue,
+    SELECT data->>'sedeId' AS sede_id, ${argentinaMonth()} AS ym,
+      COALESCE(SUM((data->>'monto')::numeric), 0)::float8 AS revenue,
       COUNT(*)::int AS tickets
     FROM inbox_events
-    WHERE source_module = 'comedor' AND event_type = 'reserva.confirmada'
-      AND occurred_at >= ${from}::timestamp AND occurred_at < ${to}::timestamp
+    WHERE source = 'comedor' AND event_type = 'reserva.confirmada'
+      AND occurred_at >= ${from}::timestamptz AND occurred_at < ${to}::timestamptz
     GROUP BY sede_id, ym`;
 
   return rows.map((row) => ({ sedeId: row.sede_id, ym: row.ym, revenue: row.revenue, tickets: row.tickets }));
@@ -135,10 +135,10 @@ export async function queryDiningRevenue(
 // Sedes que registraron alguna reserva de comedor en cualquier fecha: las que tienen servicio.
 export async function queryDiningSites(prisma: PrismaClient): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ sede_id: string }[]>`
-    SELECT DISTINCT payload->>'sedeId' AS sede_id
+    SELECT DISTINCT data->>'sedeId' AS sede_id
     FROM inbox_events
-    WHERE source_module = 'comedor' AND event_type = 'reserva.confirmada'
-      AND payload->>'sedeId' IS NOT NULL`;
+    WHERE source = 'comedor' AND event_type = 'reserva.confirmada'
+      AND data->>'sedeId' IS NOT NULL`;
 
   return rows.map((row) => row.sede_id);
 }

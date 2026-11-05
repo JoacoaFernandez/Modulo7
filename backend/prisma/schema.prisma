@@ -7,18 +7,47 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// Bandeja de entrada: cada evento recibido de los otros módulos de UADEnet, tal cual llegó.
+// Bandeja de entrada: envelope v1 de CORE tal cual llegó. event_id es la clave de idempotencia (CORE v1 §10).
 model InboxEvent {
-  id           String   @id @default(cuid())
-  eventId      String   @unique @map("event_id")
-  sourceModule String   @map("source_module")
-  eventType    String   @map("event_type")
-  occurredAt   DateTime @map("occurred_at")
-  payload      Json
-  receivedAt   DateTime @default(now()) @map("received_at")
+  eventId       String   @id @map("event_id") @db.Uuid
+  specVersion   String   @map("spec_version")
+  eventType     String   @map("event_type")
+  source        String
+  occurredAt    DateTime @map("occurred_at") @db.Timestamptz(3)
+  subject       String?
+  correlationId String?  @map("correlation_id") @db.Uuid
+  causationId   String?  @map("causation_id") @db.Uuid
+  actor         Json?
+  data          Json
+  // OK | UNKNOWN_TYPE (sólo con INBOX_STORE_UNKNOWN)
+  result        String   @default("OK")
+  receivedAt    DateTime @default(now()) @map("received_at") @db.Timestamptz(3)
 
-  @@index([eventType])
-  @@index([occurredAt])
-  @@index([sourceModule, eventType])
+  @@index([eventType, occurredAt])
+  @@index([source, receivedAt])
   @@map("inbox_events")
+}
+
+// Un renglón por módulo emisor: alimenta "Fuentes de datos" y el pie de cada tablero, incluso con eventos descartados.
+model SourceIngestion {
+  source         String    @id
+  lastEventAt    DateTime? @map("last_event_at") @db.Timestamptz(3)
+  lastReceivedAt DateTime  @map("last_received_at") @db.Timestamptz(3)
+  storedCount    Int       @default(0) @map("stored_count")
+  ignoredCount   Int       @default(0) @map("ignored_count")
+
+  @@map("source_ingestions")
+}
+
+// Foto mensual del saldo vigente de CORE: es lo único que el dueño no puede reconstruir hacia atrás.
+model WalletBalanceSnapshot {
+  month              String   @id // AAAA-MM
+  currency           String   @default("ARS")
+  outstandingBalance Decimal  @map("outstanding_balance") @db.Decimal(18, 2)
+  walletCount        Int      @map("wallet_count")
+  capturedAt         DateTime @map("captured_at") @db.Timestamptz(3)
+  // true: tomada con el mes ya cerrado (no se vuelve a pisar).
+  isFinal            Boolean  @default(false) @map("is_final")
+
+  @@map("wallet_balance_snapshots")
 }

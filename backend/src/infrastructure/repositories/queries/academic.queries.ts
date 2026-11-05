@@ -29,17 +29,17 @@ function earlyClosure(sedeMatch: boolean): Prisma.Sql {
   return Prisma.sql`
       AND NOT EXISTS (
         SELECT 1 FROM inbox_events c
-        WHERE c.source_module = 'gestion-academica'
+        WHERE c.source = 'gestion-academica'
           AND c.event_type = 'curso.cerrado'
-          AND c.payload->>'cursoId' = e.payload->>'cursoId'
-          AND c.payload->>'cuatrimestre' = e.payload->>'cuatrimestre'
-          ${sedeMatch ? Prisma.sql`AND c.payload->>'sedeId' = e.payload->>'sedeId'` : Prisma.empty}
+          AND c.data->>'cursoId' = e.data->>'cursoId'
+          AND c.data->>'cuatrimestre' = e.data->>'cuatrimestre'
+          ${sedeMatch ? Prisma.sql`AND c.data->>'sedeId' = e.data->>'sedeId'` : Prisma.empty}
           AND c.occurred_at < COALESCE(
-            (SELECT (q.payload->>'fin')::date + 1
+            (SELECT (q.data->>'fin')::date + 1
              FROM inbox_events q
-             WHERE q.source_module = 'gestion-academica'
+             WHERE q.source = 'gestion-academica'
                AND q.event_type = 'cuatrimestre.definido'
-               AND q.payload->>'cuatrimestre' = e.payload->>'cuatrimestre'
+               AND q.data->>'cuatrimestre' = e.data->>'cuatrimestre'
              ORDER BY q.occurred_at DESC LIMIT 1),
             now() AT TIME ZONE 'UTC'
           )
@@ -54,13 +54,13 @@ export async function queryActiveSubjectsCount(
   facultad: string | null,
 ): Promise<number> {
   const rows = await prisma.$queryRaw<{ total: number }[]>`
-    SELECT COUNT(DISTINCT e.payload->>'materia')::int AS total
+    SELECT COUNT(DISTINCT e.data->>'materia')::int AS total
     FROM inbox_events e
-    WHERE e.source_module = 'gestion-academica'
+    WHERE e.source = 'gestion-academica'
       AND e.event_type = 'curso.abierto'
-      AND e.payload->>'cuatrimestre' = ${quarter}
-      ${siteFilter(sedeId, Prisma.sql`e.payload->>'sedeId'`)}
-      ${facultad === null ? Prisma.empty : Prisma.sql`AND e.payload->>'facultad' = ${facultad}`}
+      AND e.data->>'cuatrimestre' = ${quarter}
+      ${siteFilter(sedeId, Prisma.sql`e.data->>'sedeId'`)}
+      ${facultad === null ? Prisma.empty : Prisma.sql`AND e.data->>'facultad' = ${facultad}`}
       ${earlyClosure(false)}`;
 
   return rows[0]?.total ?? 0;
@@ -75,13 +75,13 @@ export async function queryActiveCommissionsCount(
   facultad: string | null,
 ): Promise<number> {
   const rows = await prisma.$queryRaw<{ total: number }[]>`
-    SELECT COUNT(DISTINCT (e.payload->>'sedeId', e.payload->>'cursoId'))::int AS total
+    SELECT COUNT(DISTINCT (e.data->>'sedeId', e.data->>'cursoId'))::int AS total
     FROM inbox_events e
-    WHERE e.source_module = 'gestion-academica'
+    WHERE e.source = 'gestion-academica'
       AND e.event_type = 'curso.abierto'
-      AND e.payload->>'cuatrimestre' = ${quarter}
-      ${siteFilter(sedeId, Prisma.sql`e.payload->>'sedeId'`)}
-      ${facultad === null ? Prisma.empty : Prisma.sql`AND e.payload->>'facultad' = ${facultad}`}
+      AND e.data->>'cuatrimestre' = ${quarter}
+      ${siteFilter(sedeId, Prisma.sql`e.data->>'sedeId'`)}
+      ${facultad === null ? Prisma.empty : Prisma.sql`AND e.data->>'facultad' = ${facultad}`}
       ${earlyClosure(true)}`;
 
   return rows[0]?.total ?? 0;
@@ -103,20 +103,20 @@ export async function queryActiveStudentsCount(
   facultad: string | null,
 ): Promise<number> {
   const rows = await prisma.$queryRaw<{ total: number }[]>`
-    SELECT COUNT(DISTINCT i.payload->>'alumnoId')::int AS total
+    SELECT COUNT(DISTINCT i.data->>'alumnoId')::int AS total
     FROM inbox_events i
-    WHERE i.source_module = 'portal-estudiante'
+    WHERE i.source = 'portal-estudiante'
       AND i.event_type = 'inscripcion.confirmada'
-      AND i.payload->>'cuatrimestre' = ${quarter}
-      ${siteFilter(sedeId, Prisma.sql`i.payload->>'sedeId'`)}
-      ${facultyFilter(facultad, Prisma.sql`i.payload->>'cursoId'`, Prisma.sql`i.payload->>'cuatrimestre'`)}
+      AND i.data->>'cuatrimestre' = ${quarter}
+      ${siteFilter(sedeId, Prisma.sql`i.data->>'sedeId'`)}
+      ${facultyFilter(facultad, Prisma.sql`i.data->>'cursoId'`, Prisma.sql`i.data->>'cuatrimestre'`)}
       AND NOT EXISTS (
         SELECT 1 FROM inbox_events c
-        WHERE c.source_module = 'portal-estudiante'
+        WHERE c.source = 'portal-estudiante'
           AND c.event_type = 'inscripcion.cancelada'
-          AND c.payload->>'alumnoId' = i.payload->>'alumnoId'
-          AND c.payload->>'cursoId' = i.payload->>'cursoId'
-          AND c.payload->>'cuatrimestre' = i.payload->>'cuatrimestre'
+          AND c.data->>'alumnoId' = i.data->>'alumnoId'
+          AND c.data->>'cursoId' = i.data->>'cursoId'
+          AND c.data->>'cuatrimestre' = i.data->>'cuatrimestre'
           AND c.occurred_at >= i.occurred_at
       )`;
 
@@ -133,17 +133,17 @@ export async function queryTeachersCount(
 ): Promise<number> {
   const rows = await prisma.$queryRaw<{ total: number }[]>`
     SELECT COUNT(*)::int AS total FROM (
-      SELECT payload->>'docenteId' AS docente_id
+      SELECT data->>'docenteId' AS docente_id
       FROM inbox_events
-      WHERE source_module = 'gestion-academica' AND event_type = 'resultado.publicado'
-        AND payload->>'cuatrimestre' = ${quarter} ${siteFilter(sedeId)}
-        ${facultyFilter(facultad, Prisma.sql`payload->>'cursoId'`, Prisma.sql`payload->>'cuatrimestre'`)}
+      WHERE source = 'gestion-academica' AND event_type = 'resultado.publicado'
+        AND data->>'cuatrimestre' = ${quarter} ${siteFilter(sedeId)}
+        ${facultyFilter(facultad, Prisma.sql`data->>'cursoId'`, Prisma.sql`data->>'cuatrimestre'`)}
       UNION
-      SELECT payload->>'docenteId'
+      SELECT data->>'docenteId'
       FROM inbox_events
-      WHERE source_module = 'portal-docente' AND event_type = 'curso.creado'
-        AND payload->>'cuatrimestre' = ${quarter} ${siteFilter(sedeId)}
-        ${facultyFilter(facultad, Prisma.sql`payload->>'cursoId'`, Prisma.sql`payload->>'cuatrimestre'`)}
+      WHERE source = 'portal-docente' AND event_type = 'curso.creado'
+        AND data->>'cuatrimestre' = ${quarter} ${siteFilter(sedeId)}
+        ${facultyFilter(facultad, Prisma.sql`data->>'cursoId'`, Prisma.sql`data->>'cuatrimestre'`)}
     ) teachers
     WHERE docente_id IS NOT NULL`;
 
@@ -155,30 +155,30 @@ export async function queryTeachersCount(
 function currentResults(quarters: string[], sedeId: string | null, facultad: string | null): Prisma.Sql {
   return Prisma.sql`
     WITH published AS (
-      SELECT DISTINCT ON (payload->>'alumnoId', payload->>'cursoId')
-        payload->>'alumnoId' AS alumno_id,
-        payload->>'cursoId' AS curso_id,
-        payload->>'materia' AS materia,
-        payload->>'docenteId' AS docente_id,
-        payload->>'cuatrimestre' AS cuatrimestre,
-        (payload->>'aprobado')::boolean AS aprobado
+      SELECT DISTINCT ON (data->>'alumnoId', data->>'cursoId')
+        data->>'alumnoId' AS alumno_id,
+        data->>'cursoId' AS curso_id,
+        data->>'materia' AS materia,
+        data->>'docenteId' AS docente_id,
+        data->>'cuatrimestre' AS cuatrimestre,
+        (data->>'aprobado')::boolean AS aprobado
       FROM inbox_events
-      WHERE source_module = 'gestion-academica'
+      WHERE source = 'gestion-academica'
         AND event_type = 'resultado.publicado'
-        AND payload->>'cuatrimestre' IN (${Prisma.join(quarters)})
+        AND data->>'cuatrimestre' IN (${Prisma.join(quarters)})
         ${siteFilter(sedeId)}
-        ${facultyFilter(facultad, Prisma.sql`payload->>'cursoId'`, Prisma.sql`payload->>'cuatrimestre'`)}
-      ORDER BY payload->>'alumnoId', payload->>'cursoId', occurred_at DESC
+        ${facultyFilter(facultad, Prisma.sql`data->>'cursoId'`, Prisma.sql`data->>'cuatrimestre'`)}
+      ORDER BY data->>'alumnoId', data->>'cursoId', occurred_at DESC
     ),
     results AS (
       SELECT p.curso_id, p.materia, p.docente_id, p.cuatrimestre,
         COALESCE(
-          (SELECT (m.payload->>'aprobado')::boolean
+          (SELECT (m.data->>'aprobado')::boolean
            FROM inbox_events m
-           WHERE m.source_module = 'gestion-academica'
+           WHERE m.source = 'gestion-academica'
              AND m.event_type = 'resultado.modificado'
-             AND m.payload->>'alumnoId' = p.alumno_id
-             AND m.payload->>'cursoId' = p.curso_id
+             AND m.data->>'alumnoId' = p.alumno_id
+             AND m.data->>'cursoId' = p.curso_id
            ORDER BY m.occurred_at DESC LIMIT 1),
           p.aprobado
         ) AS aprobado
@@ -198,12 +198,12 @@ export async function querySubjectApprovals(
     SELECT r.materia, r.cuatrimestre,
       COUNT(*)::int AS total,
       (COUNT(*) FILTER (WHERE r.aprobado))::int AS approved,
-      (SELECT a.payload->>'nombreMateria'
+      (SELECT a.data->>'nombreMateria'
        FROM inbox_events a
-       WHERE a.source_module = 'gestion-academica'
+       WHERE a.source = 'gestion-academica'
          AND a.event_type = 'curso.abierto'
-         AND a.payload->>'materia' = r.materia
-         AND a.payload->>'nombreMateria' IS NOT NULL
+         AND a.data->>'materia' = r.materia
+         AND a.data->>'nombreMateria' IS NOT NULL
        ORDER BY a.occurred_at DESC LIMIT 1) AS nombre
     FROM results r
     GROUP BY r.materia, r.cuatrimestre`;
@@ -223,11 +223,11 @@ export async function queryTeacherApprovals(
     SELECT r.docente_id, r.cuatrimestre,
       COUNT(*)::int AS total,
       (COUNT(*) FILTER (WHERE r.aprobado))::int AS approved,
-      (SELECT d.payload->>'nombre'
+      (SELECT d.data->>'nombre'
        FROM inbox_events d
-       WHERE d.source_module = 'backoffice'
+       WHERE d.source = 'backoffice'
          AND d.event_type = 'docente.alta'
-         AND d.payload->>'docenteId' = r.docente_id
+         AND d.data->>'docenteId' = r.docente_id
        ORDER BY d.occurred_at DESC LIMIT 1) AS nombre,
       MODE() WITHIN GROUP (ORDER BY r.materia) AS materia
     FROM results r
@@ -258,13 +258,13 @@ export async function queryFacultyApprovals(
       (COUNT(*) FILTER (WHERE r.aprobado))::int AS approved
     FROM results r
     JOIN LATERAL (
-      SELECT a.payload->>'facultad' AS facultad
+      SELECT a.data->>'facultad' AS facultad
       FROM inbox_events a
-      WHERE a.source_module = 'gestion-academica'
+      WHERE a.source = 'gestion-academica'
         AND a.event_type = 'curso.abierto'
-        AND a.payload->>'cursoId' = r.curso_id
-        AND a.payload->>'cuatrimestre' = r.cuatrimestre
-        AND a.payload->>'facultad' IS NOT NULL
+        AND a.data->>'cursoId' = r.curso_id
+        AND a.data->>'cuatrimestre' = r.cuatrimestre
+        AND a.data->>'facultad' IS NOT NULL
       ORDER BY a.occurred_at DESC LIMIT 1
     ) f ON true
     GROUP BY f.facultad, r.cuatrimestre`;
