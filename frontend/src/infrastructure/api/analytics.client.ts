@@ -1,5 +1,7 @@
 // API clients: HTTP setup and calls to the backend, isolated from the rest of the app.
+import { API_BASE_URL, toApiError } from "./http";
 import { authTokenStore } from "./auth-token.store";
+import { refreshSession } from "./session-refresh";
 import type {
   AcademicFilters,
   AcademicStats,
@@ -10,23 +12,37 @@ import type {
   FinancialStats,
 } from "../../domain/entities/analytics.entity";
 
-const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:3000/api";
-
-async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
-  const token = authTokenStore.get();
+async function fetchWithToken(path: string, signal?: AbortSignal): Promise<{ response: Response; usedToken: string | null }> {
+  const usedToken = authTokenStore.get();
   const response = await fetch(`${API_BASE_URL}${path}`, {
     signal,
-    headers: token ? { Authorization: `Bearer ${token}` } : undefined,
+    headers: usedToken ? { Authorization: `Bearer ${usedToken}` } : undefined,
   });
+  return { response, usedToken };
+}
 
-  // CORE rechazó el token (vencido o inválido): la sesión se cierra y vuelve el login.
+async function getJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  const first = await fetchWithToken(path, signal);
+  const usedToken = first.usedToken;
+  let response = first.response;
+
+  // El access token (15 min) venció: un único refresh compartido y un reintento. Si otro pedido ya
+  // renovó el token mientras este viajaba, se reintenta directo con el nuevo.
   if (response.status === 401) {
-    authTokenStore.notifyUnauthorized();
+    try {
+      if (authTokenStore.get() === usedToken) await refreshSession();
+    } catch {
+      // Sin refresh posible (cookie vencida o revocada): la sesión se cierra y vuelve el login.
+      authTokenStore.notifyUnauthorized();
+      throw await toApiError(response, "Sesión vencida");
+    }
+    response = (await fetchWithToken(path, signal)).response;
+    if (response.status === 401) {
+      authTokenStore.notifyUnauthorized();
+    }
   }
 
-  if (!response.ok) {
-    throw new Error(`Request to ${path} failed with status ${response.status}`);
-  }
+  if (!response.ok) throw await toApiError(response, "Error al consultar el servidor");
   return response.json() as Promise<T>;
 }
 

@@ -6,6 +6,7 @@ import { StatCard } from "./stat-card.component";
 import { SectionCard } from "./dashboard/section-card.component";
 import { SectionHeader } from "./dashboard/section-header.component";
 import { EmptyState } from "./dashboard/empty-state.component";
+import { DataWarnings } from "./dashboard/data-warnings.component";
 import { DataSourceNote } from "./dashboard/data-source-note.component";
 import { ChartLegend } from "./charts/chart-legend.component";
 import { ChartTooltip } from "./charts/chart-tooltip.component";
@@ -86,6 +87,8 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
         <h2 className="font-heading text-[21px] leading-[1.2] text-[#16243C]">Estadísticas de eventos académicos</h2>
         <p className="text-[12.5px] text-[#647188]">Frecuencia, concurrencia y tasa de presentismo · {stats.month}</p>
       </div>
+
+      <DataWarnings warnings={stats.warnings} />
 
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard label="Eventos realizados" value={formatCount(stats.totalEvents)} unit="eventos" caption={stats.month} />

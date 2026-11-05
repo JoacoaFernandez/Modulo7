@@ -3,7 +3,7 @@ import { createContext, useContext } from "react";
 import type { AuthSession, AuthUser } from "@/domain/entities/auth.entity";
 
 export interface SessionState {
-  // Sesión de CORE; null mientras no se haya iniciado sesión.
+  // Sesión de CORE, sólo en memoria; null mientras no se haya iniciado sesión.
   auth: AuthSession | null;
   // Última elección del usuario; null hasta que elija. Puede quedar fuera del catálogo vigente
   // (los catálogos salen de los eventos): la página lo valida contra GET /filters.
@@ -18,9 +18,11 @@ export interface SessionState {
 }
 
 export interface SessionContextValue extends SessionState {
+  // true mientras se intenta restaurar la sesión con la cookie de refresh al cargar la página.
+  isRestoring: boolean;
   user: AuthUser | null;
   login: (session: AuthSession) => void;
-  // Cierra la sesión pero conserva sede/período elegidos.
+  // Cierra la sesión (revoca el refresh en el backend) pero conserva sede/período elegidos.
   logout: () => void;
   setSiteId: (siteId: string) => void;
   setQuarter: (quarter: string) => void;

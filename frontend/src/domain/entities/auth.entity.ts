@@ -3,8 +3,13 @@ import type { RoleId } from "./analytics.entity";
 
 // Usuario autenticado por CORE (módulo 10).
 export interface AuthUser {
+  id: string;
   email: string;
   name: string;
+  // Roles de CORE (ACADEMIC_ADMIN, FINANCE_ADMIN, ADMIN...).
+  coreRoles: string[];
+  permissions: string[];
+  // Secciones de Analítica que ve (derivadas por el backend de coreRoles y permissions).
   roles: RoleId[];
 }
 

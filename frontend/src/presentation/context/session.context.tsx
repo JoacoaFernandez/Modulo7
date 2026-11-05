@@ -1,8 +1,13 @@
-// Context: sesión del usuario (login de CORE + filtros de sede/período), persistida en localStorage.
-// El diseño no usa router: una sola pantalla que alterna entre login y dashboard según haya sesión.
+// Context: sesión del usuario (login de CORE + filtros de sede/período).
+// El access token vive sólo en memoria (CORE lo exige así); lo único que se persiste en localStorage
+// son las preferencias de filtros. Al cargar la página se intenta un refresh con la cookie HttpOnly
+// para restaurar la sesión. El diseño no usa router: una sola pantalla que alterna entre login y
+// dashboard según haya sesión.
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
 import type { AuthSession } from "@/domain/entities/auth.entity";
+import { authClient } from "@/infrastructure/api/auth.client";
 import { authTokenStore } from "@/infrastructure/api/auth-token.store";
+import { refreshSession } from "@/infrastructure/api/session-refresh";
 import { SessionContext, type SessionContextValue, type SessionState } from "../hooks/use-session.hook";
 
 const STORAGE_KEY = "uadenet.session";
@@ -20,6 +25,7 @@ const initialState: SessionState = {
   eventsMonth: null,
 };
 
+// Una sesión sin al menos una sección de Analítica no sirve: se trata como sin sesión.
 function isAuthSession(value: unknown): value is AuthSession {
   if (typeof value !== "object" || value === null) return false;
   const candidate = value as Partial<AuthSession>;
@@ -33,7 +39,9 @@ function isAuthSession(value: unknown): value is AuthSession {
   );
 }
 
-function readStoredState(): SessionState {
+// Sólo preferencias de filtros. Las guardadas con la forma vieja (token incluido) se leen sin el token
+// y se reescriben limpias en el primer guardado.
+function readStoredPreferences(): SessionState {
   if (typeof window === "undefined") return initialState;
 
   try {
@@ -41,21 +49,16 @@ function readStoredState(): SessionState {
     if (!raw) return initialState;
 
     const parsed = JSON.parse(raw) as Partial<Record<keyof SessionState, unknown>>;
-    const auth = isAuthSession(parsed.auth) && Date.parse(parsed.auth.expiresAt) > Date.now() ? parsed.auth : null;
-
-    // El token tiene que estar disponible antes del primer render de los hijos, que ya
-    // piden datos en su primer efecto.
-    authTokenStore.set(auth?.token ?? null);
+    const text = (value: unknown) => (typeof value === "string" ? value : null);
 
     return {
-      auth,
-      siteId: typeof parsed.siteId === "string" ? parsed.siteId : null,
-      quarter: typeof parsed.quarter === "string" ? parsed.quarter : null,
-      facultyId: typeof parsed.facultyId === "string" ? parsed.facultyId : null,
-      month: typeof parsed.month === "string" ? parsed.month : null,
-      // Estados guardados con la forma vieja no los tienen: null → default del backend.
-      eventsSiteId: typeof parsed.eventsSiteId === "string" ? parsed.eventsSiteId : null,
-      eventsMonth: typeof parsed.eventsMonth === "string" ? parsed.eventsMonth : null,
+      auth: null,
+      siteId: text(parsed.siteId),
+      quarter: text(parsed.quarter),
+      facultyId: text(parsed.facultyId),
+      month: text(parsed.month),
+      eventsSiteId: text(parsed.eventsSiteId),
+      eventsMonth: text(parsed.eventsMonth),
     };
   } catch {
     // localStorage corrupto o inaccesible (modo privado, etc.): arrancar de cero.
@@ -64,13 +67,20 @@ function readStoredState(): SessionState {
 }
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [state, setState] = useState<SessionState>(readStoredState);
+  const [state, setState] = useState<SessionState>(readStoredPreferences);
+  // true hasta saber si la cookie de refresh restaura una sesión (evita el parpadeo del login).
+  const [isRestoring, setIsRestoring] = useState(true);
 
   useEffect(() => {
     try {
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      // Sin `auth`: el token no se persiste.
+      const { siteId, quarter, facultyId, month, eventsSiteId, eventsMonth } = state;
+      window.localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ siteId, quarter, facultyId, month, eventsSiteId, eventsMonth }),
+      );
     } catch {
-      // Sin persistencia disponible: la sesión sigue funcionando solo en memoria.
+      // Sin persistencia disponible: las preferencias sólo duran la visita.
     }
   }, [state]);
 
@@ -79,16 +89,45 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setState((prev) => ({ ...prev, auth }));
   }, []);
 
+  // Cierra la sesión local y revoca el refresh token en el backend (un fallo de red no la retiene).
   const logout = useCallback(() => {
     authTokenStore.set(null);
     setState((prev) => ({ ...prev, auth: null }));
+    void authClient.logout();
   }, []);
 
-  // Si el backend responde 401 (token vencido), se vuelve al login.
+  // Restauración al cargar. refreshSession comparte la promesa en vuelo: el doble efecto de StrictMode
+  // en desarrollo no rota dos veces el refresh token.
   useEffect(() => {
-    authTokenStore.onUnauthorized(logout);
-    return () => authTokenStore.onUnauthorized(null);
-  }, [logout]);
+    let cancelled = false;
+    refreshSession()
+      .then((session) => {
+        if (!cancelled && isAuthSession(session)) setState((prev) => ({ ...prev, auth: session }));
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setIsRestoring(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // Refresh silencioso (token vencido): actualiza el token de la sesión sin tocar nada más.
+  // Si el refresh falla, el backend no puede renovar: se vuelve al login (sin llamar a /logout: ya no hay cookie válida).
+  useEffect(() => {
+    authTokenStore.onRefreshed((session) => {
+      if (isAuthSession(session)) setState((prev) => (prev.auth ? { ...prev, auth: session } : prev));
+    });
+    authTokenStore.onUnauthorized(() => {
+      authTokenStore.set(null);
+      setState((prev) => ({ ...prev, auth: null }));
+    });
+    return () => {
+      authTokenStore.onRefreshed(null);
+      authTokenStore.onUnauthorized(null);
+    };
+  }, []);
 
   const setSiteId = useCallback((siteId: string) => {
     setState((prev) => ({ ...prev, siteId }));
@@ -115,8 +154,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const value = useMemo<SessionContextValue>(
-    () => ({ ...state, user: state.auth?.user ?? null, login, logout, setSiteId, setQuarter, setFacultyId, setMonth, setEventsSiteId, setEventsMonth }),
-    [state, login, logout, setSiteId, setQuarter, setFacultyId, setMonth, setEventsSiteId, setEventsMonth],
+    () => ({ ...state, isRestoring, user: state.auth?.user ?? null, login, logout, setSiteId, setQuarter, setFacultyId, setMonth, setEventsSiteId, setEventsMonth }),
+    [state, isRestoring, login, logout, setSiteId, setQuarter, setFacultyId, setMonth, setEventsSiteId, setEventsMonth],
   );
 
   return <SessionContext.Provider value={value}>{children}</SessionContext.Provider>;

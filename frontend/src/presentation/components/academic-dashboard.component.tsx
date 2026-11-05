@@ -6,6 +6,7 @@ import { DeltaLabel } from "./trend-pill.component";
 import { SectionCard } from "./dashboard/section-card.component";
 import { SectionHeader } from "./dashboard/section-header.component";
 import { EmptyState } from "./dashboard/empty-state.component";
+import { DataWarnings } from "./dashboard/data-warnings.component";
 import { DataSourceNote } from "./dashboard/data-source-note.component";
 import { ChartLegend } from "./charts/chart-legend.component";
 import { ChartTooltip } from "./charts/chart-tooltip.component";
@@ -139,6 +140,8 @@ export function AcademicDashboard({ stats }: AcademicDashboardProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <DataWarnings warnings={stats.warnings} />
+
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {stats.kpis.map((kpi) => (
           <StatCard
@@ -147,6 +150,7 @@ export function AcademicDashboard({ stats }: AcademicDashboardProps) {
             value={kpi.formattedValue}
             unit={kpi.unit || undefined}
             delta={kpi.delta}
+            note={kpi.note}
             comparisonLabel={`vs. ${stats.previousQuarter}`}
           />
         ))}

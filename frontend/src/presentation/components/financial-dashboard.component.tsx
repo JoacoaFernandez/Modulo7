@@ -8,6 +8,7 @@ import { DeltaLabel } from "./trend-pill.component";
 import { SectionCard } from "./dashboard/section-card.component";
 import { SectionHeader } from "./dashboard/section-header.component";
 import { EmptyState } from "./dashboard/empty-state.component";
+import { DataWarnings } from "./dashboard/data-warnings.component";
 import { DataSourceNote } from "./dashboard/data-source-note.component";
 import { ChartLegend } from "./charts/chart-legend.component";
 import { ChartTooltip } from "./charts/chart-tooltip.component";
@@ -15,7 +16,7 @@ import { GroupedBarChart, type GroupedBarCategory } from "./charts/grouped-bar-c
 import { AreaLineChart } from "./charts/area-line-chart.component";
 import { StackedBar } from "./charts/stacked-bar.component";
 import { BarList, type BarListRow } from "./charts/bar-list.component";
-import { createScale, buildPolylinePoints, buildAreaPoints, buildDots, buildGridRows, paddedDomain } from "@/lib/chart-scale";
+import { createScale, buildGappedSeries, buildGridRows, paddedDomain } from "@/lib/chart-scale";
 import { formatCount, formatLastIngestion, formatMillions, formatPercent } from "@/lib/format";
 
 interface FinancialDashboardProps {
@@ -31,7 +32,7 @@ type ProductRanking = "units" | "revenue";
 export function FinancialDashboard({ stats }: FinancialDashboardProps) {
   // Criterio del ranking de productos; solo estado local.
   const [ranking, setRanking] = useState<ProductRanking>("units");
-  const hasBalanceData = stats.monthlyBalance.some((m) => m.income !== 0 || m.expense !== 0 || m.balance !== 0);
+  const hasBalanceData = stats.monthlyBalance.some((m) => m.income !== 0 || m.expense !== 0 || (m.balance ?? 0) !== 0);
   const maxBar = Math.max(1, ...stats.monthlyBalance.flatMap((m) => [m.income, m.expense]));
   const balanceCategories: GroupedBarCategory[] = stats.monthlyBalance.map((month) => {
     const incomeHeight = `${(month.income / maxBar) * 100}%`;
@@ -55,7 +56,9 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
   });
 
   const balanceValues = stats.monthlyBalance.map((m) => m.balance);
-  const { min: balanceLo, max: balanceHi } = paddedDomain(balanceValues);
+  // balance null = mes sin snapshot: queda un hueco en la serie, no un 0.
+  const knownBalances = balanceValues.filter((value): value is number => value !== null);
+  const { min: balanceLo, max: balanceHi } = paddedDomain(knownBalances);
   const balanceScale = createScale({
     pointCount: balanceValues.length,
     domainMin: balanceLo,
@@ -65,12 +68,13 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
     marginTop: 14,
     plotHeight: 128,
   });
-  const balanceGridValues = [0, 1, 2, 3].map((k) => balanceHi - ((balanceHi - balanceLo) * k) / 3);
+  const balanceGridValues = (knownBalances.length > 0 ? [0, 1, 2, 3] : []).map((k) => balanceHi - ((balanceHi - balanceLo) * k) / 3);
   const balanceGrid = buildGridRows(
     balanceGridValues,
     { domainMin: balanceLo, domainMax: balanceHi, marginTop: 14, plotHeight: 128 },
     (value) => formatMillions(value),
   );
+  const balanceSeries = buildGappedSeries(balanceValues, balanceScale, 142);
   const selectedBalance = stats.monthlyBalance.find((m) => m.isSelected);
 
   const maxDining = Math.max(1, ...stats.diningRevenues.map((d) => d.revenue));
@@ -98,6 +102,8 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
 
   return (
     <div className="flex flex-col gap-4">
+      <DataWarnings warnings={stats.warnings} notice={stats.siteScopeNote} />
+
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
         {stats.kpis.map((kpi) => (
           <StatCard
@@ -106,6 +112,7 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
             value={kpi.formattedValue}
             unit={kpi.unit || undefined}
             delta={kpi.delta}
+            note={kpi.note}
             comparisonLabel={`vs. ${stats.previousMonth}`}
             size="compact"
           />
@@ -141,9 +148,9 @@ export function FinancialDashboard({ stats }: FinancialDashboardProps) {
             label="Saldo acumulado"
             valueLabel={selectedBalance?.formattedBalance ?? stats.kpis[0]?.formattedValue ?? ""}
             grid={balanceGrid}
-            points={buildPolylinePoints(balanceValues, balanceScale)}
-            areaPoints={buildAreaPoints(balanceValues, balanceScale, 142)}
-            dots={buildDots(balanceValues, balanceScale)}
+            points={balanceSeries.lines}
+            areaPoints={balanceSeries.areas}
+            dots={balanceSeries.dots}
             color={BALANCE_COLOR}
           />
             </>

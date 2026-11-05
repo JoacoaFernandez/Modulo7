@@ -11,6 +11,7 @@ import { FinancialDashboard } from "../components/financial-dashboard.component"
 import { EventsDashboard } from "../components/events-dashboard.component";
 import { Sidebar, type AnalyticsSection } from "../components/sidebar.component";
 import { DataSources } from "../components/data-sources.component";
+import { DataWarnings } from "../components/dashboard/data-warnings.component";
 import { DashboardHeader } from "../components/dashboard-header.component";
 
 // Eyebrow y título literales del prototipo (rolActual / tituloVista); "events" es la sección
@@ -186,6 +187,11 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
             <p className="text-sm text-destructive">No se pudieron cargar los filtros: {filtersError}</p>
           )}
           {error && <p className="text-sm text-destructive">Error al cargar las estadísticas: {error}</p>}
+          {activeSection !== "sources" && filterOptions?.warnings && filterOptions.warnings.length > 0 && (
+            <div className="mb-4">
+              <DataWarnings warnings={filterOptions.warnings} />
+            </div>
+          )}
 
           {!isLoading && !error && (
             <>

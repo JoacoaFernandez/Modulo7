@@ -17,9 +17,11 @@ interface StatCardProps {
   caption?: string;
   // El tablero académico usa valores más grandes (30px) que el financiero y eventos (26px).
   size?: "default" | "compact";
+  // Aclaración de la definición o del dato faltante (KpiCard.note), en letra chica al pie.
+  note?: string;
 }
 
-export function StatCard({ label, value, unit, delta, comparisonLabel, caption, size = "default" }: StatCardProps) {
+export function StatCard({ label, value, unit, delta, comparisonLabel, caption, size = "default", note }: StatCardProps) {
   const isCompact = size === "compact";
 
   return (
@@ -46,6 +48,8 @@ export function StatCard({ label, value, unit, delta, comparisonLabel, caption, 
           <span className="text-[11.5px] whitespace-nowrap text-[#6E7A90]">{comparisonLabel}</span>
         </div>
       )}
+
+      {note && <p className="text-[11px] leading-[1.4] text-[#6E7A90]">{note}</p>}
 
       {caption && (
         <span

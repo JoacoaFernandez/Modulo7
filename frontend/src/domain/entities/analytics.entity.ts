@@ -6,6 +6,13 @@ export interface Delta {
   tone: DeltaTone;
 }
 
+// Aviso de que una fuente no respondió y el bloque afectado salió vacío (nunca se inventan números).
+export interface DashboardWarning {
+  // Servicio afectado: "core", "backoffice", "academic".
+  source: string;
+  message: string;
+}
+
 export interface KpiCard {
   id: string;
   label: string;
@@ -13,6 +20,8 @@ export interface KpiCard {
   formattedValue: string;
   unit: string;
   delta: Delta;
+  // Aclaración de la definición o del dato faltante (por ejemplo "Sin resultados publicados en el período").
+  note?: string;
 }
 
 export interface Site {
@@ -60,6 +69,8 @@ export interface FilterOptions {
   months: Period[];
   faculties: Faculty[];
   defaults: FilterDefaults;
+  // Fuentes que fallaron al armar los catálogos (la lista afectada va reducida).
+  warnings?: DashboardWarning[];
 }
 
 export type RoleId = "academica" | "financiera";
@@ -155,6 +166,7 @@ export interface AcademicStats {
   facultyTrends: FacultyTrendSeries[];
   teacherApprovalRates: TeacherApprovalRate[];
   totalTeachersCount: number;
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
   // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
   lastIngestionAt: string | null;
@@ -166,7 +178,8 @@ export interface MonthlyBalancePoint {
   income: number;
   expense: number;
   result: number;
-  balance: number;
+  // Saldo acumulado al cierre del mes; null si no hay snapshot de ese mes (formattedBalance: "—").
+  balance: number | null;
   formattedIncome: string;
   formattedExpense: string;
   formattedResult: string;
@@ -215,6 +228,9 @@ export interface FinancialStats {
   // Top de productos del mes por facturación; mismo tipo y límite que el anterior.
   topRevenueProducts: TopSellingProduct[];
   diningRevenues: DiningRevenue[];
+  // Con una sede elegida: aviso de que saldo, ingresos, egresos y sueldos son institucionales. null con "Todas las sedes".
+  siteScopeNote: string | null;
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
   // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
   lastIngestionAt: string | null;
@@ -252,6 +268,7 @@ export interface EventStats {
   worstAttendance: EventAttendanceHighlight;
   monthlySeries: EventMonthlyPoint[];
   eventTypes: EventTypeStats[];
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
   // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
   lastIngestionAt: string | null;

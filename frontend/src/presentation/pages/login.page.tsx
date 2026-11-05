@@ -3,6 +3,7 @@
 // App.tsx según haya sesión. El login es contra CORE (hoy un mock en el backend), con el
 // mail de la universidad; el rol (dirección académica o financiera) lo define CORE.
 import { useState, type FormEvent } from "react";
+import { ApiError } from "@/infrastructure/api/http";
 import { AuthRepositoryImpl } from "@/infrastructure/repositories/auth.repository.impl";
 import { LoginUseCase } from "@/application/use-cases/login.use-case";
 import { useEventSources } from "@/presentation/hooks/use-event-sources.hook";
@@ -13,6 +14,19 @@ const loginUseCase = new LoginUseCase(new AuthRepositoryImpl());
 
 const inputClassName =
   "w-full rounded-[10px] border border-[var(--app-border)] bg-white px-4 py-3 text-sm text-[var(--navy)] outline-none transition-colors placeholder:text-muted-foreground focus:border-[var(--blue)]";
+
+// Mensaje para el usuario: CORE autenticó pero sin rol de Analítica (403) se explica aparte; un fallo
+// de red no trae mensaje útil del backend.
+function loginErrorMessage(caught: unknown): string {
+  if (caught instanceof ApiError) {
+    if (caught.code === "ANALYTICS_FORBIDDEN") {
+      return "Tu usuario no tiene acceso a Analítica Institucional. El ingreso es para Dirección Académica, Dirección Financiera y administradores; si creés que es un error, pedí el permiso en Backoffice.";
+    }
+    return caught.message;
+  }
+  if (caught instanceof TypeError) return "No se pudo conectar con el servidor. Intentá de nuevo en unos minutos.";
+  return caught instanceof Error ? caught.message : "No se pudo iniciar sesión.";
+}
 
 export function LoginPage() {
   const { login } = useSession();
@@ -38,7 +52,7 @@ export function LoginPage() {
     try {
       login(await loginUseCase.execute({ email, password }));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo iniciar sesión.");
+      setError(loginErrorMessage(caught));
       setIsSubmitting(false);
     }
   }
