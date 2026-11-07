@@ -56,10 +56,6 @@ interface DashboardHeaderProps {
   periodValue: string;
   periodOptions: FilterOption[];
   onPeriodChange: (value: string) => void;
-  // Nombre del usuario que inició sesión en CORE.
-  userName: string;
-  // Cierra la sesión y vuelve al login (conserva sede/período elegidos).
-  onLogout: () => void;
   // Abre el drawer del Sidebar; el botón que lo dispara solo se ve en <lg.
   onOpenMenu: () => void;
   // Recarga los datos de la sección sin F5; mientras dura, el ícono gira y el botón se deshabilita.
@@ -79,8 +75,6 @@ export function DashboardHeader({
   periodValue,
   periodOptions,
   onPeriodChange,
-  userName,
-  onLogout,
   onOpenMenu,
   onRefresh,
   isRefreshing,
@@ -126,14 +120,6 @@ export function DashboardHeader({
         >
           <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
           <span className="hidden sm:inline">Actualizar</span>
-        </button>
-        <span className="hidden text-[12.5px] text-[#6E7A90] xl:inline">{userName}</span>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="cursor-pointer rounded-[7px] border border-[#DCE1E8] bg-white px-3 py-2 text-[12.5px] font-medium text-[#41506B] transition-colors hover:border-[var(--blue)] hover:text-[var(--navy)]"
-        >
-          Cerrar sesión
         </button>
       </div>
     </header>

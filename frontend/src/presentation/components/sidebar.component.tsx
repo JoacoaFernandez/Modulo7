@@ -2,7 +2,7 @@
 // Colores, espaciados y textos porteados 1:1 del <aside> del prototipo (Analitica Institucional.dc.html).
 // Debajo de `lg` pasa a ser un drawer off-canvas (no está en el prototipo, que es solo desktop).
 // En desktop queda fijo (sticky, alto de pantalla) y solo scrollea el contenido de la derecha.
-import { X } from "lucide-react";
+import { LogOut, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // "Eventos académicos" es una sección propia (con sus filtros), al mismo nivel que las demás y
@@ -18,6 +18,9 @@ interface SidebarProps {
   // Controla el drawer en mobile/tablet (<lg); en desktop el aside queda siempre visible.
   isOpen: boolean;
   onClose: () => void;
+  // Usuario logueado y cierre de sesión: van al pie del menú (en el header no entraban con los filtros).
+  userName: string;
+  onLogout: () => void;
 }
 
 interface NavItem {
@@ -27,7 +30,15 @@ interface NavItem {
   onClick?: () => void;
 }
 
-export function Sidebar({ availableSections, activeSection, onSelectSection, isOpen, onClose }: SidebarProps) {
+export function Sidebar({
+  availableSections,
+  activeSection,
+  onSelectSection,
+  isOpen,
+  onClose,
+  userName,
+  onLogout,
+}: SidebarProps) {
   const goTo = (section: AnalyticsSection) => () => {
     onSelectSection(section);
     onClose();
@@ -103,6 +114,20 @@ export function Sidebar({ availableSections, activeSection, onSelectSection, isO
           <p className="text-[11.5px] leading-[1.5] text-[#D3DAE4]">
             Eventos recolectados de los 9 módulos de UADEnet.
           </p>
+        </div>
+
+        <div className="-mt-[14px] flex flex-col gap-2 px-1">
+          <p className="truncate text-[11.5px] text-[#8494AB]" title={userName}>
+            {userName}
+          </p>
+          <button
+            type="button"
+            onClick={onLogout}
+            className="flex cursor-pointer items-center justify-center gap-2 rounded-md border border-[#2A3A57] px-2.5 py-2 text-[12.5px] font-medium text-[#C3CCD9] transition-colors hover:bg-[#243755] hover:text-white"
+          >
+            <LogOut className="size-3.5" />
+            Cerrar sesión
+          </button>
         </div>
       </aside>
     </>

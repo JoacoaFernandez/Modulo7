@@ -149,6 +149,8 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
         onSelectSection={setActiveSection}
         isOpen={isSidebarOpen}
         onClose={() => setIsSidebarOpen(false)}
+        userName={user.name}
+        onLogout={logout}
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
@@ -172,8 +174,6 @@ export function InstitutionalAnalyticsPage({ user }: { user: AuthUser }) {
           periodValue={currentPeriod}
           periodOptions={periodOptions}
           onPeriodChange={isAcademicSection ? setQuarter : isEventsSection ? setEventsMonth : setMonth}
-          userName={user.name}
-          onLogout={logout}
           onOpenMenu={() => setIsSidebarOpen(true)}
           onRefresh={handleRefresh}
           isRefreshing={isRefreshing}
