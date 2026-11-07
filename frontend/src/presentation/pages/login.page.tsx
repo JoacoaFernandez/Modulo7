@@ -3,6 +3,7 @@
 // App.tsx según haya sesión. El login es contra CORE (hoy un mock en el backend), con el
 // mail de la universidad; el rol (dirección académica o financiera) lo define CORE.
 import { useState, type FormEvent } from "react";
+import { ApiError } from "@/infrastructure/api/http";
 import { AuthRepositoryImpl } from "@/infrastructure/repositories/auth.repository.impl";
 import { LoginUseCase } from "@/application/use-cases/login.use-case";
 import { useEventSources } from "@/presentation/hooks/use-event-sources.hook";
@@ -14,6 +15,19 @@ const loginUseCase = new LoginUseCase(new AuthRepositoryImpl());
 const inputClassName =
   "w-full rounded-[10px] border border-[var(--app-border)] bg-white px-4 py-3 text-sm text-[var(--navy)] outline-none transition-colors placeholder:text-muted-foreground focus:border-[var(--blue)]";
 
+// Mensaje para el usuario: CORE autenticó pero sin rol de Analítica (403) se explica aparte; un fallo
+// de red no trae mensaje útil del backend.
+function loginErrorMessage(caught: unknown): string {
+  if (caught instanceof ApiError) {
+    if (caught.code === "ANALYTICS_FORBIDDEN") {
+      return "Tu usuario no tiene acceso a Analítica Institucional. El ingreso es para Dirección Académica, Dirección Financiera y administradores; si creés que es un error, pedí el permiso en Backoffice.";
+    }
+    return caught.message;
+  }
+  if (caught instanceof TypeError) return "No se pudo conectar con el servidor. Intentá de nuevo en unos minutos.";
+  return caught instanceof Error ? caught.message : "No se pudo iniciar sesión.";
+}
+
 export function LoginPage() {
   const { login } = useSession();
   const { sources, isLoading } = useEventSources();
@@ -22,7 +36,13 @@ export function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const lastIngestionAt = sources.length > 0 ? formatLastIngestion(sources[0].lastIngestionAt) : null;
+  // La más reciente entre los módulos; null = todavía no llegó ningún evento.
+  const latestIso = sources.reduce<string | null>(
+    (latest, source) => (source.lastIngestionAt && (!latest || Date.parse(source.lastIngestionAt) > Date.parse(latest)) ? source.lastIngestionAt : latest),
+    null,
+  );
+  const lastIngestionAt = sources.length > 0 ? formatLastIngestion(latestIso) : null;
+  const connectedModules = sources.filter((source) => source.lastIngestionAt !== null).length;
 
   async function handleSubmit(event: FormEvent) {
     event.preventDefault();
@@ -32,14 +52,14 @@ export function LoginPage() {
     try {
       login(await loginUseCase.execute({ email, password }));
     } catch (caught) {
-      setError(caught instanceof Error ? caught.message : "No se pudo iniciar sesión.");
+      setError(loginErrorMessage(caught));
       setIsSubmitting(false);
     }
   }
 
   return (
     <div className="grid min-h-screen w-full grid-cols-1 lg:grid-cols-[minmax(360px,0.85fr)_1.15fr]">
-      {/* Panel izquierdo: identidad de la plataforma y las fuentes de eventos */}
+      {/* Panel izquierdo: identidad de la plataforma y las 9 fuentes de eventos */}
       <div className="flex flex-col justify-between gap-10 bg-[var(--navy)] px-6 py-10 text-white sm:px-10 lg:px-14 lg:py-16">
         <div className="flex items-center gap-2.5">
           <div className="flex size-9 items-center justify-center rounded-lg bg-[var(--blue)] text-sm font-bold">
@@ -55,7 +75,7 @@ export function LoginPage() {
             Institucional
           </h1>
           <p className="max-w-md text-sm leading-relaxed text-white/70">
-            Un mismo tablero para los eventos que emiten los módulos de UADEnet: portales,
+            Un mismo tablero para los eventos que emiten los 9 módulos de UADEnet: portales,
             comedor, tienda, eventos, biblioteca y el resto de la operación.
           </p>
         </div>
@@ -132,7 +152,9 @@ export function LoginPage() {
         <div className="flex items-center gap-2 text-xs text-muted-foreground">
           <span className="size-1.5 rounded-full bg-[var(--green)]" />
           {lastIngestionAt
-            ? `Última ingesta de eventos: ${lastIngestionAt} · ${sources.length} módulos conectados`
+            ? latestIso
+              ? `Última ingesta de eventos: ${lastIngestionAt} · ${connectedModules} de ${sources.length} módulos con datos`
+              : "Sin datos recibidos todavía"
             : "Conectando con las fuentes de eventos…"}
         </div>
       </div>

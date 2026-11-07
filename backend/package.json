@@ -10,17 +10,30 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "docs:payloads": "tsx scripts/generate-payload-docs.ts",
     "docs:postman": "tsx scripts/generate-postman.ts",
-    "docs": "npm run docs:payloads && npm run docs:postman"
+    "docs": "npm run docs:payloads && npm run docs:postman",
+    "backfill:core": "tsx scripts/backfill-from-core.ts",
+    "db:up": "docker compose up -d",
+    "db:migrate": "prisma migrate dev",
+    "db:demo": "tsx prisma/demo-seed.ts",
+    "db:demo:clear": "tsx prisma/demo-seed.ts --clear",
+    "postinstall": "prisma generate",
+    "mocks:generate": "tsx scripts/generate-demo-mocks.ts",
+    "mocks:check": "tsx scripts/check-mocks.ts"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "express": "^5.2.1"
+    "@prisma/client": "^6.19.3",
+    "amqplib": "^2.2.1",
+    "express": "^5.2.1",
+    "jose": "^6.2.15"
   },
   "devDependencies": {
+    "@types/amqplib": "^0.10.8",
     "@types/express": "^5.0.6",
     "@types/node": "^26.2.0",
+    "prisma": "^6.19.3",
     "tsx": "^4.23.12",
     "typescript": "^7.0.2"
   }

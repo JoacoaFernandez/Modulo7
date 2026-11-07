@@ -2,7 +2,7 @@
 // Estructura y colores porteados 1:1 del <header> del prototipo (Analitica Institucional.dc.html):
 // selects nativos en pill, no el <Select> de shadcn (el diseño no usa dropdown con popover).
 // Debajo de `lg` el header envuelve en dos filas y suma el botón de menú del Sidebar.
-import { Menu } from "lucide-react";
+import { Menu, RefreshCw } from "lucide-react";
 
 export interface FilterOption {
   value: string;
@@ -18,12 +18,12 @@ interface FilterSelectProps {
 
 function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
   return (
-    <label className="flex items-center gap-[7px] rounded-[7px] border border-[#DCE1E8] bg-[var(--app-bg)] px-2.5 py-[7px]">
+    <label className="flex max-w-full min-w-0 items-center gap-[7px] rounded-[7px] border border-[#DCE1E8] bg-[var(--app-bg)] px-2.5 py-[7px]">
       <span className="text-[10px] font-medium tracking-[0.1em] text-[#647188] uppercase">{label}</span>
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="cursor-pointer border-0 bg-transparent text-[13px] font-medium text-[var(--navy)] outline-none"
+        className="min-w-0 cursor-pointer truncate border-0 bg-transparent text-[13px] font-medium text-[var(--navy)] outline-none"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -35,6 +35,13 @@ function FilterSelect({ label, value, options, onChange }: FilterSelectProps) {
   );
 }
 
+// Filtro de facultad: sólo lo pasa el tablero académico, así que no aparece en los demás.
+interface FacultyFilter {
+  value: string;
+  options: FilterOption[];
+  onChange: (value: string) => void;
+}
+
 interface DashboardHeaderProps {
   eyebrow: string;
   title: string;
@@ -43,17 +50,17 @@ interface DashboardHeaderProps {
   siteId: string;
   siteOptions: FilterOption[];
   onSiteChange: (value: string) => void;
+  facultyFilter?: FacultyFilter;
   // "Cuatrimestre" en el tablero académico, "Período" en el resto.
   periodLabel: string;
   periodValue: string;
   periodOptions: FilterOption[];
   onPeriodChange: (value: string) => void;
-  // Nombre del usuario que inició sesión en CORE.
-  userName: string;
-  // Cierra la sesión y vuelve al login (conserva sede/período elegidos).
-  onLogout: () => void;
   // Abre el drawer del Sidebar; el botón que lo dispara solo se ve en <lg.
   onOpenMenu: () => void;
+  // Recarga los datos de la sección sin F5; mientras dura, el ícono gira y el botón se deshabilita.
+  onRefresh: () => void;
+  isRefreshing: boolean;
 }
 
 export function DashboardHeader({
@@ -63,13 +70,14 @@ export function DashboardHeader({
   siteId,
   siteOptions,
   onSiteChange,
+  facultyFilter,
   periodLabel,
   periodValue,
   periodOptions,
   onPeriodChange,
-  userName,
-  onLogout,
   onOpenMenu,
+  onRefresh,
+  isRefreshing,
 }: DashboardHeaderProps) {
   return (
     <header className="flex flex-col gap-3 border-b border-[var(--app-border)] bg-white px-4 py-3.5 sm:px-6 lg:flex-row lg:items-center lg:justify-between lg:gap-6 lg:px-7 lg:py-[18px]">
@@ -92,16 +100,26 @@ export function DashboardHeader({
         {showFilters && (
           <>
             <FilterSelect label="Sede" value={siteId} options={siteOptions} onChange={onSiteChange} />
+            {facultyFilter && (
+              <FilterSelect
+                label="Facultad"
+                value={facultyFilter.value}
+                options={facultyFilter.options}
+                onChange={facultyFilter.onChange}
+              />
+            )}
             <FilterSelect label={periodLabel} value={periodValue} options={periodOptions} onChange={onPeriodChange} />
           </>
         )}
-        <span className="hidden text-[12.5px] text-[#6E7A90] xl:inline">{userName}</span>
         <button
           type="button"
-          onClick={onLogout}
-          className="cursor-pointer rounded-[7px] border border-[#DCE1E8] bg-white px-3 py-2 text-[12.5px] font-medium text-[#41506B] transition-colors hover:border-[var(--blue)] hover:text-[var(--navy)]"
+          onClick={onRefresh}
+          disabled={isRefreshing}
+          aria-label="Actualizar"
+          className="flex cursor-pointer items-center gap-1.5 rounded-[7px] border border-[#DCE1E8] bg-white px-3 py-2 text-[12.5px] font-medium text-[#41506B] transition-colors hover:border-[var(--blue)] hover:text-[var(--navy)] disabled:cursor-not-allowed disabled:opacity-60"
         >
-          Cerrar sesión
+          <RefreshCw className={`size-3.5 ${isRefreshing ? "animate-spin" : ""}`} />
+          <span className="hidden sm:inline">Actualizar</span>
         </button>
       </div>
     </header>

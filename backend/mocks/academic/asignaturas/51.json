@@ -1,0 +1,62 @@
+[
+  {
+    "id": 127,
+    "codigo": "PSI-101",
+    "nombre": "Psicología General",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  },
+  {
+    "id": 128,
+    "codigo": "PSI-110",
+    "nombre": "Psicología Evolutiva",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  },
+  {
+    "id": 129,
+    "codigo": "PSI-210",
+    "nombre": "Estadística Aplicada a la Psicología",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  },
+  {
+    "id": 130,
+    "codigo": "HUM-101",
+    "nombre": "Comunicación y Lenguaje",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  },
+  {
+    "id": 131,
+    "codigo": "HUM-110",
+    "nombre": "Epistemología",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  },
+  {
+    "id": 132,
+    "codigo": "SAL-101",
+    "nombre": "Anatomía Humana",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 51
+  }
+]

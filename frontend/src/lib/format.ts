@@ -13,14 +13,15 @@ export function formatPercent(value: number, decimals = 1): string {
   return `${value.toFixed(decimals)}%`;
 }
 
-// Mismo formato que `money()` en el backend (`analytics-calculator.service.ts`), sin el
+// Mismo formato que el que arma el backend para los importes, sin el
 // prefijo "$ ": lo usan los labels del eje de los gráficos de área (saldo acumulado).
 export function formatMillions(value: number): string {
   return value.toLocaleString("es-AR", { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
-// "26/08 04:12", en la zona horaria del dato (el mock viaja con su propio offset -03:00).
-export function formatLastIngestion(iso: string): string {
+// "26/08 04:12" en hora de Buenos Aires. null = todavía no llegó ningún evento.
+export function formatLastIngestion(iso: string | null): string {
+  if (iso === null) return "Sin datos recibidos";
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
 
@@ -34,14 +35,4 @@ export function formatLastIngestion(iso: string): string {
   })
     .format(date)
     .replace(",", "");
-}
-
-const MONTH_NAMES = ["Ene", "Feb", "Mar", "Abr", "May", "Jun", "Jul", "Ago", "Sep", "Oct", "Nov", "Dic"];
-
-// "2026-08" → "Ago 2026" (mismo criterio que monthLabel del backend). Si no tiene el formato
-// esperado, devuelve el valor tal cual.
-export function monthLabel(month: string): string {
-  const [year, monthNumber] = month.split("-").map(Number);
-  const name = MONTH_NAMES[monthNumber - 1];
-  return name ? `${name} ${year}` : month;
 }

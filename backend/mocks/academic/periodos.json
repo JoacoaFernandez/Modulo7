@@ -1,0 +1,44 @@
+[
+  {
+    "id": 3,
+    "anio": 2024,
+    "numero": 1,
+    "fechaInicio": "2024-03-11",
+    "fechaFin": "2024-07-12"
+  },
+  {
+    "id": 4,
+    "anio": 2024,
+    "numero": 2,
+    "fechaInicio": "2024-08-05",
+    "fechaFin": "2024-12-13"
+  },
+  {
+    "id": 5,
+    "anio": 2025,
+    "numero": 1,
+    "fechaInicio": "2025-03-10",
+    "fechaFin": "2025-07-11"
+  },
+  {
+    "id": 6,
+    "anio": 2025,
+    "numero": 2,
+    "fechaInicio": "2025-08-04",
+    "fechaFin": "2025-12-12"
+  },
+  {
+    "id": 7,
+    "anio": 2026,
+    "numero": 1,
+    "fechaInicio": "2026-03-09",
+    "fechaFin": "2026-07-11"
+  },
+  {
+    "id": 8,
+    "anio": 2026,
+    "numero": 2,
+    "fechaInicio": "2026-08-10",
+    "fechaFin": "2026-12-12"
+  }
+]

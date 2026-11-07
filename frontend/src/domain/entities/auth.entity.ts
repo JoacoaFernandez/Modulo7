@@ -1,29 +1,23 @@
 // Domain entities: core business objects, independent of frameworks and infrastructure.
 import type { RoleId } from "./analytics.entity";
 
-// Usuario del portal de Analítica (GET /me): identidad de CORE (módulo 10) más el nombre
-// que sale de Backoffice. Los permisos son {modulo}:{recurso}:{acción}.
-export interface SessionUser {
-  userId: string;
+// Usuario autenticado por CORE (módulo 10).
+export interface AuthUser {
+  id: string;
   email: string;
-  displayName: string;
-  roles: RoleId[];
+  name: string;
+  // Roles de CORE (ACADEMIC_ADMIN, FINANCE_ADMIN, ADMIN...).
+  coreRoles: string[];
   permissions: string[];
+  // Secciones de Analítica que ve (derivadas por el backend de coreRoles y permissions).
+  roles: RoleId[];
 }
 
 export interface AuthSession {
-  // Access token de CORE (JWT de 15 min). Vive solo en memoria; el refresh va en cookie HttpOnly.
-  accessToken: string;
-  // ISO 8601, calculado a partir de expiresIn.
+  token: string;
+  // ISO 8601.
   expiresAt: string;
-  user: SessionUser;
-}
-
-// Respuesta de login/refresh de CORE sin el usuario.
-export interface AccessTokenGrant {
-  accessToken: string;
-  // Segundos de vida del access token.
-  expiresIn: number;
+  user: AuthUser;
 }
 
 export interface LoginCredentials {

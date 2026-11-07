@@ -1,0 +1,7 @@
+[
+  { "id": 1, "codigo": "ISI", "nombre": "Ingeniería en Sistemas de Información", "facultad": "Ingeniería y Tecnología", "duracion": 5, "titulo": "Ingeniero/a en Sistemas de Información", "estado": "ACTIVA" },
+  { "id": 2, "codigo": "LAE", "nombre": "Licenciatura en Administración de Empresas", "facultad": "Ciencias Económicas", "duracion": 4, "titulo": "Licenciado/a en Administración de Empresas", "estado": "ACTIVA" },
+  { "id": 3, "codigo": "ABG", "nombre": "Abogacía", "facultad": "Derecho y Ciencias Sociales", "duracion": 5, "titulo": "Abogado/a", "estado": "ACTIVA" },
+  { "id": 4, "codigo": "ARQ", "nombre": "Arquitectura", "facultad": "Arquitectura y Diseño", "duracion": 5, "titulo": "Arquitecto/a", "estado": "ACTIVA" },
+  { "id": 5, "codigo": "PSI", "nombre": "Licenciatura en Psicología", "facultad": "Ciencias de la Salud y Psicología", "duracion": 5, "titulo": "Licenciado/a en Psicología", "estado": "ACTIVA" }
+]

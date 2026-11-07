@@ -1,0 +1,72 @@
+[
+  {
+    "id": 109,
+    "codigo": "ECO-101",
+    "nombre": "Contabilidad Básica",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 21
+  },
+  {
+    "id": 110,
+    "codigo": "ECO-110",
+    "nombre": "Microeconomía",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 21
+  },
+  {
+    "id": 111,
+    "codigo": "ECO-120",
+    "nombre": "Macroeconomía",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 21
+  },
+  {
+    "id": 112,
+    "codigo": "ECO-201",
+    "nombre": "Estadística para Negocios",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 21
+  },
+  {
+    "id": 113,
+    "codigo": "ADM-101",
+    "nombre": "Administración General",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 21
+  },
+  {
+    "id": 114,
+    "codigo": "ECO-210",
+    "nombre": "Costos y Gestión",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 21
+  },
+  {
+    "id": 115,
+    "codigo": "MKT-201",
+    "nombre": "Marketing Digital",
+    "anio": 3,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 21
+  }
+]

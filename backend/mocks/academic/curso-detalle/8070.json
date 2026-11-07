@@ -1,0 +1,23 @@
+{
+  "curso": {
+    "id": 8070,
+    "asignatura": {
+      "id": 120,
+      "codigo": "DER-220",
+      "nombre": "Derecho Laboral"
+    },
+    "periodo": {
+      "id": 8,
+      "anio": 2026,
+      "numero": 2
+    },
+    "sedeId": 1,
+    "estado": "FINALIZADO"
+  },
+  "docentes": [
+    {
+      "docenteId": "02d00000-0000-4000-8000-000000000014",
+      "rol": "TITULAR"
+    }
+  ]
+}

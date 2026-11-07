@@ -1,4 +1,5 @@
 // Domain entities: core business objects, independent of frameworks and infrastructure.
+import { DashboardWarning } from "./dashboard-warning.entity";
 import { SourceModule } from "./event-source.entity";
 
 export interface EventTypeStats {
@@ -35,9 +36,12 @@ export interface EventStats {
   capacityOccupancy: number;
   bestAttendance: EventAttendanceHighlight;
   worstAttendance: EventAttendanceHighlight;
-  // Seis meses: barras de frecuencia y área de concurrencia.
+  // Hasta seis meses, terminando en el seleccionado: barras de frecuencia y área de concurrencia.
   monthlySeries: EventMonthlyPoint[];
+  // Tipo de evento: la `category` de G6 o, si no la informa, la clase de precio (Pago / Gratuito); en ese caso va un aviso.
   eventTypes: EventTypeStats[];
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido de los módulos que alimentan el tablero (ISO 8601); null si no hay ninguno.
+  lastIngestionAt: string | null;
 }

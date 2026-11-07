@@ -9,8 +9,9 @@ interface AreaLineChartProps {
   label: string;
   valueLabel: string;
   grid: ChartGridRow[];
-  points: string;
-  areaPoints: string;
+  // Un tramo o varios (una serie con huecos se dibuja cortada).
+  points: string | string[];
+  areaPoints: string | string[];
   dots: ChartDot[];
   color?: string;
   viewBoxWidth?: number;
@@ -74,16 +75,21 @@ export function AreaLineChart({
             {row.label}
           </text>
         ))}
-        <polygon points={areaPoints} fill={color} fillOpacity={0.1} />
-        <polyline
-          points={points}
-          fill="none"
-          stroke={color}
-          strokeWidth={2}
-          strokeLinejoin="round"
-          strokeLinecap="round"
-          vectorEffect="non-scaling-stroke"
-        />
+        {[areaPoints].flat().map((area, index) => (
+          <polygon key={`area-${index}`} points={area} fill={color} fillOpacity={0.1} />
+        ))}
+        {[points].flat().map((line, index) => (
+          <polyline
+            key={`line-${index}`}
+            points={line}
+            fill="none"
+            stroke={color}
+            strokeWidth={2}
+            strokeLinejoin="round"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
+        ))}
         {dots.map((dot, index) => (
           <circle key={`dot-${index}`} cx={dot.x} cy={dot.y} r={2.6} fill={color} />
         ))}

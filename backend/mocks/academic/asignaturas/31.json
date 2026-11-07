@@ -1,0 +1,62 @@
+[
+  {
+    "id": 116,
+    "codigo": "DER-101",
+    "nombre": "Introducción al Derecho",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 31
+  },
+  {
+    "id": 117,
+    "codigo": "DER-110",
+    "nombre": "Derecho Constitucional",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 31
+  },
+  {
+    "id": 118,
+    "codigo": "DER-120",
+    "nombre": "Derecho Civil: Parte General",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 31
+  },
+  {
+    "id": 119,
+    "codigo": "DER-210",
+    "nombre": "Derecho Penal",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 31
+  },
+  {
+    "id": 120,
+    "codigo": "DER-220",
+    "nombre": "Derecho Laboral",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 31
+  },
+  {
+    "id": 121,
+    "codigo": "SOC-101",
+    "nombre": "Sociología",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 31
+  }
+]

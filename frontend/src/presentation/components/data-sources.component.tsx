@@ -1,6 +1,6 @@
 // Presentation components: app-specific components composed from shadcn/ui primitives (components/ui).
-// Pantalla "Fuentes de datos": los módulos que emiten eventos, su última ingesta y qué tablero alimentan.
-// No hay columna de estado: los eventos llegan por la cola de CORE, no por una conexión con cada módulo.
+// Pantalla "Fuentes de datos": los 9 módulos que emiten eventos, su última ingesta y qué tablero alimentan.
+// No hay columna de estado: la ingesta es batch (POST por evento), no una conexión abierta.
 import type { EventSource, SourceModule } from "@/domain/entities/analytics.entity";
 import { formatLastIngestion } from "@/lib/format";
 import { SectionCard } from "./dashboard/section-card.component";
@@ -8,15 +8,15 @@ import { SectionHeader } from "./dashboard/section-header.component";
 
 // Qué tableros se calculan con los eventos de cada módulo (ver backend/EVENTOS.md).
 const FEEDS: Record<SourceModule, string> = {
-  academic: "Académico",
-  // Los resultados y los docentes de cada curso salen de Gestión Académica.
-  teacher: "Ninguno",
+  "gestion-academica": "Académico",
+  "portal-estudiante": "Académico",
+  "portal-docente": "Académico",
   backoffice: "Académico y financiero",
   core: "Financiero",
-  store: "Financiero",
-  dining: "Financiero",
-  events: "Estadísticas de eventos",
-  library: "Ninguno todavía",
+  tienda: "Financiero",
+  comedor: "Financiero",
+  eventos: "Estadísticas de eventos",
+  biblioteca: "Ninguno todavía",
 };
 
 interface DataSourcesProps {
@@ -30,7 +30,7 @@ export function DataSources({ sources, isLoading, error }: DataSourcesProps) {
     <SectionCard className="p-5 sm:p-6">
       <SectionHeader
         title="Fuentes de eventos"
-        description="Módulos de UADEnet que publican eventos en CORE, que los entrega a Analítica Institucional"
+        description="Módulos de UADEnet que le mandan eventos a Analítica Institucional por POST /api/analytics/events"
       />
 
       {isLoading && <p className="text-sm text-muted-foreground">Cargando fuentes…</p>}

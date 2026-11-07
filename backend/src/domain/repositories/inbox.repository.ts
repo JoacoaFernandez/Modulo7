@@ -1,9 +1,19 @@
 // Repository interfaces: contracts that infrastructure implementations must fulfill.
+import { EventEnvelope, InboxEvent, InboxResult } from "../entities/inbox-event.entity";
 
-// Tabla inbox del contrato de CORE (§10.3): registra cada eventId procesado para no repetir
-// el efecto ante una reentrega. Con base de datos, el registro y el efecto van en la misma
-// transacción, con índice único por eventId.
+export interface InboxPage {
+  items: InboxEvent[];
+  // null si no hay más páginas.
+  nextCursor: string | null;
+}
+
 export interface InboxRepository {
-  // false si el eventId ya estaba registrado (reentrega).
-  register(eventId: string): Promise<boolean>;
+  // true si insertó; false si el eventId ya existía (no pisa la fila original).
+  insertIfAbsent(envelope: EventEnvelope, result: InboxResult): Promise<boolean>;
+  // Tipo y momento del evento ya guardado con ese eventId, para detectar el mismo id con otro contenido.
+  findSummary(eventId: string): Promise<{ eventType: string; occurredAt: string } | null>;
+  // Actualiza el renglón del módulo emisor (último recibido y contadores).
+  touchSource(source: string, occurredAt: string, outcome: "stored" | "ignored"): Promise<void>;
+  // Más nuevos primero; el cursor es opaco.
+  list(limit: number, cursor: string | null): Promise<InboxPage>;
 }

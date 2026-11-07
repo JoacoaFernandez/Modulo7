@@ -1,11 +1,9 @@
 // Use cases: application-specific business rules, orchestrate domain entities and repositories.
-import { AnalyticsRepository } from "../../domain/repositories/analytics.repository";
-import { Role } from "../../domain/entities/role.entity";
+import { Role, ROLES } from "../../domain/entities/role.entity";
 
+// Los roles son configuración (los define CORE), no salen de eventos ni de la base.
 export class GetRolesUseCase {
-  constructor(private readonly analyticsRepository: AnalyticsRepository) {}
-
-  execute(): Promise<Role[]> {
-    return this.analyticsRepository.getRoles();
+  execute(): Role[] {
+    return [...ROLES];
   }
 }

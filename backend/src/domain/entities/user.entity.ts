@@ -1,23 +1,35 @@
 // Domain entities: core business objects, independent of frameworks and infrastructure.
 import { RoleId } from "./role.entity";
 
-// Identidad que viaja en el access token de CORE (claims sub, email, roles, permissions).
-// Analítica no guarda usuarios: valida el token y lee los claims.
-export interface AuthenticatedUser {
-  userId: string;
+// Usuario tal como lo devuelve CORE al loguear (campos que usamos).
+export interface CoreUser {
+  id: string;
   email: string;
-  // Roles del catálogo de CORE: STUDENT, TEACHER, ADMIN, ACADEMIC_ADMIN, FINANCE_ADMIN, etc.
   roles: string[];
-  // Permisos {modulo}:{recurso}:{acción}; los de Analítica son analytics:*.
   permissions: string[];
+  status?: string;
 }
 
-// Usuario del portal de Analítica (GET /api/v1/me): la identidad de CORE más el nombre que
-// sale de la ficha de Backoffice y los tableros que habilitan sus permisos.
-export interface SessionUser {
-  userId: string;
+// Usuario autenticado por CORE (módulo 10). Analítica no guarda usuarios: los lee del JWT.
+export interface AuthenticatedUser {
+  id: string;
   email: string;
-  displayName: string;
-  roles: RoleId[];
+  // Roles de CORE (ACADEMIC_ADMIN, FINANCE_ADMIN, ADMIN...).
+  coreRoles: string[];
   permissions: string[];
+  // Secciones de Analítica que ve (derivadas de coreRoles y permissions). Un usuario ve el tablero de cada una.
+  roles: RoleId[];
+}
+
+// Usuario con el nombre a mostrar (de Backoffice; si no está, la parte local del mail).
+export interface UserProfile extends AuthenticatedUser {
+  name: string;
+}
+
+// Respuesta de login/refresh hacia el frontend: el access token (JWT de CORE) va como Bearer.
+export interface AuthSession {
+  token: string;
+  // ISO 8601.
+  expiresAt: string;
+  user: UserProfile;
 }

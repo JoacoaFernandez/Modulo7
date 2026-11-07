@@ -1,0 +1,23 @@
+{
+  "curso": {
+    "id": 7012,
+    "asignatura": {
+      "id": 103,
+      "codigo": "FIS-110",
+      "nombre": "Física I"
+    },
+    "periodo": {
+      "id": 7,
+      "anio": 2026,
+      "numero": 1
+    },
+    "sedeId": 3,
+    "estado": "FINALIZADO"
+  },
+  "docentes": [
+    {
+      "docenteId": "02d00000-0000-4000-8000-000000000008",
+      "rol": "TITULAR"
+    }
+  ]
+}

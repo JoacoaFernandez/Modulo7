@@ -8,8 +8,9 @@ import { DeltaLabel } from "../trend-pill.component";
 export interface LineChartSeries {
   name: string;
   color: string;
-  // "x1,y1 x2,y2 ..." — ya calculado con `chart-scale` (createScale + buildPolylinePoints).
-  points: string;
+  // Tramos "x1,y1 x2,y2 ..." — ya calculados con `chart-scale` (createScale + buildPolylinePoints).
+  // Más de uno cuando la serie tiene huecos (períodos sin resultados).
+  segments: string[];
   dots: ChartDot[];
   lastValueLabel: string;
   delta: { formatted: string; tone: DeltaTone };
@@ -70,10 +71,11 @@ export function LineChart({
             {row.label}
           </text>
         ))}
-        {series.map((s) => (
+        {series.flatMap((s) =>
+          s.segments.map((points, index) => (
           <polyline
-            key={`line-${s.name}`}
-            points={s.points}
+            key={`line-${s.name}-${index}`}
+            points={points}
             fill="none"
             stroke={s.color}
             strokeWidth={2}
@@ -81,7 +83,8 @@ export function LineChart({
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />
-        ))}
+          )),
+        )}
         {series.map((s) =>
           s.dots.map((dot, index) => (
             <circle key={`dot-${s.name}-${index}`} cx={dot.x} cy={dot.y} r={2.6} fill={s.color} />
@@ -90,8 +93,8 @@ export function LineChart({
       </svg>
 
       <div className="grid gap-0 pb-3.5" style={{ gridTemplateColumns: `repeat(${categories.length}, 1fr)`, paddingLeft: gridX1 }}>
-        {categories.map((label) => (
-          <div key={label} className="text-center text-[10px] text-[#6E7A90]">
+        {categories.map((label, index) => (
+          <div key={`${label}-${index}`} className="text-center text-[10px] text-[#6E7A90]">
             {label}
           </div>
         ))}

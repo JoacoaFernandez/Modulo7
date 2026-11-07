@@ -1,0 +1,16 @@
+[
+  { "id": "5d1e7c2a-8f43-4b9e-a6d0-2c7f9e1b3a58", "email": "direccion.academica@uade.edu.ar", "password": "uadenet2026",
+    "roles": ["ACADEMIC_ADMIN"], "permissions": ["wallet:read:self", "wallet:credit:self", "academic:manage"],
+    "careerIds": [], "status": "ACTIVE" },
+  { "id": "9c3e5b71-2d84-4a60-b1f7-0e6a4c8d2f15", "email": "direccion.financiera@uade.edu.ar", "password": "uadenet2026",
+    "roles": ["FINANCE_ADMIN"],
+    "permissions": ["wallet:read:self", "wallet:credit:self", "wallet:read:any", "wallet:read:aggregates", "wallet:credit:any", "wallet:admin", "backoffice:read", "backoffice:payroll:approve"],
+    "careerIds": [], "status": "ACTIVE" },
+  { "id": "1a7d4f90-6b23-4c58-8e01-3f9b2a5c7d64", "email": "direccion.general@uade.edu.ar", "password": "uadenet2026",
+    "roles": ["ADMIN"], "permissions": ["wallet:read:self", "wallet:credit:self", "backoffice:manage", "backoffice:read"],
+    "careerIds": [], "status": "ACTIVE" },
+  { "id": "ba310c57-a684-4dbf-a4a4-905fcfbefa08", "email": "alumno.demo@uade.edu.ar", "password": "uadenet2026",
+    "roles": ["STUDENT"], "permissions": ["wallet:read:self", "wallet:credit:self"], "careerIds": ["1"], "status": "ACTIVE" },
+  { "id": "e2b6a0d4-71c9-4f38-95a2-8d1c3b7e6f09", "email": "suspendido.demo@uade.edu.ar", "password": "uadenet2026",
+    "roles": ["ACADEMIC_ADMIN"], "permissions": ["wallet:read:self"], "careerIds": [], "status": "SUSPENDED" }
+]

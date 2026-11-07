@@ -1,0 +1,29 @@
+[
+  {
+    "id": 11,
+    "codigo": "ISI-2026",
+    "nombre": "Plan de Estudios 2026",
+    "vigenciaDesde": "2026-03-01",
+    "cantidadAsignaturas": 8,
+    "estado": "ACTIVO",
+    "carreraId": 1
+  },
+  {
+    "id": 12,
+    "codigo": "ISI-2020",
+    "nombre": "Plan de Estudios 2020",
+    "vigenciaDesde": "2020-03-01",
+    "cantidadAsignaturas": 4,
+    "estado": "ACTIVO",
+    "carreraId": 1
+  },
+  {
+    "id": 13,
+    "codigo": "ISI-2027",
+    "nombre": "Plan de Estudios 2027",
+    "vigenciaDesde": "2027-03-01",
+    "cantidadAsignaturas": 0,
+    "estado": "PLANIFICADO",
+    "carreraId": 1
+  }
+]

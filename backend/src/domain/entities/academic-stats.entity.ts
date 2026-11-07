@@ -1,6 +1,7 @@
 // Domain entities: core business objects, independent of frameworks and infrastructure.
 import { Delta } from "./delta.value-object";
 import { KpiCard } from "./kpi.value-object";
+import { DashboardWarning } from "./dashboard-warning.entity";
 import { SourceModule } from "./event-source.entity";
 
 export interface SubjectApprovalPoint {
@@ -11,7 +12,7 @@ export interface SubjectApprovalPoint {
 export interface SubjectApprovalRate {
   code: string;
   name: string;
-  // Tasa del cuatrimestre seleccionado, ya ajustada por sede.
+  // Tasa del cuatrimestre seleccionado, para la sede del filtro.
   approvalRate: number;
   // Tres puntos: cuatrimestres t-2, t-1 y t. Alimenta las barras agrupadas.
   series: SubjectApprovalPoint[];
@@ -28,7 +29,7 @@ export interface FacultyTrendSeries {
   facultyName: string;
   // Color fijo de la serie en el gráfico de líneas.
   color: string;
-  // Seis cuatrimestres: la serie completa, no recortada al filtro.
+  // Hasta seis cuatrimestres, terminando en el seleccionado; 0 donde la facultad no tuvo resultados.
   points: FacultyTrendPoint[];
   latestApprovalRate: number;
   delta: Delta;
@@ -43,8 +44,8 @@ export interface TeacherApprovalRate {
 
 export interface AcademicStats {
   siteName: string;
-  // termId del cuatrimestre seleccionado; quarter y el resto de las etiquetas son AAAA-NC.
-  termId: string;
+  // Facultad aplicada al tablero; null = todas las facultades.
+  facultyName: string | null;
   quarter: string;
   previousQuarter: string;
   // Etiquetas [t-2, t-1, t] para la leyenda de las barras agrupadas.
@@ -54,8 +55,11 @@ export interface AcademicStats {
   subjectApprovalRates: SubjectApprovalRate[];
   facultyTrends: FacultyTrendSeries[];
   teacherApprovalRates: TeacherApprovalRate[];
-  // Total de docentes de la sede, del que teacherApprovalRates es una muestra.
+  // Docentes distintos con resultados publicados en el cuatrimestre, la sede y la facultad del filtro.
   totalTeachersCount: number;
+  // Fuentes que no respondieron: el bloque afectado sale vacío (nunca números inventados).
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido de los módulos que alimentan el tablero (ISO 8601); null si no hay ninguno.
+  lastIngestionAt: string | null;
 }

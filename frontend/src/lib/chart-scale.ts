@@ -86,3 +86,49 @@ export function buildGridRows(
     return { y: y.toFixed(1), textY: (y + textOffset).toFixed(1), label: formatLabel(value) };
   });
 }
+
+// Dominio con aire arriba y abajo para series de valores reales (pueden ser negativos o
+// constantes): evita el `min * 0.94` que se invierte con negativos y el dominio de tamaño 0.
+// `nonNegative`: para conteos, el piso no baja de 0.
+export function paddedDomain(values: number[], padRatio = 0.1, nonNegative = false): { min: number; max: number } {
+  if (values.length === 0) return { min: 0, max: 1 };
+  const lo = Math.min(...values);
+  const hi = Math.max(...values);
+  const pad = (hi - lo) * padRatio || Math.abs(hi) * padRatio || 1;
+  return { min: nonNegative ? Math.max(0, lo - pad) : lo - pad, max: hi + pad };
+}
+
+// Serie con huecos (valor null = sin dato): una línea y un área por cada tramo consecutivo con datos,
+// y un punto por cada valor presente (un tramo de un solo punto se ve como punto suelto). El índice X
+// es el de la serie completa, así el hueco queda en su lugar.
+export function buildGappedSeries(
+  values: (number | null)[],
+  scale: ChartScale,
+  baselineY: number,
+): { lines: string[]; areas: string[]; dots: ChartDot[] } {
+  const lines: string[] = [];
+  const areas: string[] = [];
+  const dots: ChartDot[] = [];
+  let run: { index: number; value: number }[] = [];
+
+  const flush = () => {
+    if (run.length > 1) {
+      const points = run.map((p) => `${scale.x(p.index).toFixed(1)},${scale.y(p.value).toFixed(1)}`).join(" ");
+      lines.push(points);
+      areas.push(`${scale.x(run[0].index).toFixed(1)},${baselineY} ${points} ${scale.x(run[run.length - 1].index).toFixed(1)},${baselineY}`);
+    }
+    run = [];
+  };
+
+  values.forEach((value, index) => {
+    if (value === null) {
+      flush();
+      return;
+    }
+    run.push({ index, value });
+    dots.push({ x: scale.x(index).toFixed(1), y: scale.y(value).toFixed(1) });
+  });
+  flush();
+
+  return { lines, areas, dots };
+}

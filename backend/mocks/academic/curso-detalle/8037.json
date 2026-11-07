@@ -1,0 +1,27 @@
+{
+  "curso": {
+    "id": 8037,
+    "asignatura": {
+      "id": 110,
+      "codigo": "ECO-110",
+      "nombre": "Microeconomía"
+    },
+    "periodo": {
+      "id": 8,
+      "anio": 2026,
+      "numero": 2
+    },
+    "sedeId": 3,
+    "estado": "FINALIZADO"
+  },
+  "docentes": [
+    {
+      "docenteId": "02d00000-0000-4000-8000-00000000000e",
+      "rol": "TITULAR"
+    },
+    {
+      "docenteId": "02d00000-0000-4000-8000-00000000000a",
+      "rol": "AUXILIAR"
+    }
+  ]
+}

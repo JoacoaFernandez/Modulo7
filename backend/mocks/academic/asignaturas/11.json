@@ -1,0 +1,82 @@
+[
+  {
+    "id": 101,
+    "codigo": "MAT-101",
+    "nombre": "Análisis Matemático I",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 102,
+    "codigo": "MAT-102",
+    "nombre": "Álgebra y Geometría Analítica",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 103,
+    "codigo": "FIS-110",
+    "nombre": "Física I",
+    "anio": 1,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 104,
+    "codigo": "INF-120",
+    "nombre": "Algoritmos y Estructuras de Datos",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 105,
+    "codigo": "INF-210",
+    "nombre": "Bases de Datos",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 106,
+    "codigo": "INF-220",
+    "nombre": "Sistemas Operativos",
+    "anio": 2,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 107,
+    "codigo": "INF-230",
+    "nombre": "Inteligencia Artificial",
+    "anio": 3,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  },
+  {
+    "id": 108,
+    "codigo": "IND-201",
+    "nombre": "Probabilidad y Estadística",
+    "anio": 3,
+    "creditos": 6,
+    "cargaHoraria": 96,
+    "estado": "ACTIVA",
+    "planId": 11
+  }
+]

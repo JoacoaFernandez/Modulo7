@@ -7,12 +7,4 @@ export class AuthRepositoryImpl implements AuthRepository {
   login(credentials: LoginCredentials, signal?: AbortSignal): Promise<AuthSession> {
     return authClient.login(credentials, signal);
   }
-
-  restoreSession(signal?: AbortSignal): Promise<AuthSession> {
-    return authClient.restore(signal);
-  }
-
-  logout(): Promise<void> {
-    return authClient.logout();
-  }
 }

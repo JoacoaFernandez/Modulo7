@@ -5,14 +5,16 @@ import type { EventStats } from "@/domain/entities/analytics.entity";
 import { StatCard } from "./stat-card.component";
 import { SectionCard } from "./dashboard/section-card.component";
 import { SectionHeader } from "./dashboard/section-header.component";
+import { EmptyState } from "./dashboard/empty-state.component";
+import { DataWarnings } from "./dashboard/data-warnings.component";
 import { DataSourceNote } from "./dashboard/data-source-note.component";
 import { ChartLegend } from "./charts/chart-legend.component";
 import { ChartTooltip } from "./charts/chart-tooltip.component";
 import { GroupedBarChart, type GroupedBarCategory } from "./charts/grouped-bar-chart.component";
 import { AreaLineChart } from "./charts/area-line-chart.component";
 import { BarList, type BarListRow } from "./charts/bar-list.component";
-import { createScale, buildPolylinePoints, buildAreaPoints, buildDots, buildGridRows } from "@/lib/chart-scale";
-import { formatCount, formatPercent, monthLabel } from "@/lib/format";
+import { createScale, buildPolylinePoints, buildAreaPoints, buildDots, buildGridRows, paddedDomain } from "@/lib/chart-scale";
+import { formatCount, formatLastIngestion, formatPercent } from "@/lib/format";
 
 interface EventsDashboardProps {
   stats: EventStats;
@@ -28,7 +30,8 @@ function attendanceBarColor(rate: number): string {
 }
 
 export function EventsDashboard({ stats }: EventsDashboardProps) {
-  const maxEventsCount = Math.max(...stats.monthlySeries.map((m) => m.eventsCount));
+  const hasMonthlyData = stats.monthlySeries.some((m) => m.eventsCount > 0 || m.attendeesCount > 0);
+  const maxEventsCount = Math.max(1, ...stats.monthlySeries.map((m) => m.eventsCount));
   const frequencyCategories: GroupedBarCategory[] = stats.monthlySeries.map((month) => {
     const height = `${(month.eventsCount / maxEventsCount) * 100}%`;
     return {
@@ -50,10 +53,9 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
   });
 
   const attendeeValues = stats.monthlySeries.map((m) => m.attendeesCount);
-  const attendanceLo = Math.min(...attendeeValues) * 0.85;
-  const attendanceHi = Math.max(...attendeeValues) * 1.05;
+  const { min: attendanceLo, max: attendanceHi } = paddedDomain(attendeeValues, 0.15, true);
   const attendanceScale = createScale({
-    pointCount: 6,
+    pointCount: attendeeValues.length,
     domainMin: attendanceLo,
     domainMax: attendanceHi,
     marginLeft: 46,
@@ -75,17 +77,21 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
     bar: { color: attendanceBarColor(event.attendanceRate), widthPercent: event.attendanceRate },
   }));
 
-  const maxFrequency = Math.max(...stats.eventTypes.map((e) => e.frequency));
+  const maxFrequency = Math.max(1, ...stats.eventTypes.map((e) => e.frequency));
+  const hasEventTypes = stats.eventTypes.length > 0;
+  const hasHighlights = hasEventTypes && stats.bestAttendance.eventType !== "—";
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1 pt-2">
         <h2 className="font-heading text-[21px] leading-[1.2] text-[#16243C]">Estadísticas de eventos académicos</h2>
-        <p className="text-[12.5px] text-[#647188]">Frecuencia, concurrencia y tasa de presentismo · {monthLabel(stats.month)}</p>
+        <p className="text-[12.5px] text-[#647188]">Frecuencia, concurrencia y tasa de presentismo · {stats.month}</p>
       </div>
 
+      <DataWarnings warnings={stats.warnings} />
+
       <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-2 xl:grid-cols-4">
-        <StatCard label="Eventos realizados" value={formatCount(stats.totalEvents)} unit="eventos" caption={monthLabel(stats.month)} />
+        <StatCard label="Eventos realizados" value={formatCount(stats.totalEvents)} unit="eventos" caption={stats.month} />
         <StatCard
           label="Concurrencia total"
           value={formatCount(stats.totalAttendees)}
@@ -118,6 +124,8 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
               />
             }
           />
+          {hasMonthlyData ? (
+            <>
           <GroupedBarChart
             seriesColors={[FREQUENCY_COLOR]}
             categories={frequencyCategories}
@@ -127,7 +135,7 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
           />
           <AreaLineChart
             label="Concurrencia por mes"
-            valueLabel={`${formatCount(stats.totalAttendees)} asistentes`}
+            valueLabel={`${formatCount(stats.totalAttendees)} ${stats.totalAttendees === 1 ? "asistente" : "asistentes"}`}
             grid={attendanceGrid}
             points={buildPolylinePoints(attendeeValues, attendanceScale)}
             areaPoints={buildAreaPoints(attendeeValues, attendanceScale, 118)}
@@ -136,22 +144,34 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
             viewBoxHeight={130}
             heightPx={104}
           />
+            </>
+          ) : (
+            <EmptyState message="Todavía no hay eventos registrados en los últimos meses" />
+          )}
         </SectionCard>
 
         <SectionCard className="px-5 py-[18px]">
-          <SectionHeader title="Presentismo por tipo" description={`Asistentes verificados sobre inscriptos · ${monthLabel(stats.month)}`} />
-          <BarList rows={attendanceRows} variant="stacked" />
+          <SectionHeader title="Presentismo por tipo" description={`Asistentes verificados sobre inscriptos · ${stats.month}`} />
+          {hasEventTypes ? (
+            <BarList rows={attendanceRows} variant="stacked" />
+          ) : (
+            <EmptyState message="Todavía no hay eventos para este período" />
+          )}
           <div className="mt-4 flex flex-col gap-1.5 border-t border-[#E7EAEF] pt-3">
             <div className="flex items-baseline justify-between gap-2.5">
               <span className="text-[11.5px] text-[#647188]">Mayor presentismo</span>
               <span className="text-[11.5px] font-medium text-[#104C30]">
-                {stats.bestAttendance.eventType} · {formatPercent(stats.bestAttendance.attendanceRate)}
+                {hasHighlights
+                  ? `${stats.bestAttendance.eventType} · ${formatPercent(stats.bestAttendance.attendanceRate)}`
+                  : "Sin datos"}
               </span>
             </div>
             <div className="flex items-baseline justify-between gap-2.5">
               <span className="text-[11.5px] text-[#647188]">Menor presentismo</span>
               <span className="text-[11.5px] font-medium text-[#A51C30]">
-                {stats.worstAttendance.eventType} · {formatPercent(stats.worstAttendance.attendanceRate)}
+                {hasHighlights
+                  ? `${stats.worstAttendance.eventType} · ${formatPercent(stats.worstAttendance.attendanceRate)}`
+                  : "Sin datos"}
               </span>
             </div>
           </div>
@@ -163,7 +183,7 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
           <div className="flex flex-col gap-1">
             <h2 className="font-heading text-[17px] leading-[1.25] text-[#16243C]">Eventos académicos</h2>
             <p className="text-xs leading-[1.4] text-[#647188]">
-              Frecuencia, concurrencia y presentismo sobre inscriptos · {monthLabel(stats.month)}
+              Frecuencia, concurrencia y presentismo sobre inscriptos · {stats.month}
             </p>
           </div>
           <div className="flex flex-wrap gap-5 sm:gap-7">
@@ -182,6 +202,10 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
           </div>
         </div>
 
+        {!hasEventTypes ? (
+          <EmptyState message="Todavía no hay eventos académicos para este período y sede" />
+        ) : (
+        <>
         {/* overflow-x-auto + min-width: cada fila tiene 2 barras de progreso con su propia
             etiqueta; en columnas `fr` esas barras se aplastan sin un piso, así que en mobile
             scrollea en vez de perder legibilidad. */}
@@ -227,10 +251,13 @@ export function EventsDashboard({ stats }: EventsDashboardProps) {
           ))}
         </div>
         </div>
+        </>
+        )}
       </SectionCard>
 
       <DataSourceNote>
-        Datos de ejemplo · agregados desde eventos del módulo Eventos Académicos · presentismo verificado en el ingreso
+        Agregados desde eventos del módulo Eventos Académicos · presentismo verificado en el ingreso · última ingesta{" "}
+        {formatLastIngestion(stats.lastIngestionAt)}
       </DataSourceNote>
     </div>
   );

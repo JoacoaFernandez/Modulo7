@@ -1,0 +1,23 @@
+{
+  "curso": {
+    "id": 7005,
+    "asignatura": {
+      "id": 901,
+      "codigo": "MAT-101",
+      "nombre": "Análisis Matemático I"
+    },
+    "periodo": {
+      "id": 7,
+      "anio": 2026,
+      "numero": 1
+    },
+    "sedeId": 2,
+    "estado": "FINALIZADO"
+  },
+  "docentes": [
+    {
+      "docenteId": "02d00000-0000-4000-8000-000000000005",
+      "rol": "TITULAR"
+    }
+  ]
+}

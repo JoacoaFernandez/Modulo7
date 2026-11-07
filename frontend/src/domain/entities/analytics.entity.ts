@@ -6,26 +6,27 @@ export interface Delta {
   tone: DeltaTone;
 }
 
+// Aviso de que una fuente no respondió y el bloque afectado salió vacío (nunca se inventan números).
+export interface DashboardWarning {
+  // Servicio afectado: "core", "backoffice", "academic".
+  source: string;
+  message: string;
+}
+
 export interface KpiCard {
   id: string;
   label: string;
-  value: string;
+  value: number;
   formattedValue: string;
   unit: string;
   delta: Delta;
+  // Aclaración de la definición o del dato faltante (por ejemplo "Sin resultados publicados en el período").
+  note?: string;
 }
 
 export interface Site {
-  // siteId (UUID) de Backoffice; null solo para "Todas las sedes".
-  id: string | null;
-  // Código legible ("CENTRO"); vacío para la agregada.
-  code: string;
+  id: string;
   name: string;
-  studentsCount: number;
-  subjectsCount: number;
-  commissionsCount: number;
-  teachersCount: number;
-  rateAdjustment: number;
   isAggregate: boolean;
 }
 
@@ -39,28 +40,37 @@ export interface Period {
 }
 
 export interface AcademicFilters {
-  // null = todas las sedes (no se manda el query param).
-  siteId: string | null;
-  termId: string;
+  siteId: string;
+  quarter: string;
+  // Id de la facultad del catálogo; null = todas las facultades.
+  facultyId: string | null;
 }
 
 export interface FinancialFilters {
-  siteId: string | null;
-  // AAAA-MM.
+  siteId: string;
   month: string;
 }
 
 export interface FilterDefaults {
-  siteId: string | null;
-  termId: string;
+  siteName: string;
+  quarter: string;
   month: string;
+}
+
+// Facultad del catálogo de filtros; hoy el id es el propio nombre.
+export interface Faculty {
+  id: string;
+  name: string;
 }
 
 export interface FilterOptions {
   sites: Site[];
   quarters: Period[];
   months: Period[];
+  faculties: Faculty[];
   defaults: FilterDefaults;
+  // Fuentes que fallaron al armar los catálogos (la lista afectada va reducida).
+  warnings?: DashboardWarning[];
 }
 
 export type RoleId = "academica" | "financiera";
@@ -75,12 +85,40 @@ export interface Role {
   availableDashboards: DashboardId[];
 }
 
-export type SourceModule = "backoffice" | "teacher" | "academic" | "library" | "dining" | "store" | "events" | "core";
+export type SourceModule =
+  | "portal-estudiante"
+  | "portal-docente"
+  | "biblioteca"
+  | "comedor"
+  | "tienda"
+  | "eventos"
+  | "backoffice"
+  | "gestion-academica"
+  | "core";
 
 export interface EventSource {
   module: SourceModule;
   label: string;
-  lastIngestionAt: string;
+  // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
+  lastIngestionAt: string | null;
+}
+
+export interface InstitutionalEvent {
+  id: string;
+  eventId: string;
+  sourceModule: SourceModule;
+  eventType: string;
+  payload: Record<string, unknown>;
+  occurredAt: string;
+  receivedAt: string;
+}
+
+export interface RecordEventPayload {
+  eventId: string;
+  sourceModule: SourceModule;
+  eventType: string;
+  occurredAt: string;
+  payload: Record<string, unknown>;
 }
 
 export interface SubjectApprovalPoint {
@@ -118,7 +156,8 @@ export interface TeacherApprovalRate {
 
 export interface AcademicStats {
   siteName: string;
-  termId: string;
+  // Facultad aplicada al tablero; null = todas las facultades.
+  facultyName: string | null;
   quarter: string;
   previousQuarter: string;
   comparedQuarters: string[];
@@ -127,17 +166,20 @@ export interface AcademicStats {
   facultyTrends: FacultyTrendSeries[];
   teacherApprovalRates: TeacherApprovalRate[];
   totalTeachersCount: number;
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
+  lastIngestionAt: string | null;
 }
 
 export interface MonthlyBalancePoint {
   month: string;
   shortMonth: string;
-  income: string;
-  expense: string;
-  result: string;
-  balance: string;
+  income: number;
+  expense: number;
+  result: number;
+  // Saldo acumulado al cierre del mes; null si no hay snapshot de ese mes (formattedBalance: "—").
+  balance: number | null;
   formattedIncome: string;
   formattedExpense: string;
   formattedResult: string;
@@ -148,7 +190,7 @@ export interface MonthlyBalancePoint {
 export interface AdministrativeExpense {
   category: string;
   percentage: number;
-  amount: string;
+  amount: number;
   formattedAmount: string;
   color: string;
 }
@@ -157,16 +199,16 @@ export interface TopSellingProduct {
   productName: string;
   category: string;
   unitsSold: number;
-  revenue: string;
+  revenue: number;
   formattedRevenue: string;
 }
 
 export interface DiningRevenue {
   siteName: string;
-  revenue: string;
+  revenue: number;
   formattedRevenue: string;
   ticketsCount: number;
-  averageTicket: string;
+  averageTicket: number;
   formattedAverageTicket: string;
   delta: Delta;
   hasService: boolean;
@@ -181,10 +223,17 @@ export interface FinancialStats {
   kpis: KpiCard[];
   monthlyBalance: MonthlyBalancePoint[];
   administrativeExpenses: AdministrativeExpense[];
+  // Top de productos del mes por unidades vendidas (netas de devoluciones).
   topSellingProducts: TopSellingProduct[];
+  // Top de productos del mes por facturación; mismo tipo y límite que el anterior.
+  topRevenueProducts: TopSellingProduct[];
   diningRevenues: DiningRevenue[];
+  // Con una sede elegida: aviso de que saldo, ingresos, egresos y sueldos son institucionales. null con "Todas las sedes".
+  siteScopeNote: string | null;
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
+  lastIngestionAt: string | null;
 }
 
 export interface EventTypeStats {
@@ -219,6 +268,8 @@ export interface EventStats {
   worstAttendance: EventAttendanceHighlight;
   monthlySeries: EventMonthlyPoint[];
   eventTypes: EventTypeStats[];
+  warnings?: DashboardWarning[];
   sourceModules: SourceModule[];
-  lastIngestionAt: string;
+  // Último evento recibido (ISO 8601); null si todavía no llegó ninguno.
+  lastIngestionAt: string | null;
 }

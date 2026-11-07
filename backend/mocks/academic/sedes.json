@@ -1,0 +1,22 @@
+[
+  {
+    "id": 1,
+    "backofficeSiteId": "3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90",
+    "nombre": "Sede Monserrat"
+  },
+  {
+    "id": 3,
+    "backofficeSiteId": "b1e4d7a3-6c20-4f95-8a3d-0e9c5b2f7a14",
+    "nombre": "Sede Belgrano"
+  },
+  {
+    "id": 2,
+    "backofficeSiteId": "7a41c2d8-0b6e-4f53-8d19-5e2a9c0f1b37",
+    "nombre": "Sede Pilar"
+  },
+  {
+    "id": 4,
+    "backofficeSiteId": "c5f8a2e0-93b4-4d1a-b7e6-2a0d9c4f8b61",
+    "nombre": "Campus Online"
+  }
+]
