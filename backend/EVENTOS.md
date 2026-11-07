@@ -1,7 +1,7 @@
 # Ingesta de eventos — Analítica Institucional
 
 Este documento describe cómo Analítica (Módulo 7) recibe los eventos de los demás módulos de
-UADEnet. El contrato es el **envelope v1 de CORE** (`Recursos IA/CORE-contrato-integracion-v1.md`,
+UADEnet. El contrato es el **envelope v1 de CORE** ([`docs/CORE-contrato-integracion-v1.md`](../docs/CORE-contrato-integracion-v1.md),
 §9 a §11, más las novedades del 2026-11-04): Analítica no define un formato propio. Qué `eventType`
 consume y con qué `data` está en el catálogo
 [`src/domain/entities/event-catalog.ts`](src/domain/entities/event-catalog.ts), que es la **fuente de

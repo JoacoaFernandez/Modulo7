@@ -4,6 +4,3 @@ dist
 *.log
 .env
 .env.local
-
-# Export de Trello: contiene credenciales de prueba de CORE en texto plano
-Recursos IA/*desaap2.json

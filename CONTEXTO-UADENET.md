@@ -1,8 +1,8 @@
 # Contexto UADEnet — referencia única del TP y del ecosistema (Módulo 7 · Analítica)
 
 > Reemplaza a `TPOUADENET.md`, `DATOS-POR-MODULO.md`, `ANALISIS-DISENO.md`, `prototipo.md` y
-> `backend/INTEGRACION-ACADEMICA.md` (ya borrados). Consolidado el **2026-11-04** a partir de lo que hay en
-> `Recursos IA/`; la sección «Estado de implementación» se agregó el **2026-11-05**. El README sigue siendo
+> `backend/INTEGRACION-ACADEMICA.md` (ya borrados). Consolidado el **2026-11-04** a partir de la consigna, el contrato y las novedades de CORE, los xlsx de
+> flujos de datos de cada equipo y el Trello de POs; la sección «Estado de implementación» se agregó el **2026-11-05**. El README sigue siendo
 > la documentación de nuestro módulo; el contrato de ingesta que implementa el backend está en
 > [`backend/EVENTOS.md`](backend/EVENTOS.md) (tabla de tipos generada por script desde
 > `backend/src/domain/entities/event-catalog.ts`) y la especificación técnica de la integración en
@@ -13,9 +13,9 @@
 **Prioridad de fuentes** (de mayor a menor; si dos se contradicen manda la de arriba y se
 dice explícitamente):
 
-1. Novedades de CORE del 2026-11-04 (`Recursos IA/CORE G10 - Novedades 2026-11-04.pdf`).
+1. Novedades de CORE del 2026-11-04 (PDF «CORE G10 · Novedades», compartido por el equipo de CORE).
 2. Trello, xlsx de los equipos y consigna, según la fecha de cada uno.
-3. Contrato de integración de CORE v1 del 2026-08-05 (`Recursos IA/CORE-contrato-integracion-v1.md`).
+3. Contrato de integración de CORE v1 del 2026-08-05 ([`docs/CORE-contrato-integracion-v1.md`](docs/CORE-contrato-integracion-v1.md)).
 4. Nuestros `.md` viejos (ya absorbidos y borrados).
 
 **Citas:** `(Consigna, p. N)` · `(CORE v1, §N)` · `(Novedades CORE 04/11, p. N)` ·
@@ -26,8 +26,8 @@ cuando no hay comentario con fecha se usa la fecha de la última actividad de la
 - No se pudo leer el Swagger de CORE (`/docs`, Railway): Trello dice que **esa** es la referencia
   actual y que la v5 del 15/09 ya no describe todo el código (Trello, «G8→G10 · Alta de identidad…», 2026-10-20).
   Todo lo de CORE que no esté en v1, Trello o las Novedades hay que validarlo contra el Swagger.
-- En `Recursos IA/Equipos/` **faltan los xlsx de Portal Estudiante (1) y Tienda (5)**.
-- La consigna (PDF de 6 páginas) **no trae fechas de entrega ni criterios de evaluación**.
+- De los xlsx de flujos de datos de los equipos **faltaron los de Portal Estudiante (1) y Tienda (5)**.
+- La consigna ([`docs/TPO - DEA II 2Q 2026.pdf`](<docs/TPO - DEA II 2Q 2026.pdf>), 6 páginas) **no trae fechas de entrega ni criterios de evaluación**.
 
 ## Índice
 
@@ -172,7 +172,7 @@ y que la entrega final lleva README y diagrama de arquitectura.
 ## 3. Contrato de CORE vigente (v1 + novedades 04/11)
 
 Describe el estado **vigente**: el contrato v1 del 2026-08-05 más lo que lo modificó. Texto completo de v1:
-`Recursos IA/CORE-contrato-integracion-v1.md`. Regla de compatibilidad de v1: dentro de `v1` solo se agregan
+[`docs/CORE-contrato-integracion-v1.md`](docs/CORE-contrato-integracion-v1.md). Regla de compatibilidad de v1: dentro de `v1` solo se agregan
 campos opcionales; un cambio incompatible crea `v2` con una semana de aviso (CORE v1, encabezado).
 
 Las Novedades del 04/11 declaran que **"todo es compatible con lo que ya estaba: no se quitaron rutas, campos, roles ni permisos"** (Novedades CORE 04/11, p. 8).
@@ -262,7 +262,7 @@ Según CORE v1, §12, §10 y §7, con lo vigente de 3.1:
 
 ## 4. Decisiones y aclaraciones de los POs (Trello)
 
-Tablero «DesaAp2»: listas Pendientes / En revisión / Completadas / Instrucciones, **86 cards** (Trello, export `3xyLsFwA - desaap2.json`).
+Tablero «DesaAp2»: listas Pendientes / En revisión / Completadas / Instrucciones, **86 cards** (Trello, export del tablero del 2026-11-04).
 Funcionamiento: se crea una card en «Pendientes» con la consulta y la etiqueta del PO y de los grupos involucrados; al responder pasa a «En revisión»; el PO que
 preguntó la pasa a «Completadas» o la vuelve a «Pendientes» (cards «Instrucciones»). Etiquetas: G1 Estudiante, G2 Docente, G3 Biblioteca, G4 Comedor, G5 Tienda, G6 Eventos, G7 Analítica, G8 Backoffice, G9 Gestión Académica, G10 CORE.
 **Las tres cards etiquetadas G7 y las cinco de G5→G7 son las únicas que nos nombran explícitamente.** Marcadas con ★ las que afectan a Analítica.
@@ -591,7 +591,7 @@ El prototipo se autodescribe como "datos de ejemplo, sin backend" y define 4 pan
 | 2026-10-12/14 | Login `@uade.edu.ar` contra mock de CORE (reemplaza el selector de rol "Acceso simulado"); sedes por `sedeId`; payloads validados por tipo; Fuentes de datos como pantalla real; se quita "Permisos por rol" del menú |
 | 2026-11-04 | Postgres + Prisma; se elimina el dataset mock; períodos dinámicos; comisiones activas desde `curso.abierto`/`curso.cerrado`; dataset de demo (`npm run db:demo`); Eventos académicos pasa a sección propia (antes ancla dentro del financiero); botón Actualizar por sección; selector Unidades/Facturación en productos; filtro de facultad en el académico |
 | 2026-11-05 | Integración con CORE v1 implementada (fases A a E): envelope v1, consumer RabbitMQ, gateways con mocks por flag, auth contra CORE, tableros sobre inbox y gateways, demo y Postman en formato v1; se retira el contrato propio |
-| 2026-10-22 / 11-04 | Se documenta el diseño objetivo alineado a CORE v1 (xlsx M7 del 21/10) y se reúnen las fuentes de `Recursos IA/` en este documento |
+| 2026-10-22 / 11-04 | Se documenta el diseño objetivo alineado a CORE v1 (xlsx M7 del 21/10) y se reúnen en este documento las fuentes de la consigna, CORE, los equipos y Trello |
 
 ---
 
