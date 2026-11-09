@@ -1,22 +1,22 @@
 {
   "curso": {
-    "id": 8070,
+    "id": 8003,
     "asignatura": {
-      "id": 120,
-      "codigo": "DER-220",
-      "nombre": "Derecho Laboral"
+      "id": 101,
+      "codigo": "MAT-101",
+      "nombre": "Análisis Matemático I"
     },
     "periodo": {
       "id": 8,
       "anio": 2026,
       "numero": 2
     },
-    "sedeId": 1,
+    "sedeId": 3,
     "estado": "FINALIZADO"
   },
   "docentes": [
     {
-      "docenteId": "02d00000-0000-4000-8000-000000000014",
+      "docenteId": "02d00000-0000-4000-8000-000000000004",
       "rol": "TITULAR"
     }
   ]

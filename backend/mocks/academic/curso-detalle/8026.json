@@ -1,26 +1,26 @@
 {
   "curso": {
-    "id": 8037,
+    "id": 8026,
     "asignatura": {
-      "id": 110,
-      "codigo": "ECO-110",
-      "nombre": "Microeconomía"
+      "id": 107,
+      "codigo": "INF-230",
+      "nombre": "Inteligencia Artificial"
     },
     "periodo": {
       "id": 8,
       "anio": 2026,
       "numero": 2
     },
-    "sedeId": 3,
+    "sedeId": 4,
     "estado": "FINALIZADO"
   },
   "docentes": [
     {
-      "docenteId": "02d00000-0000-4000-8000-00000000000e",
+      "docenteId": "02d00000-0000-4000-8000-000000000002",
       "rol": "TITULAR"
     },
     {
-      "docenteId": "02d00000-0000-4000-8000-00000000000a",
+      "docenteId": "02d00000-0000-4000-8000-000000000005",
       "rol": "AUXILIAR"
     }
   ]

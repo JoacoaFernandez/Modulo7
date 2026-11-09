@@ -65,15 +65,15 @@
     },
     {
       "key": "studentId",
-      "value": "5f40b16a-9e12-40a9-a893-9ca0c8a2eb27"
+      "value": "aefa24e6-8cde-4d7d-8853-3a2f3f95c201"
     },
     {
       "key": "eventUuid",
-      "value": "37fa488b-bb5e-4217-8109-0e2411d2b496"
+      "value": "f6f7c7cb-bf4e-4892-9aa6-fb8b5e765f5f"
     },
     {
       "key": "reservationId",
-      "value": "6b733fa2-b37e-488a-b242-edafb80bf24a"
+      "value": "07d97198-2b1c-41bc-877d-34bae08557e8"
     }
   ],
   "item": [
@@ -439,7 +439,7 @@
           "item": [
             {
               "name": "academic.course-result.published.v1",
-              "description": "Resultado de un alumno nuevo en el curso MAT-101-MON-B (Análisis Matemático I, Sede Monserrat, 2026-2C). Impacta en el tablero académico del cuatrimestre en curso. Guarda el alumno en {{studentId}} para la corrección de la carpeta de casos borde.",
+              "description": "Resultado de un alumno nuevo en el curso MAT-101-MON-A (Análisis Matemático I, Sede Monserrat, 2026-2C). Impacta en el tablero académico del cuatrimestre en curso. Guarda el alumno en {{studentId}} para la corrección de la carpeta de casos borde.",
               "event": [
                 {
                   "listen": "prerequest",
@@ -485,7 +485,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{studentId}}\",\n    \"courseId\": \"8002\",\n    \"subjectId\": \"901\",\n    \"periodId\": \"8\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 8,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{studentId}}\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 8,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1131,7 +1131,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{studentId}}\",\n    \"courseId\": \"8002\",\n    \"subjectId\": \"901\",\n    \"periodId\": \"8\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 3,\n    \"status\": \"DESAPROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{studentId}}\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 3,\n    \"status\": \"DESAPROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1461,7 +1461,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"alumno-123\",\n    \"courseId\": \"8002\",\n    \"subjectId\": \"901\",\n    \"periodId\": \"8\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 8,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"alumno-123\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 8,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"

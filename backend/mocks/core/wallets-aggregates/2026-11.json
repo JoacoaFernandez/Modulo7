@@ -10,8 +10,8 @@
     {
       "key": "TOP_UP",
       "type": "CREDIT",
-      "count": 175,
-      "total": "2451600.00"
+      "count": 183,
+      "total": "2568700.00"
     },
     {
       "key": "SCHOLARSHIP",
@@ -28,8 +28,8 @@
     {
       "key": "DINING_RESERVATION",
       "type": "DEBIT",
-      "count": 89,
-      "total": "267000.00"
+      "count": 123,
+      "total": "369000.00"
     },
     {
       "key": "LIBRARY_FINE",
@@ -46,8 +46,8 @@
     {
       "key": "REFUND",
       "type": "REVERSAL",
-      "count": 10,
-      "total": "52600.00"
+      "count": 12,
+      "total": "58500.00"
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "curso": {
-    "id": 8008,
+    "id": 8010,
     "asignatura": {
       "id": 102,
       "codigo": "MAT-102",
@@ -11,17 +11,13 @@
       "anio": 2026,
       "numero": 2
     },
-    "sedeId": 3,
+    "sedeId": 2,
     "estado": "FINALIZADO"
   },
   "docentes": [
     {
-      "docenteId": "02d00000-0000-4000-8000-000000000006",
+      "docenteId": "02d00000-0000-4000-8000-000000000007",
       "rol": "TITULAR"
-    },
-    {
-      "docenteId": "02d00000-0000-4000-8000-000000000001",
-      "rol": "AUXILIAR"
     }
   ]
 }

@@ -10,8 +10,8 @@
     {
       "key": "TOP_UP",
       "type": "CREDIT",
-      "count": 1084,
-      "total": "15171400.00"
+      "count": 1120,
+      "total": "15677500.00"
     },
     {
       "key": "PAYROLL",
@@ -34,8 +34,8 @@
     {
       "key": "DINING_RESERVATION",
       "type": "DEBIT",
-      "count": 663,
-      "total": "1657500.00"
+      "count": 844,
+      "total": "2110000.00"
     },
     {
       "key": "LIBRARY_FINE",
@@ -52,8 +52,8 @@
     {
       "key": "REFUND",
       "type": "REVERSAL",
-      "count": 48,
-      "total": "257800.00"
+      "count": 57,
+      "total": "280300.00"
     }
   ]
 }

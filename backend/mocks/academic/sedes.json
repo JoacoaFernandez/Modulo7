@@ -11,12 +11,17 @@
   },
   {
     "id": 2,
-    "backofficeSiteId": "7a41c2d8-0b6e-4f53-8d19-5e2a9c0f1b37",
-    "nombre": "Sede Pilar"
+    "backofficeSiteId": "79cf2b0f-1d9a-41c4-8423-7e9dd4b2735a",
+    "nombre": "Sede Pinamar"
   },
   {
     "id": 4,
     "backofficeSiteId": "c5f8a2e0-93b4-4d1a-b7e6-2a0d9c4f8b61",
-    "nombre": "Campus Online"
+    "nombre": "Modalidad Online"
+  },
+  {
+    "id": 5,
+    "backofficeSiteId": "556403bb-f0a6-4718-98b5-da9e9c8eda03",
+    "nombre": "Sede Recoleta"
   }
 ]

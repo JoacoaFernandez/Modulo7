@@ -36,7 +36,7 @@ El mock responde ese status y el tablero afectado sale con el bloque vacío (`�
 
 Los mocks y los eventos del demo (`npm run db:demo`) salen de los mismos ids (`backend/demo/ids.ts`), así que se ven coherentes en los tres tableros:
 
-- **Sedes** (Backoffice): Monserrat, Belgrano, Pilar, Campus Online y Rosario (`INACTIVE`: no aparece en el filtro de sedes). Campus Online no tiene comedor: sale como «Sin reservas de comedor registradas». G9 conoce las cuatro activas con `backofficeSiteId`.
+- **Sedes** (Backoffice): Monserrat, Belgrano, Recoleta, Pinamar y Modalidad Online, todas `ACTIVE`. Modalidad Online no tiene comedor: sale como «Sin reservas de comedor registradas». G9 conoce las cinco con `backofficeSiteId`; Recoleta dicta sólo las materias de Económicas, Derecho y Psicología.
 - **Períodos**: 2024-1C a 2026-2C (ids 3 a 8). Todos tienen cursos con `inscriptosActivos`; los cuatro primeros cerrados y 2026-2C en curso, con un tercio de los cursos ya finalizados (promoción directa) y resultados publicados.
 - **Académico**: 5 carreras con 5 facultades, 7 planes (el plan viejo `ISI-2020` repite 4 materias con otro id y el mismo código; `ISI-2027` está `PLANIFICADO` y no tiene archivo de asignaturas), 32 materias, cursos `CANCELADO` y docentes `TITULAR` y `AUXILIAR`.
 - **Detalle de curso**: unos pocos cursos no traen `docentes` en el listado y se resuelven con `curso-detalle/<id>.json`; uno no tiene ficha (`404`) y no se atribuye a ningún docente.

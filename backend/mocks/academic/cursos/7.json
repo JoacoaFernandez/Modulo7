@@ -8,7 +8,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 22,
+    "inscriptosActivos": 19,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000003",
@@ -24,16 +24,12 @@
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 27,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 23,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000004",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000007",
-        "rol": "AUXILIAR"
       }
     ]
   },
@@ -46,7 +42,7 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 12,
+    "inscriptosActivos": 7,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000004",
@@ -63,24 +59,28 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 9,
+    "inscriptosActivos": 17,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000005",
         "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000008",
+        "rol": "AUXILIAR"
       }
     ]
   },
   {
     "id": 7005,
-    "codigo": "MAT-101-PIL-A",
+    "codigo": "MAT-101-PIN-A",
     "asignaturaId": 901,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
-    "cupoMaximo": 35,
-    "inscriptosActivos": 24
+    "cupoMaximo": 30,
+    "inscriptosActivos": 23
   },
   {
     "id": 7006,
@@ -91,7 +91,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 16,
+    "inscriptosActivos": 19,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000005",
@@ -107,8 +107,8 @@
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 28,
+    "cupoMaximo": 30,
+    "inscriptosActivos": 17,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000006",
@@ -125,7 +125,7 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 17,
+    "inscriptosActivos": 14,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000006",
@@ -142,7 +142,7 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 14,
+    "inscriptosActivos": 8,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000007",
@@ -156,18 +156,22 @@
   },
   {
     "id": 7010,
-    "codigo": "MAT-102-PIL-A",
+    "codigo": "MAT-102-PIN-A",
     "asignaturaId": 102,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 28,
+    "cupoMaximo": 30,
+    "inscriptosActivos": 16,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000007",
         "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000002",
+        "rol": "AUXILIAR"
       }
     ]
   },
@@ -179,16 +183,12 @@
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 35,
-    "inscriptosActivos": 25,
+    "cupoMaximo": 40,
+    "inscriptosActivos": 29,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000007",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000002",
-        "rol": "AUXILIAR"
       }
     ]
   },
@@ -205,14 +205,14 @@
   },
   {
     "id": 7013,
-    "codigo": "FIS-110-PIL-A",
+    "codigo": "FIS-110-PIN-A",
     "asignaturaId": 902,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 32,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 27,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000001",
@@ -228,12 +228,16 @@
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 28,
+    "cupoMaximo": 30,
+    "inscriptosActivos": 22,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000001",
         "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000004",
+        "rol": "AUXILIAR"
       }
     ]
   },
@@ -245,8 +249,8 @@
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 35,
-    "inscriptosActivos": 24,
+    "cupoMaximo": 30,
+    "inscriptosActivos": 21,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000002",
@@ -284,7 +288,7 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 13,
+    "inscriptosActivos": 17,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000003",
@@ -294,14 +298,14 @@
   },
   {
     "id": 7018,
-    "codigo": "INF-120-PIL-A",
+    "codigo": "INF-120-PIN-A",
     "asignaturaId": 903,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 20,
+    "cupoMaximo": 40,
+    "inscriptosActivos": 30,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000003",
@@ -315,18 +319,14 @@
     "asignaturaId": 903,
     "periodoId": 7,
     "sedeId": 4,
-    "sedeNombre": "Campus Online",
+    "sedeNombre": "Modalidad Online",
     "estado": "FINALIZADO",
-    "cupoMaximo": 50,
-    "inscriptosActivos": 37,
+    "cupoMaximo": 40,
+    "inscriptosActivos": 28,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000004",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000007",
-        "rol": "AUXILIAR"
       }
     ]
   },
@@ -339,7 +339,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 18
+    "inscriptosActivos": 21
   },
   {
     "id": 7021,
@@ -350,15 +350,11 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 12,
+    "inscriptosActivos": 10,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000004",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000007",
-        "rol": "AUXILIAR"
       }
     ]
   },
@@ -370,8 +366,8 @@
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 16,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 27,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000005",
@@ -388,15 +384,11 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 10,
+    "inscriptosActivos": 16,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000006",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000001",
-        "rol": "AUXILIAR"
       }
     ]
   },
@@ -409,7 +401,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 19,
+    "inscriptosActivos": 18,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000007",
@@ -444,18 +436,14 @@
     "asignaturaId": 107,
     "periodoId": 7,
     "sedeId": 4,
-    "sedeNombre": "Campus Online",
+    "sedeNombre": "Modalidad Online",
     "estado": "FINALIZADO",
-    "cupoMaximo": 55,
-    "inscriptosActivos": 39,
+    "cupoMaximo": 45,
+    "inscriptosActivos": 33,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000002",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000005",
-        "rol": "AUXILIAR"
       }
     ]
   },
@@ -468,7 +456,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 21,
+    "inscriptosActivos": 24,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000001",
@@ -490,23 +478,19 @@
       {
         "docenteId": "02d00000-0000-4000-8000-000000000002",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000005",
-        "rol": "AUXILIAR"
       }
     ]
   },
   {
     "id": 7029,
-    "codigo": "IND-201-PIL-A",
+    "codigo": "IND-201-PIN-A",
     "asignaturaId": 108,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
-    "cupoMaximo": 35,
-    "inscriptosActivos": 23,
+    "cupoMaximo": 30,
+    "inscriptosActivos": 20,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000003",
@@ -526,8 +510,8 @@
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 35,
-    "inscriptosActivos": 27,
+    "cupoMaximo": 30,
+    "inscriptosActivos": 22,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000b",
@@ -548,7 +532,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 18,
+    "inscriptosActivos": 22,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000c",
@@ -565,15 +549,11 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 12,
+    "inscriptosActivos": 9,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000c",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000000f",
-        "rol": "AUXILIAR"
       }
     ]
   },
@@ -586,7 +566,7 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 18,
+    "inscriptosActivos": 17,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000d",
@@ -596,11 +576,11 @@
   },
   {
     "id": 7034,
-    "codigo": "ECO-101-PIL-A",
+    "codigo": "ECO-101-PIN-A",
     "asignaturaId": 109,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
     "cupoMaximo": 35,
     "inscriptosActivos": 28,
@@ -608,10 +588,6 @@
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000d",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000009",
-        "rol": "AUXILIAR"
       }
     ]
   },
@@ -621,38 +597,10 @@
     "asignaturaId": 109,
     "periodoId": 7,
     "sedeId": 4,
-    "sedeNombre": "Campus Online",
-    "estado": "CANCELADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 0
-  },
-  {
-    "id": 7036,
-    "codigo": "ECO-110-MON-A",
-    "asignaturaId": 110,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
+    "sedeNombre": "Modalidad Online",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 23,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000000d",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7037,
-    "codigo": "ECO-110-BEL-A",
-    "asignaturaId": 110,
-    "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 22,
+    "cupoMaximo": 45,
+    "inscriptosActivos": 32,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000e",
@@ -661,15 +609,15 @@
     ]
   },
   {
-    "id": 7038,
-    "codigo": "ECO-110-PIL-A",
-    "asignaturaId": 110,
+    "id": 7036,
+    "codigo": "ECO-101-REC-A",
+    "asignaturaId": 109,
     "periodoId": 7,
-    "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
     "estado": "FINALIZADO",
-    "cupoMaximo": 45,
-    "inscriptosActivos": 34,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 25,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000f",
@@ -678,15 +626,53 @@
     ]
   },
   {
-    "id": 7039,
-    "codigo": "ECO-120-MON-A",
-    "asignaturaId": 111,
+    "id": 7037,
+    "codigo": "ECO-110-MON-A",
+    "asignaturaId": 110,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
+    "cupoMaximo": 35,
+    "inscriptosActivos": 28,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000d",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7038,
+    "codigo": "ECO-110-BEL-A",
+    "asignaturaId": 110,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 17,
+    "inscriptosActivos": 15,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000e",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000a",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7039,
+    "codigo": "ECO-110-PIN-A",
+    "asignaturaId": 110,
+    "periodoId": 7,
+    "sedeId": 2,
+    "sedeNombre": "Sede Pinamar",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 40,
+    "inscriptosActivos": 26,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000f",
@@ -696,6 +682,34 @@
   },
   {
     "id": 7040,
+    "codigo": "ECO-110-REC-A",
+    "asignaturaId": 110,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 40,
+    "inscriptosActivos": 28,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000a",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7041,
+    "codigo": "ECO-120-MON-A",
+    "asignaturaId": 111,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "CANCELADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 0
+  },
+  {
+    "id": 7042,
     "codigo": "ECO-120-BEL-A",
     "asignaturaId": 111,
     "periodoId": 7,
@@ -703,7 +717,7 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 19,
+    "inscriptosActivos": 15,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000009",
@@ -716,15 +730,15 @@
     ]
   },
   {
-    "id": 7041,
-    "codigo": "ECO-120-PIL-A",
+    "id": 7043,
+    "codigo": "ECO-120-PIN-A",
     "asignaturaId": 111,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
-    "cupoMaximo": 45,
-    "inscriptosActivos": 30,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 22,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000a",
@@ -733,15 +747,36 @@
     ]
   },
   {
-    "id": 7042,
+    "id": 7044,
+    "codigo": "ECO-120-REC-A",
+    "asignaturaId": 111,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 45,
+    "inscriptosActivos": 34,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000c",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000f",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7045,
     "codigo": "ECO-201-MON-A",
     "asignaturaId": 112,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 21,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 24,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000a",
@@ -750,7 +785,7 @@
     ]
   },
   {
-    "id": 7043,
+    "id": 7046,
     "codigo": "ECO-201-BEL-A",
     "asignaturaId": 112,
     "periodoId": 7,
@@ -758,7 +793,7 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 13,
+    "inscriptosActivos": 15,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000b",
@@ -767,70 +802,15 @@
     ]
   },
   {
-    "id": 7044,
+    "id": 7047,
     "codigo": "ECO-201-ONL-A",
     "asignaturaId": 112,
     "periodoId": 7,
     "sedeId": 4,
-    "sedeNombre": "Campus Online",
+    "sedeNombre": "Modalidad Online",
     "estado": "FINALIZADO",
     "cupoMaximo": 35,
-    "inscriptosActivos": 27,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000000d",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7045,
-    "codigo": "ADM-101-MON-A",
-    "asignaturaId": 113,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 22,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000000c",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7046,
-    "codigo": "ADM-101-MON-B",
-    "asignaturaId": 113,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 30,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000000d",
-        "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000009",
-        "rol": "AUXILIAR"
-      }
-    ]
-  },
-  {
-    "id": 7047,
-    "codigo": "ADM-101-BEL-A",
-    "asignaturaId": 113,
-    "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 9,
+    "inscriptosActivos": 24,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000d",
@@ -840,14 +820,14 @@
   },
   {
     "id": 7048,
-    "codigo": "ADM-101-BEL-B",
-    "asignaturaId": 113,
+    "codigo": "ECO-201-REC-A",
+    "asignaturaId": 112,
     "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 23,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 26,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000e",
@@ -857,11 +837,87 @@
   },
   {
     "id": 7049,
-    "codigo": "ADM-101-PIL-A",
+    "codigo": "ADM-101-MON-A",
+    "asignaturaId": 113,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 21,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000c",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000f",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7050,
+    "codigo": "ADM-101-MON-B",
+    "asignaturaId": 113,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 20,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000d",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7051,
+    "codigo": "ADM-101-BEL-A",
+    "asignaturaId": 113,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 35,
+    "inscriptosActivos": 28,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000d",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7052,
+    "codigo": "ADM-101-BEL-B",
+    "asignaturaId": 113,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 11,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000e",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000a",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7053,
+    "codigo": "ADM-101-PIN-A",
     "asignaturaId": 113,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
     "cupoMaximo": 35,
     "inscriptosActivos": 25,
@@ -869,19 +925,23 @@
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000e",
         "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000a",
+        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7050,
+    "id": 7054,
     "codigo": "ADM-101-ONL-A",
     "asignaturaId": 113,
     "periodoId": 7,
     "sedeId": 4,
-    "sedeNombre": "Campus Online",
+    "sedeNombre": "Modalidad Online",
     "estado": "FINALIZADO",
-    "cupoMaximo": 45,
-    "inscriptosActivos": 31,
+    "cupoMaximo": 30,
+    "inscriptosActivos": 20,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000f",
@@ -890,15 +950,32 @@
     ]
   },
   {
-    "id": 7051,
+    "id": 7055,
+    "codigo": "ADM-101-REC-A",
+    "asignaturaId": 113,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 40,
+    "inscriptosActivos": 26,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000009",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7056,
     "codigo": "ECO-210-MON-A",
     "asignaturaId": 114,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 35,
-    "inscriptosActivos": 25,
+    "cupoMaximo": 40,
+    "inscriptosActivos": 28,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000e",
@@ -907,7 +984,7 @@
     ]
   },
   {
-    "id": 7052,
+    "id": 7057,
     "codigo": "ECO-210-BEL-A",
     "asignaturaId": 114,
     "periodoId": 7,
@@ -924,15 +1001,32 @@
     ]
   },
   {
-    "id": 7053,
+    "id": 7058,
+    "codigo": "ECO-210-REC-A",
+    "asignaturaId": 114,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 35,
+    "inscriptosActivos": 27,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000b",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7059,
     "codigo": "MKT-201-MON-A",
     "asignaturaId": 115,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 16,
+    "cupoMaximo": 45,
+    "inscriptosActivos": 32,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000009",
@@ -941,7 +1035,7 @@
     ]
   },
   {
-    "id": 7054,
+    "id": 7060,
     "codigo": "MKT-201-BEL-A",
     "asignaturaId": 115,
     "periodoId": 7,
@@ -949,7 +1043,7 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 15,
+    "inscriptosActivos": 16,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000a",
@@ -958,28 +1052,41 @@
     ]
   },
   {
-    "id": 7055,
+    "id": 7061,
     "codigo": "MKT-201-ONL-A",
     "asignaturaId": 115,
     "periodoId": 7,
     "sedeId": 4,
-    "sedeNombre": "Campus Online",
+    "sedeNombre": "Modalidad Online",
     "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 29,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 23,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000000c",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000000f",
-        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7056,
+    "id": 7062,
+    "codigo": "MKT-201-REC-A",
+    "asignaturaId": 115,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 21,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000000d",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7063,
     "codigo": "DER-101-MON-A",
     "asignaturaId": 116,
     "periodoId": 7,
@@ -987,7 +1094,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 35,
-    "inscriptosActivos": 26,
+    "inscriptosActivos": 27,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000012",
@@ -996,7 +1103,7 @@
     ]
   },
   {
-    "id": 7057,
+    "id": 7064,
     "codigo": "DER-101-MON-B",
     "asignaturaId": 116,
     "periodoId": 7,
@@ -1004,7 +1111,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 23,
+    "inscriptosActivos": 11,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000013",
@@ -1013,7 +1120,7 @@
     ]
   },
   {
-    "id": 7058,
+    "id": 7065,
     "codigo": "DER-101-BEL-A",
     "asignaturaId": 116,
     "periodoId": 7,
@@ -1021,20 +1128,16 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 12,
+    "inscriptosActivos": 16,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000013",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000010",
-        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7059,
+    "id": 7066,
     "codigo": "DER-101-BEL-B",
     "asignaturaId": 116,
     "periodoId": 7,
@@ -1042,25 +1145,21 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 14,
+    "inscriptosActivos": 19,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000014",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000011",
-        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7060,
-    "codigo": "DER-101-PIL-A",
+    "id": 7067,
+    "codigo": "DER-101-PIN-A",
     "asignaturaId": 116,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
     "inscriptosActivos": 15,
@@ -1072,185 +1171,70 @@
     ]
   },
   {
-    "id": 7061,
+    "id": 7068,
     "codigo": "DER-101-ONL-A",
     "asignaturaId": 116,
     "periodoId": 7,
     "sedeId": 4,
-    "sedeNombre": "Campus Online",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 28,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000015",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7062,
-    "codigo": "DER-110-MON-A",
-    "asignaturaId": 117,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 30,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000014",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7063,
-    "codigo": "DER-110-BEL-A",
-    "asignaturaId": 117,
-    "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 17,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000015",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7064,
-    "codigo": "DER-110-PIL-A",
-    "asignaturaId": 117,
-    "periodoId": 7,
-    "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 18,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000010",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7065,
-    "codigo": "DER-120-MON-A",
-    "asignaturaId": 118,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 45,
-    "inscriptosActivos": 33,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000010",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7066,
-    "codigo": "DER-120-BEL-A",
-    "asignaturaId": 118,
-    "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 18,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000011",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7067,
-    "codigo": "DER-120-PIL-A",
-    "asignaturaId": 118,
-    "periodoId": 7,
-    "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 16,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000012",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7068,
-    "codigo": "DER-210-MON-A",
-    "asignaturaId": 119,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
+    "sedeNombre": "Modalidad Online",
     "estado": "FINALIZADO",
     "cupoMaximo": 40,
     "inscriptosActivos": 29,
     "docentes": [
       {
-        "docenteId": "02d00000-0000-4000-8000-000000000012",
+        "docenteId": "02d00000-0000-4000-8000-000000000015",
         "rol": "TITULAR"
       }
     ]
   },
   {
     "id": 7069,
-    "codigo": "DER-210-BEL-A",
-    "asignaturaId": 119,
+    "codigo": "DER-101-REC-A",
+    "asignaturaId": 116,
     "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 17,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 25,
     "docentes": [
       {
-        "docenteId": "02d00000-0000-4000-8000-000000000013",
+        "docenteId": "02d00000-0000-4000-8000-000000000010",
         "rol": "TITULAR"
       }
     ]
   },
   {
     "id": 7070,
-    "codigo": "DER-220-MON-A",
-    "asignaturaId": 120,
+    "codigo": "DER-110-MON-A",
+    "asignaturaId": 117,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 45,
-    "inscriptosActivos": 30,
+    "cupoMaximo": 30,
+    "inscriptosActivos": 24,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000014",
         "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000011",
+        "rol": "AUXILIAR"
       }
     ]
   },
   {
     "id": 7071,
-    "codigo": "DER-220-BEL-A",
-    "asignaturaId": 120,
+    "codigo": "DER-110-BEL-A",
+    "asignaturaId": 117,
     "periodoId": 7,
     "sedeId": 3,
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 16,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 25,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000015",
@@ -1260,31 +1244,14 @@
   },
   {
     "id": 7072,
-    "codigo": "DER-220-ONL-A",
-    "asignaturaId": 120,
+    "codigo": "DER-110-PIN-A",
+    "asignaturaId": 117,
     "periodoId": 7,
-    "sedeId": 4,
-    "sedeNombre": "Campus Online",
+    "sedeId": 2,
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 29,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000011",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7073,
-    "codigo": "SOC-101-MON-A",
-    "asignaturaId": 121,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 45,
-    "inscriptosActivos": 35,
+    "cupoMaximo": 30,
+    "inscriptosActivos": 19,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000010",
@@ -1293,29 +1260,71 @@
     ]
   },
   {
-    "id": 7074,
-    "codigo": "SOC-101-BEL-A",
-    "asignaturaId": 121,
+    "id": 7073,
+    "codigo": "DER-110-REC-A",
+    "asignaturaId": 117,
     "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 15,
+    "cupoMaximo": 40,
+    "inscriptosActivos": 29,
     "docentes": [
       {
-        "docenteId": "02d00000-0000-4000-8000-000000000011",
+        "docenteId": "02d00000-0000-4000-8000-000000000012",
         "rol": "TITULAR"
       }
     ]
   },
   {
+    "id": 7074,
+    "codigo": "DER-120-MON-A",
+    "asignaturaId": 118,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 18,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000010",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000013",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
     "id": 7075,
-    "codigo": "SOC-101-PIL-A",
-    "asignaturaId": 121,
+    "codigo": "DER-120-BEL-A",
+    "asignaturaId": 118,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 17,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000011",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000014",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7076,
+    "codigo": "DER-120-PIN-A",
+    "asignaturaId": 118,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
     "inscriptosActivos": 21,
@@ -1327,15 +1336,53 @@
     ]
   },
   {
-    "id": 7076,
-    "codigo": "SOC-101-ONL-A",
-    "asignaturaId": 121,
+    "id": 7077,
+    "codigo": "DER-120-REC-A",
+    "asignaturaId": 118,
     "periodoId": 7,
-    "sedeId": 4,
-    "sedeNombre": "Campus Online",
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
     "estado": "FINALIZADO",
     "cupoMaximo": 40,
-    "inscriptosActivos": 31,
+    "inscriptosActivos": 27,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000014",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7078,
+    "codigo": "DER-210-MON-A",
+    "asignaturaId": 119,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 18,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000012",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000015",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7079,
+    "codigo": "DER-210-BEL-A",
+    "asignaturaId": 119,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 35,
+    "inscriptosActivos": 24,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000013",
@@ -1344,81 +1391,94 @@
     ]
   },
   {
-    "id": 7077,
-    "codigo": "ARQ-101-MON-A",
-    "asignaturaId": 122,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 12,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000018",
-        "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000016",
-        "rol": "AUXILIAR"
-      }
-    ]
-  },
-  {
-    "id": 7078,
-    "codigo": "ARQ-101-MON-B",
-    "asignaturaId": 122,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 14,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000019",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7079,
-    "codigo": "ARQ-101-BEL-A",
-    "asignaturaId": 122,
-    "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 7,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000019",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
     "id": 7080,
-    "codigo": "ARQ-101-BEL-B",
-    "asignaturaId": 122,
+    "codigo": "DER-210-REC-A",
+    "asignaturaId": 119,
     "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 13,
+    "inscriptosActivos": 21,
     "docentes": [
       {
-        "docenteId": "02d00000-0000-4000-8000-00000000001a",
+        "docenteId": "02d00000-0000-4000-8000-000000000010",
         "rol": "TITULAR"
       }
     ]
   },
   {
     "id": 7081,
-    "codigo": "ARQ-110-MON-A",
-    "asignaturaId": 123,
+    "codigo": "DER-220-MON-A",
+    "asignaturaId": 120,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 18,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000014",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7082,
+    "codigo": "DER-220-BEL-A",
+    "asignaturaId": 120,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 21,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000015",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7083,
+    "codigo": "DER-220-ONL-A",
+    "asignaturaId": 120,
+    "periodoId": 7,
+    "sedeId": 4,
+    "sedeNombre": "Modalidad Online",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 18,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000011",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7084,
+    "codigo": "DER-220-REC-A",
+    "asignaturaId": 120,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 40,
+    "inscriptosActivos": 30,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000012",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7085,
+    "codigo": "SOC-101-MON-A",
+    "asignaturaId": 121,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
@@ -1427,69 +1487,86 @@
     "inscriptosActivos": 17,
     "docentes": [
       {
-        "docenteId": "02d00000-0000-4000-8000-00000000001a",
+        "docenteId": "02d00000-0000-4000-8000-000000000010",
         "rol": "TITULAR"
       }
     ]
   },
   {
-    "id": 7082,
-    "codigo": "ARQ-110-BEL-A",
-    "asignaturaId": 123,
+    "id": 7086,
+    "codigo": "SOC-101-BEL-A",
+    "asignaturaId": 121,
     "periodoId": 7,
     "sedeId": 3,
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 12,
+    "inscriptosActivos": 22,
     "docentes": [
       {
-        "docenteId": "02d00000-0000-4000-8000-000000000016",
+        "docenteId": "02d00000-0000-4000-8000-000000000011",
         "rol": "TITULAR"
       }
     ]
   },
   {
-    "id": 7083,
-    "codigo": "ARQ-110-PIL-A",
-    "asignaturaId": 123,
+    "id": 7087,
+    "codigo": "SOC-101-PIN-A",
+    "asignaturaId": 121,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 24,
+    "inscriptosActivos": 20,
     "docentes": [
       {
-        "docenteId": "02d00000-0000-4000-8000-000000000017",
+        "docenteId": "02d00000-0000-4000-8000-000000000012",
         "rol": "TITULAR"
       }
     ]
   },
   {
-    "id": 7084,
-    "codigo": "ARQ-120-MON-A",
-    "asignaturaId": 124,
+    "id": 7088,
+    "codigo": "SOC-101-ONL-A",
+    "asignaturaId": 121,
+    "periodoId": 7,
+    "sedeId": 4,
+    "sedeNombre": "Modalidad Online",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 16,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000013",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7089,
+    "codigo": "SOC-101-REC-A",
+    "asignaturaId": 121,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 17,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000014",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7090,
+    "codigo": "ARQ-101-MON-A",
+    "asignaturaId": 122,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 12,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000017",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7085,
-    "codigo": "ARQ-120-BEL-A",
-    "asignaturaId": 124,
-    "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
     "inscriptosActivos": 15,
@@ -1497,23 +1574,40 @@
       {
         "docenteId": "02d00000-0000-4000-8000-000000000018",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000016",
-        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7086,
-    "codigo": "ARQ-210-MON-A",
-    "asignaturaId": 125,
+    "id": 7091,
+    "codigo": "ARQ-101-MON-B",
+    "asignaturaId": 122,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 13,
+    "inscriptosActivos": 22,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000019",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000017",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7092,
+    "codigo": "ARQ-101-BEL-A",
+    "asignaturaId": 122,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 8,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000019",
@@ -1522,15 +1616,15 @@
     ]
   },
   {
-    "id": 7087,
-    "codigo": "ARQ-210-BEL-A",
-    "asignaturaId": 125,
+    "id": 7093,
+    "codigo": "ARQ-101-BEL-B",
+    "asignaturaId": 122,
     "periodoId": 7,
     "sedeId": 3,
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 12,
+    "inscriptosActivos": 9,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001a",
@@ -1539,15 +1633,32 @@
     ]
   },
   {
-    "id": 7088,
-    "codigo": "DIS-101-MON-A",
-    "asignaturaId": 126,
+    "id": 7094,
+    "codigo": "ARQ-110-MON-A",
+    "asignaturaId": 123,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 13,
+    "inscriptosActivos": 19,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001a",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7095,
+    "codigo": "ARQ-110-BEL-A",
+    "asignaturaId": 123,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 8,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000016",
@@ -1556,12 +1667,29 @@
     ]
   },
   {
-    "id": 7089,
-    "codigo": "DIS-101-BEL-A",
-    "asignaturaId": 126,
+    "id": 7096,
+    "codigo": "ARQ-110-PIN-A",
+    "asignaturaId": 123,
     "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
+    "sedeId": 2,
+    "sedeNombre": "Sede Pinamar",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 22,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000017",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7097,
+    "codigo": "ARQ-120-MON-A",
+    "asignaturaId": 124,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
     "inscriptosActivos": 18,
@@ -1577,15 +1705,15 @@
     ]
   },
   {
-    "id": 7090,
-    "codigo": "DIS-101-PIL-A",
-    "asignaturaId": 126,
+    "id": 7098,
+    "codigo": "ARQ-120-BEL-A",
+    "asignaturaId": 124,
     "periodoId": 7,
-    "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 23,
+    "inscriptosActivos": 9,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000018",
@@ -1594,7 +1722,100 @@
     ]
   },
   {
-    "id": 7091,
+    "id": 7099,
+    "codigo": "ARQ-210-MON-A",
+    "asignaturaId": 125,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 23,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000019",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7100,
+    "codigo": "ARQ-210-BEL-A",
+    "asignaturaId": 125,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 8,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001a",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000018",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7101,
+    "codigo": "DIS-101-MON-A",
+    "asignaturaId": 126,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 15,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000016",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7102,
+    "codigo": "DIS-101-BEL-A",
+    "asignaturaId": 126,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 12,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000017",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001a",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7103,
+    "codigo": "DIS-101-PIN-A",
+    "asignaturaId": 126,
+    "periodoId": 7,
+    "sedeId": 2,
+    "sedeNombre": "Sede Pinamar",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 18,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000018",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7104,
     "codigo": "PSI-101-MON-A",
     "asignaturaId": 127,
     "periodoId": 7,
@@ -1607,15 +1828,11 @@
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001d",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000020",
-        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7092,
+    "id": 7105,
     "codigo": "PSI-101-MON-B",
     "asignaturaId": 127,
     "periodoId": 7,
@@ -1623,7 +1840,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 10,
+    "inscriptosActivos": 17,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001e",
@@ -1636,7 +1853,7 @@
     ]
   },
   {
-    "id": 7093,
+    "id": 7106,
     "codigo": "PSI-101-BEL-A",
     "asignaturaId": 127,
     "periodoId": 7,
@@ -1649,11 +1866,15 @@
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001e",
         "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001b",
+        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7094,
+    "id": 7107,
     "codigo": "PSI-101-BEL-B",
     "asignaturaId": 127,
     "periodoId": 7,
@@ -1670,49 +1891,15 @@
     ]
   },
   {
-    "id": 7095,
-    "codigo": "PSI-101-PIL-A",
+    "id": 7108,
+    "codigo": "PSI-101-PIN-A",
     "asignaturaId": 127,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 9,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000001f",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7096,
-    "codigo": "PSI-101-ONL-A",
-    "asignaturaId": 127,
-    "periodoId": 7,
-    "sedeId": 4,
-    "sedeNombre": "Campus Online",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 20,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000020",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7097,
-    "codigo": "PSI-110-MON-A",
-    "asignaturaId": 128,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 19,
+    "inscriptosActivos": 21,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001f",
@@ -1725,7 +1912,62 @@
     ]
   },
   {
-    "id": 7098,
+    "id": 7109,
+    "codigo": "PSI-101-ONL-A",
+    "asignaturaId": 127,
+    "periodoId": 7,
+    "sedeId": 4,
+    "sedeNombre": "Modalidad Online",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 35,
+    "inscriptosActivos": 24,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000020",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7110,
+    "codigo": "PSI-101-REC-A",
+    "asignaturaId": 127,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 13,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001b",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7111,
+    "codigo": "PSI-110-MON-A",
+    "asignaturaId": 128,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 40,
+    "inscriptosActivos": 32,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001f",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001c",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7112,
     "codigo": "PSI-110-BEL-A",
     "asignaturaId": 128,
     "periodoId": 7,
@@ -1733,24 +1975,28 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 13,
+    "inscriptosActivos": 16,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000020",
         "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001d",
+        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7099,
-    "codigo": "PSI-110-PIL-A",
+    "id": 7113,
+    "codigo": "PSI-110-PIN-A",
     "asignaturaId": 128,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 17,
+    "inscriptosActivos": 21,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001b",
@@ -1759,7 +2005,24 @@
     ]
   },
   {
-    "id": 7100,
+    "id": 7114,
+    "codigo": "PSI-110-REC-A",
+    "asignaturaId": 128,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 40,
+    "inscriptosActivos": 27,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001d",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7115,
     "codigo": "PSI-210-MON-A",
     "asignaturaId": 129,
     "periodoId": 7,
@@ -1767,7 +2030,7 @@
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
     "cupoMaximo": 35,
-    "inscriptosActivos": 23,
+    "inscriptosActivos": 24,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001b",
@@ -1780,7 +2043,7 @@
     ]
   },
   {
-    "id": 7101,
+    "id": 7116,
     "codigo": "PSI-210-BEL-A",
     "asignaturaId": 129,
     "periodoId": 7,
@@ -1788,24 +2051,28 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 11,
+    "inscriptosActivos": 16,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001c",
         "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001f",
+        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7102,
-    "codigo": "PSI-210-PIL-A",
+    "id": 7117,
+    "codigo": "PSI-210-PIN-A",
     "asignaturaId": 129,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 16,
+    "inscriptosActivos": 20,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001d",
@@ -1814,28 +2081,41 @@
     ]
   },
   {
-    "id": 7103,
+    "id": 7118,
+    "codigo": "PSI-210-REC-A",
+    "asignaturaId": 129,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 21,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001f",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7119,
     "codigo": "HUM-101-MON-A",
     "asignaturaId": 130,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 40,
-    "inscriptosActivos": 29,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 26,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001d",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-000000000020",
-        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7104,
+    "id": 7120,
     "codigo": "HUM-101-BEL-A",
     "asignaturaId": 130,
     "periodoId": 7,
@@ -1843,7 +2123,7 @@
     "sedeNombre": "Sede Belgrano",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 16,
+    "inscriptosActivos": 12,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001e",
@@ -1852,36 +2132,32 @@
     ]
   },
   {
-    "id": 7105,
-    "codigo": "HUM-101-PIL-A",
+    "id": 7121,
+    "codigo": "HUM-101-PIN-A",
     "asignaturaId": 130,
     "periodoId": 7,
     "sedeId": 2,
-    "sedeNombre": "Sede Pilar",
+    "sedeNombre": "Sede Pinamar",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 9,
+    "inscriptosActivos": 18,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001f",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000001c",
-        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7106,
+    "id": 7122,
     "codigo": "HUM-101-ONL-A",
     "asignaturaId": 130,
     "periodoId": 7,
     "sedeId": 4,
-    "sedeNombre": "Campus Online",
+    "sedeNombre": "Modalidad Online",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 17,
+    "cupoMaximo": 35,
+    "inscriptosActivos": 28,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-000000000020",
@@ -1890,28 +2166,45 @@
     ]
   },
   {
-    "id": 7107,
+    "id": 7123,
+    "codigo": "HUM-101-REC-A",
+    "asignaturaId": 130,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 35,
+    "inscriptosActivos": 25,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001b",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001e",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7124,
     "codigo": "HUM-110-MON-A",
     "asignaturaId": 131,
     "periodoId": 7,
     "sedeId": 1,
     "sedeNombre": "Sede Monserrat",
     "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 20,
+    "cupoMaximo": 40,
+    "inscriptosActivos": 25,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001f",
         "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000001c",
-        "rol": "AUXILIAR"
       }
     ]
   },
   {
-    "id": 7108,
+    "id": 7125,
     "codigo": "HUM-110-BEL-A",
     "asignaturaId": 131,
     "periodoId": 7,
@@ -1928,53 +2221,15 @@
     ]
   },
   {
-    "id": 7109,
+    "id": 7126,
     "codigo": "HUM-110-ONL-A",
     "asignaturaId": 131,
     "periodoId": 7,
     "sedeId": 4,
-    "sedeNombre": "Campus Online",
+    "sedeNombre": "Modalidad Online",
     "estado": "FINALIZADO",
     "cupoMaximo": 30,
-    "inscriptosActivos": 16,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000001c",
-        "rol": "TITULAR"
-      }
-    ]
-  },
-  {
-    "id": 7110,
-    "codigo": "SAL-101-MON-A",
-    "asignaturaId": 132,
-    "periodoId": 7,
-    "sedeId": 1,
-    "sedeNombre": "Sede Monserrat",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 20,
-    "docentes": [
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000001b",
-        "rol": "TITULAR"
-      },
-      {
-        "docenteId": "02d00000-0000-4000-8000-00000000001e",
-        "rol": "AUXILIAR"
-      }
-    ]
-  },
-  {
-    "id": 7111,
-    "codigo": "SAL-101-BEL-A",
-    "asignaturaId": 132,
-    "periodoId": 7,
-    "sedeId": 3,
-    "sedeNombre": "Sede Belgrano",
-    "estado": "FINALIZADO",
-    "cupoMaximo": 30,
-    "inscriptosActivos": 10,
+    "inscriptosActivos": 21,
     "docentes": [
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001c",
@@ -1982,6 +2237,82 @@
       },
       {
         "docenteId": "02d00000-0000-4000-8000-00000000001f",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7127,
+    "codigo": "HUM-110-REC-A",
+    "asignaturaId": 131,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 35,
+    "inscriptosActivos": 27,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001d",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-000000000020",
+        "rol": "AUXILIAR"
+      }
+    ]
+  },
+  {
+    "id": 7128,
+    "codigo": "SAL-101-MON-A",
+    "asignaturaId": 132,
+    "periodoId": 7,
+    "sedeId": 1,
+    "sedeNombre": "Sede Monserrat",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 40,
+    "inscriptosActivos": 30,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001b",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7129,
+    "codigo": "SAL-101-BEL-A",
+    "asignaturaId": 132,
+    "periodoId": 7,
+    "sedeId": 3,
+    "sedeNombre": "Sede Belgrano",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 14,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001c",
+        "rol": "TITULAR"
+      }
+    ]
+  },
+  {
+    "id": 7130,
+    "codigo": "SAL-101-REC-A",
+    "asignaturaId": 132,
+    "periodoId": 7,
+    "sedeId": 5,
+    "sedeNombre": "Sede Recoleta",
+    "estado": "FINALIZADO",
+    "cupoMaximo": 30,
+    "inscriptosActivos": 22,
+    "docentes": [
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001f",
+        "rol": "TITULAR"
+      },
+      {
+        "docenteId": "02d00000-0000-4000-8000-00000000001c",
         "rol": "AUXILIAR"
       }
     ]

@@ -508,7 +508,7 @@ Para simular fallas, un archivo puede ser `{ "__mockStatus": 503, "__mockBody": 
 ```
 El último usuario sirve para probar el `403 ANALYTICS_FORBIDDEN`. `status: "SUSPENDED"` simula `403 AUTH_IDENTITY_SUSPENDED`. El mock firma el JWT con `iss = "mock-core"`, `aud = "uadenet"`, 15 min, `sub`, `email`, `roles`, `permissions`, `careerIds`, `sid`, `jti`, y fija la cookie de refresh (`HttpOnly`, `Path=/api/auth`) con un id opaco que `refresh` y `logout` reconocen en memoria. El token de servicio del mock es un string fijo sin llamada.
 
-`backoffice/sites.json`: el ejemplo de 4.2.a con dos sedes (`Sede Monserrat`, `Sede Pilar`).
+`backoffice/sites.json`: el ejemplo de 4.2.a con dos sedes (`Sede Monserrat`, `Sede Pinamar`).
 
 `backoffice/users/5f0a8e21-4c7b-4d19-9a3e-61b2c8d7f034.json`:
 ```json
@@ -527,7 +527,7 @@ El último usuario sirve para probar el `403 ANALYTICS_FORBIDDEN`. `status: "SUS
 `academic/sedes.json`:
 ```json
 [ { "id": 1, "backofficeSiteId": "3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90", "nombre": "Sede Monserrat" },
-  { "id": 2, "backofficeSiteId": "7a41c2d8-0b6e-4f53-8d19-5e2a9c0f1b37", "nombre": "Sede Pilar" } ]
+  { "id": 2, "backofficeSiteId": "79cf2b0f-1d9a-41c4-8423-7e9dd4b2735a", "nombre": "Sede Pinamar" } ]
 ```
 
 `academic/curso-detalle/42.json`: el ejemplo de 4.3 (`{curso, docentes}`).

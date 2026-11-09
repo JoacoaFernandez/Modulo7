@@ -186,9 +186,9 @@ export interface DemoDataset {
   events: DemoEnvelope[];
 }
 
-const SITE_RATE_DELTA: Record<SiteKey, number> = { monserrat: 0, belgrano: -1.5, pilar: 1.5, online: -3.5, rosario: 0 };
+const SITE_RATE_DELTA: Record<SiteKey, number> = { monserrat: 0, belgrano: -1.5, pinamar: 1.5, online: -3.5, recoleta: 0.5 };
 // Tamaño base de la población estudiantil de cada sede.
-const POOLS: Record<SiteKey, number> = { monserrat: 360, belgrano: 240, pilar: 170, online: 130, rosario: 0 };
+const POOLS: Record<SiteKey, number> = { monserrat: 360, belgrano: 240, pinamar: 170, online: 130, recoleta: 200 };
 
 const NOTAS_APROBADO: readonly (readonly [number, number])[] = [[4, 0.16], [5, 0.13], [6, 0.17], [7, 0.2], [8, 0.17], [9, 0.1], [10, 0.07]];
 const NOTAS_DESAPROBADO: readonly (readonly [number, number])[] = [[1, 0.2], [2, 0.35], [3, 0.45]];
@@ -224,16 +224,16 @@ function buildAcademic(out: Emitter): DemoCourse[] {
 
       ACTIVE_SITES.forEach((site, siteIdx) => {
         if (!subject.sedes.includes(site.letter)) return;
-        // Pilar y el campus online amplían su oferta con los años.
-        if (site.key === "pilar" && qi < 2 && subjectIndex >= 3) return;
+        // Pinamar y el campus online amplían su oferta con los años.
+        if (site.key === "pinamar" && qi < 2 && subjectIndex >= 3) return;
         if (site.key === "online" && qi < 1 && subject.popular !== true) return;
 
         const commissions = subject.popular && (site.key === "monserrat" || (site.key === "belgrano" && qi >= 3)) ? ["A", "B"] : ["A"];
         commissions.forEach((comision, commIndex) => {
           const teacher = careerTeachers[(subjectIndex * 2 + siteIdx + commIndex + Math.floor(qi / 2)) % careerTeachers.length];
           const auxiliar = rng.chance(0.25) ? careerTeachers[(careerTeachers.indexOf(teacher) + 3) % careerTeachers.length] : null;
-          // Los cursos de Pilar y Online (y la comisión B) de las materias que existen en el plan 2020 usan ese id.
-          const legacy = subject.legacyId !== undefined && (site.key === "pilar" || site.key === "online" || comision === "B");
+          // Los cursos de Pinamar y Online (y la comisión B) de las materias que existen en el plan 2020 usan ese id.
+          const legacy = subject.legacyId !== undefined && (site.key === "pinamar" || site.key === "online" || comision === "B");
           courses.push({
             id: period.id * 1000 + courses.length + 1,
             codigo: `${subject.code}-${site.code.slice(0, 3)}-${comision}`,
@@ -470,7 +470,7 @@ function buildStore(out: Emitter): void {
       const ms = randomMoment(rng, span, 9, 20);
       if (ms === null) continue;
 
-      const site = rng.weighted([[SITE_BY_KEY.monserrat, 0.4], [SITE_BY_KEY.belgrano, 0.3], [SITE_BY_KEY.pilar, 0.2], [SITE_BY_KEY.online, 0.1]] as const);
+      const site = rng.weighted([[SITE_BY_KEY.monserrat, 0.35], [SITE_BY_KEY.belgrano, 0.25], [SITE_BY_KEY.recoleta, 0.2], [SITE_BY_KEY.pinamar, 0.12], [SITE_BY_KEY.online, 0.08]] as const);
       const lineCount = rng.weighted([[1, 0.62], [2, 0.28], [3, 0.1]] as const);
       const chosen = new Set<string>();
       const items: Record<string, unknown>[] = [];
@@ -508,7 +508,7 @@ function buildStore(out: Emitter): void {
   }
 }
 
-const DINING_BASE: Partial<Record<SiteKey, number>> = { monserrat: 330, belgrano: 240, pilar: 150 };
+const DINING_BASE: Partial<Record<SiteKey, number>> = { monserrat: 330, belgrano: 240, recoleta: 200, pinamar: 150 };
 
 function buildDining(out: Emitter): void {
   const rng = createRng(20261106);

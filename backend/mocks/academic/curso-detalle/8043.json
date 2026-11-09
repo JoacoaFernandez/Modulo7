@@ -1,22 +1,22 @@
 {
   "curso": {
-    "id": 8055,
+    "id": 8043,
     "asignatura": {
-      "id": 115,
-      "codigo": "MKT-201",
-      "nombre": "Marketing Digital"
+      "id": 111,
+      "codigo": "ECO-120",
+      "nombre": "Macroeconomía"
     },
     "periodo": {
       "id": 8,
       "anio": 2026,
       "numero": 2
     },
-    "sedeId": 4,
+    "sedeId": 2,
     "estado": "FINALIZADO"
   },
   "docentes": [
     {
-      "docenteId": "02d00000-0000-4000-8000-00000000000c",
+      "docenteId": "02d00000-0000-4000-8000-00000000000a",
       "rol": "TITULAR"
     }
   ]

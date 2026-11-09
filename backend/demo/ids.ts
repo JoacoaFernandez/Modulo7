@@ -35,7 +35,7 @@ export const DEMO_EVENT_ID_PREFIX = "de0de0de";
 // Sedes (Backoffice) y sus equivalentes en Gestión Académica
 // ---------------------------------------------------------------------------------------------
 
-export type SiteKey = "monserrat" | "belgrano" | "pilar" | "online" | "rosario";
+export type SiteKey = "monserrat" | "belgrano" | "pinamar" | "online" | "recoleta";
 
 export interface DemoSite {
   key: SiteKey;
@@ -58,10 +58,9 @@ export interface DemoSite {
 export const SITES: readonly DemoSite[] = [
   { key: "monserrat", id: "3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90", code: "MONSERRAT", name: "Sede Monserrat", address: "Lima 775", city: "CABA", province: null, status: "ACTIVE", academicId: 1, letter: "C", hasDining: true },
   { key: "belgrano", id: "b1e4d7a3-6c20-4f95-8a3d-0e9c5b2f7a14", code: "BELGRANO", name: "Sede Belgrano", address: "Av. Cabildo 2040", city: "CABA", province: null, status: "ACTIVE", academicId: 3, letter: "B", hasDining: true },
-  { key: "pilar", id: "7a41c2d8-0b6e-4f53-8d19-5e2a9c0f1b37", code: "PILAR", name: "Sede Pilar", address: "Ruta 8 km 61", city: "Pilar", province: "Buenos Aires", status: "ACTIVE", academicId: 2, letter: "P", hasDining: true },
-  { key: "online", id: "c5f8a2e0-93b4-4d1a-b7e6-2a0d9c4f8b61", code: "ONLINE", name: "Campus Online", address: "Virtual", city: "CABA", province: null, status: "ACTIVE", academicId: 4, letter: "O", hasDining: false },
-  // Sede cerrada: no entra en el filtro de sedes (sólo ACTIVE), pero sigue existiendo en Backoffice.
-  { key: "rosario", id: "e0a7b3c9-4d18-4e62-9f05-7c1b8d3a6e92", code: "ROSARIO", name: "Sede Rosario", address: "Pellegrini 1200", city: "Rosario", province: "Santa Fe", status: "INACTIVE", academicId: null, letter: "R", hasDining: false },
+  { key: "pinamar", id: "79cf2b0f-1d9a-41c4-8423-7e9dd4b2735a", code: "PINAMAR", name: "Sede Pinamar", address: "Av. Bunge 1100", city: "Pinamar", province: "Buenos Aires", status: "ACTIVE", academicId: 2, letter: "P", hasDining: true },
+  { key: "online", id: "c5f8a2e0-93b4-4d1a-b7e6-2a0d9c4f8b61", code: "ONLINE", name: "Modalidad Online", address: "Virtual", city: "CABA", province: null, status: "ACTIVE", academicId: 4, letter: "O", hasDining: false },
+  { key: "recoleta", id: "556403bb-f0a6-4718-98b5-da9e9c8eda03", code: "RECOLETA", name: "Sede Recoleta", address: "Av. Pueyrredón 1640", city: "CABA", province: null, status: "ACTIVE", academicId: 5, letter: "R", hasDining: true },
 ];
 
 export const SITE_BY_KEY: Record<SiteKey, DemoSite> = Object.fromEntries(SITES.map((site) => [site.key, site])) as Record<SiteKey, DemoSite>;
@@ -87,9 +86,9 @@ export const LOCATIONS: readonly DemoLocation[] = [
   { id: demoUuid("location", 3), siteKey: "monserrat", name: "Sala de Talleres", capacity: 40, type: "AULA", status: "ACTIVE" },
   { id: demoUuid("location", 4), siteKey: "belgrano", name: "Auditorio Belgrano", capacity: 180, type: "AUDITORIO", status: "ACTIVE" },
   { id: demoUuid("location", 5), siteKey: "belgrano", name: "Aula 3B", capacity: 45, type: "AULA", status: "MAINTENANCE" },
-  { id: demoUuid("location", 6), siteKey: "pilar", name: "SUM Pilar", capacity: 120, type: "SUM", status: "ACTIVE" },
-  { id: demoUuid("location", 7), siteKey: "pilar", name: "Aula Taller Pilar", capacity: 35, type: "AULA", status: "ACTIVE" },
-  { id: demoUuid("location", 8), siteKey: "rosario", name: "Salón Rosario", capacity: 90, type: "SUM", status: "INACTIVE" },
+  { id: demoUuid("location", 6), siteKey: "pinamar", name: "SUM Pinamar", capacity: 120, type: "SUM", status: "ACTIVE" },
+  { id: demoUuid("location", 7), siteKey: "pinamar", name: "Aula Taller Pinamar", capacity: 35, type: "AULA", status: "ACTIVE" },
+  { id: demoUuid("location", 8), siteKey: "recoleta", name: "Salón Recoleta", capacity: 90, type: "SUM", status: "ACTIVE" },
 ];
 
 // Locación que NUNCA recibe un backoffice.location.upserted.v1: el evento que la usa no tiene sede y sólo cuenta en
@@ -177,7 +176,7 @@ export interface DemoSubject {
   careerId: number;
   planId: number;
   anio: number;
-  // Sedes donde se dicta, por letra (C Monserrat, B Belgrano, P Pilar, O Online).
+  // Sedes donde se dicta, por letra (C Monserrat, B Belgrano, P Pinamar, O Online, R Recoleta).
   sedes: string;
   // Materia masiva: tiene dos comisiones en las sedes grandes.
   popular?: boolean;
@@ -186,7 +185,7 @@ export interface DemoSubject {
   // Tasa base de aprobación (%) en 2024-1C y variación por período en puntos.
   base: number;
   trend: number;
-  // Id de la misma materia en el plan viejo ISI-2020 (los cursos de Pilar y Online usan esta asignatura).
+  // Id de la misma materia en el plan viejo ISI-2020 (los cursos de Pinamar y Online usan esta asignatura).
   legacyId?: number;
 }
 
@@ -203,20 +202,20 @@ const SUBJECT_SEEDS: SubjectSeed[] = [
   { code: "INF-230", name: "Inteligencia Artificial", careerId: 1, sedes: "CBO", since: 4, base: 79, trend: 1 },
   { code: "IND-201", name: "Probabilidad y Estadística", careerId: 1, sedes: "CBP", base: 54, trend: 2 },
   // Ciencias Económicas
-  { code: "ECO-101", name: "Contabilidad Básica", careerId: 2, sedes: "CBPO", popular: true, base: 72, trend: -1 },
-  { code: "ECO-110", name: "Microeconomía", careerId: 2, sedes: "CBP", base: 50, trend: 3 },
-  { code: "ECO-120", name: "Macroeconomía", careerId: 2, sedes: "CBP", base: 57, trend: 0 },
-  { code: "ECO-201", name: "Estadística para Negocios", careerId: 2, sedes: "CBO", base: 42, trend: 2.5 },
-  { code: "ADM-101", name: "Administración General", careerId: 2, sedes: "CBPO", popular: true, base: 85, trend: -0.5 },
-  { code: "ECO-210", name: "Costos y Gestión", careerId: 2, sedes: "CB", base: 82, trend: -3.5 },
-  { code: "MKT-201", name: "Marketing Digital", careerId: 2, sedes: "CBO", since: 2, base: 86, trend: 0.5 },
+  { code: "ECO-101", name: "Contabilidad Básica", careerId: 2, sedes: "CBRPO", popular: true, base: 72, trend: -1 },
+  { code: "ECO-110", name: "Microeconomía", careerId: 2, sedes: "CBRP", base: 50, trend: 3 },
+  { code: "ECO-120", name: "Macroeconomía", careerId: 2, sedes: "CBRP", base: 57, trend: 0 },
+  { code: "ECO-201", name: "Estadística para Negocios", careerId: 2, sedes: "CBRO", base: 42, trend: 2.5 },
+  { code: "ADM-101", name: "Administración General", careerId: 2, sedes: "CBRPO", popular: true, base: 85, trend: -0.5 },
+  { code: "ECO-210", name: "Costos y Gestión", careerId: 2, sedes: "CBR", base: 82, trend: -3.5 },
+  { code: "MKT-201", name: "Marketing Digital", careerId: 2, sedes: "CBRO", since: 2, base: 86, trend: 0.5 },
   // Derecho y Ciencias Sociales
-  { code: "DER-101", name: "Introducción al Derecho", careerId: 3, sedes: "CBPO", popular: true, base: 76, trend: 1 },
-  { code: "DER-110", name: "Derecho Constitucional", careerId: 3, sedes: "CBP", base: 64, trend: 0 },
-  { code: "DER-120", name: "Derecho Civil: Parte General", careerId: 3, sedes: "CBP", base: 44, trend: 2.5 },
-  { code: "DER-210", name: "Derecho Penal", careerId: 3, sedes: "CB", base: 66, trend: -2 },
-  { code: "DER-220", name: "Derecho Laboral", careerId: 3, sedes: "CBO", base: 71, trend: 1 },
-  { code: "SOC-101", name: "Sociología", careerId: 3, sedes: "CBPO", base: 83, trend: 0 },
+  { code: "DER-101", name: "Introducción al Derecho", careerId: 3, sedes: "CBRPO", popular: true, base: 76, trend: 1 },
+  { code: "DER-110", name: "Derecho Constitucional", careerId: 3, sedes: "CBRP", base: 64, trend: 0 },
+  { code: "DER-120", name: "Derecho Civil: Parte General", careerId: 3, sedes: "CBRP", base: 44, trend: 2.5 },
+  { code: "DER-210", name: "Derecho Penal", careerId: 3, sedes: "CBR", base: 66, trend: -2 },
+  { code: "DER-220", name: "Derecho Laboral", careerId: 3, sedes: "CBRO", base: 71, trend: 1 },
+  { code: "SOC-101", name: "Sociología", careerId: 3, sedes: "CBRPO", base: 83, trend: 0 },
   // Arquitectura y Diseño
   { code: "ARQ-101", name: "Taller de Diseño I", careerId: 4, sedes: "CB", popular: true, base: 81, trend: 0 },
   { code: "ARQ-110", name: "Historia de la Arquitectura", careerId: 4, sedes: "CBP", base: 87, trend: -0.5 },
@@ -224,12 +223,12 @@ const SUBJECT_SEEDS: SubjectSeed[] = [
   { code: "ARQ-210", name: "Estructuras I", careerId: 4, sedes: "CB", base: 58, trend: -1.5 },
   { code: "DIS-101", name: "Dibujo y Expresión Gráfica", careerId: 4, sedes: "CBP", base: 89, trend: 0 },
   // Ciencias de la Salud y Psicología
-  { code: "PSI-101", name: "Psicología General", careerId: 5, sedes: "CBPO", popular: true, base: 74, trend: 1 },
-  { code: "PSI-110", name: "Psicología Evolutiva", careerId: 5, sedes: "CBP", base: 69, trend: 0 },
-  { code: "PSI-210", name: "Estadística Aplicada a la Psicología", careerId: 5, sedes: "CBP", base: 50, trend: 2 },
-  { code: "HUM-101", name: "Comunicación y Lenguaje", careerId: 5, sedes: "CBPO", base: 86, trend: 0 },
-  { code: "HUM-110", name: "Epistemología", careerId: 5, sedes: "CBO", base: 65, trend: -1.5 },
-  { code: "SAL-101", name: "Anatomía Humana", careerId: 5, sedes: "CB", since: 3, base: 46, trend: 1 },
+  { code: "PSI-101", name: "Psicología General", careerId: 5, sedes: "CBRPO", popular: true, base: 74, trend: 1 },
+  { code: "PSI-110", name: "Psicología Evolutiva", careerId: 5, sedes: "CBRP", base: 69, trend: 0 },
+  { code: "PSI-210", name: "Estadística Aplicada a la Psicología", careerId: 5, sedes: "CBRP", base: 50, trend: 2 },
+  { code: "HUM-101", name: "Comunicación y Lenguaje", careerId: 5, sedes: "CBRPO", base: 86, trend: 0 },
+  { code: "HUM-110", name: "Epistemología", careerId: 5, sedes: "CBRO", base: 65, trend: -1.5 },
+  { code: "SAL-101", name: "Anatomía Humana", careerId: 5, sedes: "CBR", since: 3, base: 46, trend: 1 },
 ];
 
 const PLAN_OF_CAREER = new Map(PLANS.filter((plan) => plan.id !== 12 && plan.id !== 13).map((plan) => [plan.carreraId, plan.id]));
@@ -282,7 +281,7 @@ const TEACHER_NAMES: [careerId: number, names: string[]][] = [
   [5, ["Gabriela Romero", "Nicolás Álvarez", "Mónica Peralta", "Santiago Ríos", "Daniela Castro", "Tomás Villalba"]],
 ];
 
-const HOME_SITES: SiteKey[] = ["monserrat", "belgrano", "pilar", "monserrat"];
+const HOME_SITES: SiteKey[] = ["monserrat", "belgrano", "pinamar", "recoleta"];
 
 export const TEACHERS: readonly DemoTeacher[] = TEACHER_NAMES.flatMap(([careerId, names]) => names.map((name) => ({ careerId, name }))).map(
   ({ careerId, name }, index): DemoTeacher => {
