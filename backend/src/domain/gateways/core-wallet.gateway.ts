@@ -11,7 +11,8 @@ export interface WalletAggregateGroup {
 }
 
 export interface WalletAggregates {
-  range: { from: string; to: string };
+  // CORE v1 lo documenta, pero la API real (probada el 15/11) no lo devuelve: no se usa.
+  range?: { from: string; to: string };
   currency: string;
   outstandingBalance: string;
   walletCount: number;
