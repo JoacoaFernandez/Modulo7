@@ -51,3 +51,19 @@ model WalletBalanceSnapshot {
 
   @@map("wallet_balance_snapshots")
 }
+
+// Mensajes de la cola que no se pudieron aceptar (no son JSON, envelope o data inválidos). CORE no reintenta un nack y con
+// requeue vuelve enseguida, así que se guardan acá para reprocesarlos y el mensaje se confirma (ack).
+model RejectedEvent {
+  id         String   @id @default(uuid()) @db.Uuid
+  receivedAt DateTime @default(now()) @map("received_at") @db.Timestamptz(3)
+  // Qué falló (los problemas del validador, o "el mensaje no es JSON").
+  reason     String
+  // eventId del envelope, sólo si el mensaje era JSON y traía un UUID.
+  eventId    String?  @map("event_id") @db.Uuid
+  // Cuerpo original del mensaje, tal cual llegó (puede no ser JSON).
+  raw        String
+
+  @@index([receivedAt])
+  @@map("rejected_events")
+}

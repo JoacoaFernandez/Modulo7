@@ -10,7 +10,7 @@ Cada archivo se lee **en cada llamada** (sin caché ni watcher): editar un `.jso
 
 | Endpoint simulado | Archivo | Si el archivo no existe |
 |---|---|---|
-| CORE `wallets/aggregates?from=2026-10-01&to=…` | `core/wallets-aggregates/2026-10.json` (mes de `from`; se devuelve tal cual aunque `to` sea parcial) | `core/wallets-aggregates/_empty.json` si existe; si no, una respuesta vacía (`walletCount: 0`) |
+| CORE `wallets/aggregates?from=…&to=…&groupBy=month` | `core/wallets-aggregates/<AAAA-MM>.json` de **cada mes calendario argentino del rango** (`from` incluido, `to` excluido). Cada archivo es el agregado de un mes. El mock junta los meses: con `groupBy=month` agrega `month` a cada grupo; sin él suma por `key` y `type`. Devuelve `range` (lo pedido, ISO UTC) y el `outstandingBalance` y `walletCount` **del último mes del rango** (el saldo a `to`). `from >= to`, fecha inválida o `groupBy` distinto de `month` dan `400 WALLET_AGGREGATES_INVALID_QUERY` | un mes sin archivo usa `core/wallets-aggregates/_empty.json` si existe; si no, aporta 0 (`walletCount: 0`) |
 | CORE login | `core/users.json` | error de configuración (500) |
 | Backoffice `sites` | `backoffice/sites.json` (siempre completo, sin paginar) | error de configuración (500) |
 | Backoffice `users/{userId}` | `backoffice/users/<userId>.json` | `404 RESOURCE_NOT_FOUND` |
@@ -40,7 +40,7 @@ Los mocks y los eventos del demo (`npm run db:demo`) salen de los mismos ids (`b
 - **Períodos**: 2024-1C a 2026-2C (ids 3 a 8). Todos tienen cursos con `inscriptosActivos`; los cuatro primeros cerrados y 2026-2C en curso, con un tercio de los cursos ya finalizados (promoción directa) y resultados publicados.
 - **Académico**: 5 carreras con 5 facultades, 7 planes (el plan viejo `ISI-2020` repite 4 materias con otro id y el mismo código; `ISI-2027` está `PLANIFICADO` y no tiene archivo de asignaturas), 32 materias, cursos `CANCELADO` y docentes `TITULAR` y `AUXILIAR`.
 - **Detalle de curso**: unos pocos cursos no traen `docentes` en el listado y se resuelven con `curso-detalle/<id>.json`; uno no tiene ficha (`404`) y no se atribuye a ningún docente.
-- **CORE `wallets-aggregates`**: marzo a noviembre de 2026, con `outstandingBalance` creciente. Los conceptos de tienda, comedor y eventos suman lo mismo que los eventos del demo; el resto (cargas, sueldos, becas, multas, devoluciones) es inventado. Noviembre es un mes **parcial** (hoy es 5/11): sin sueldos todavía, así que el mes en curso muestra ingresos y egresos chicos; para ver el tablero financiero con valores de mes completo, elegí otro mes (por ejemplo Oct 2026), o editá `2026-11.json`.
+- **CORE `wallets-aggregates`**: marzo a noviembre de 2026, con `outstandingBalance` creciente. Los conceptos de tienda, comedor y eventos suman lo mismo que los eventos del demo; el resto (cargas, sueldos, becas, multas, devoluciones) es inventado. Noviembre es un mes **parcial** (sin sueldos todavía): el mes en curso muestra ingresos y egresos chicos; para ver el tablero financiero con valores de mes completo, elegí otro mes (por ejemplo Oct 2026), o editá `2026-11.json`. El `range` de cada archivo es el mes completo en ISO UTC (`2026-10-01T03:00:00.000Z` a `2026-11-01T03:00:00.000Z`) y los grupos no llevan `month` (lo agrega el mock). Los archivos de wallet se editaron a mano: `mocks:generate` no los pisa sin `--force`.
 
 ## Usuarios de prueba (`core/users.json`)
 

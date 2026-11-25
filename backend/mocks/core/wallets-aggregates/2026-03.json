@@ -1,7 +1,7 @@
 {
   "range": {
-    "from": "2026-03-01",
-    "to": "2026-03-31"
+    "from": "2026-03-01T03:00:00.000Z",
+    "to": "2026-04-01T03:00:00.000Z"
   },
   "currency": "ARS",
   "outstandingBalance": "6491900.00",
@@ -36,6 +36,12 @@
       "type": "DEBIT",
       "count": 844,
       "total": "2110000.00"
+    },
+    {
+      "key": "DINING_PURCHASE",
+      "type": "DEBIT",
+      "count": 4,
+      "total": "3600.00"
     },
     {
       "key": "LIBRARY_FINE",

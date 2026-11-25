@@ -1,7 +1,10 @@
-// Job de snapshots del saldo vigente de CORE (docs/INTEGRACION.md, 7.4): `aggregates` da una foto, no una serie, y
-// el saldo de un mes cerrado no se puede reconstruir hacia atrás. Idempotente: varias instancias no rompen nada.
+// Job de snapshots del saldo de CORE (docs/INTEGRACION.md, 7.4). Con `to` = inicio del mes siguiente, `aggregates`
+// devuelve el saldo (outstandingBalance) al cierre de ese mes (CORE, 25/11): por eso el backfill de meses cerrados
+// (WALLET_SNAPSHOT_BACKFILL_MONTHS) pide un `to` por mes y guarda el saldo de cierre real, también con CORE real.
+// Idempotente: varias instancias no rompen nada.
 import { CoreWalletGateway, WalletAggregates } from "../../domain/gateways/core-wallet.gateway";
-import { argentinaToday, currentMonthYm } from "../../domain/services/period-catalog.service";
+import { currentMonthYm } from "../../domain/services/period-catalog.service";
+import { previousMonthYm, walletMonthsQuery } from "../../domain/services/wallet-range.service";
 import { config } from "../../shared/config";
 import { coreWalletGateway } from "../integrations/gateways";
 import { prisma } from "../prisma-client";
@@ -25,19 +28,9 @@ const prismaStore: SnapshotStore = {
   },
 };
 
-// "2026-11" → "2026-10".
-function previousMonth(ym: string): string {
-  const [year, month] = ym.split("-").map(Number);
-  return month === 1 ? `${year - 1}-12` : `${year}-${String(month - 1).padStart(2, "0")}`;
-}
-
-function lastDayOf(ym: string): string {
-  const [year, month] = ym.split("-").map(Number);
-  return `${ym}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, "0")}`;
-}
-
-// Un ciclo: (1) mes en curso (isFinal=false), (2) mes anterior si no tiene snapshot final, (3) los N meses
-// anteriores sin snapshot (WALLET_SNAPSHOT_BACKFILL_MONTHS). Un mes sin datos (walletCount 0) no se guarda.
+// Un ciclo: (1) mes en curso (isFinal=false; su `to` es el fin del mes, así que el saldo es el de hoy), (2) mes
+// anterior si no tiene snapshot final, (3) los N meses anteriores sin snapshot (WALLET_SNAPSHOT_BACKFILL_MONTHS), cada
+// uno con su saldo de cierre. Un mes sin datos (walletCount 0) no se guarda.
 export async function runWalletSnapshotCycle(
   wallets: CoreWalletGateway,
   store: SnapshotStore,
@@ -46,8 +39,8 @@ export async function runWalletSnapshotCycle(
   const now = options.now ?? new Date();
   const current = currentMonthYm(now);
 
-  const capture = async (ym: string, from: string, to: string, isFinal: boolean) => {
-    const aggregates = await wallets.getAggregates(from, to);
+  const capture = async (ym: string, isFinal: boolean) => {
+    const aggregates = await wallets.getAggregates(walletMonthsQuery(ym, ym));
     if (aggregates.walletCount === 0) {
       console.log(`[wallet-snapshot] ${ym}: CORE no informó wallets; no se guarda snapshot.`);
       return;
@@ -56,13 +49,13 @@ export async function runWalletSnapshotCycle(
     console.log(`[wallet-snapshot] ${ym}: saldo ${aggregates.outstandingBalance} (${aggregates.walletCount} wallets, final=${isFinal}).`);
   };
 
-  await capture(current, `${current}-01`, argentinaToday(now), false);
+  await capture(current, false);
 
   const missing = async (ym: string) => !(await store.find(ym))?.isFinal;
   let month = current;
   for (let i = 0; i < Math.max(options.backfillMonths, 1); i++) {
-    month = previousMonth(month);
-    if (await missing(month)) await capture(month, `${month}-01`, lastDayOf(month), true);
+    month = previousMonthYm(month);
+    if (await missing(month)) await capture(month, true);
   }
 }
 

@@ -1,8 +1,9 @@
 // Decoradores con caché TTL para las implementaciones HTTP (docs/INTEGRACION.md, sección 2). Los mocks nunca se envuelven.
 import { AcademicGateway, AcademicCourse, AcademicPeriod } from "../../../domain/gateways/academic.gateway";
 import { BackofficeGateway } from "../../../domain/gateways/backoffice.gateway";
-import { CoreWalletGateway, WalletAggregates } from "../../../domain/gateways/core-wallet.gateway";
+import { CoreWalletGateway, WalletAggregates, WalletAggregatesQuery } from "../../../domain/gateways/core-wallet.gateway";
 import { currentMonthYm } from "../../../domain/services/period-catalog.service";
+import { argentinaMonthStart } from "../../../domain/services/wallet-range.service";
 import { TtlCache } from "./ttl-cache";
 
 export interface CacheTtls {
@@ -23,10 +24,12 @@ export class CachedWalletGateway implements CoreWalletGateway {
     private readonly ttls: CacheTtls,
   ) {}
 
-  getAggregates(from: string, to: string): Promise<WalletAggregates> {
-    // Mes cerrado: 24 h fijo; mes en curso: CACHE_TTL_SECONDS_AGGREGATES.
-    const closed = from.slice(0, 7) < currentMonthYm(new Date());
-    return this.cache.wrap(`${from}|${to}`, closed ? CLOSED_MONTH_TTL_SECONDS : this.ttls.aggregates, () => this.inner.getAggregates(from, to));
+  getAggregates(query: WalletAggregatesQuery): Promise<WalletAggregates> {
+    // Rango que termina en un mes ya cerrado (to <= inicio del mes en curso): 24 h fijo; si no, CACHE_TTL_SECONDS_AGGREGATES.
+    const closed = new Date(query.to).getTime() <= new Date(argentinaMonthStart(currentMonthYm(new Date()))).getTime();
+    return this.cache.wrap(`${query.from}|${query.to}|${query.groupBy ?? ""}`, closed ? CLOSED_MONTH_TTL_SECONDS : this.ttls.aggregates, () =>
+      this.inner.getAggregates(query),
+    );
   }
 }
 

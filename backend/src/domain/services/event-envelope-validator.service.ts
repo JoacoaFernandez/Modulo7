@@ -92,7 +92,7 @@ export function validateEnvelope(raw: unknown): EnvelopeValidation {
 }
 
 // Los campos que el catálogo no declara se aceptan y se ignoran: así un módulo puede agregar datos sin romper la
-// ingesta (CORE ya valida al publicar; ser más estrictos mandaría eventos buenos a la DLQ).
+// ingesta (CORE ya valida al publicar; ser más estrictos mandaría eventos buenos a rejected_events).
 function validateFields(
   fields: readonly FieldSpec[],
   value: Record<string, unknown>,

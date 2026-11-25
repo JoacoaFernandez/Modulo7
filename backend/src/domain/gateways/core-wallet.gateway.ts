@@ -6,20 +6,30 @@ export interface WalletAggregateGroup {
   key: string;
   type: WalletGroupType;
   count: number;
+  // Sólo con groupBy=month: mes calendario argentino ("2026-11") al que pertenece el grupo.
+  month?: string;
   // Decimal como texto ("6120000.00"): nunca número.
   total: string;
 }
 
 export interface WalletAggregates {
-  // CORE v1 lo documenta, pero la API real (probada el 15/11) no lo devuelve: no se usa.
-  range?: { from: string; to: string };
+  // Lo que se pidió (null en lo no enviado). Con `to`, outstandingBalance y walletCount son a esa fecha.
+  range?: { from: string | null; to: string | null };
   currency: string;
   outstandingBalance: string;
   walletCount: number;
   groups: WalletAggregateGroup[];
 }
 
+// `from` y `to` en ISO-8601 (`from` incluido, `to` excluido); ver walletMonthsQuery para armarlos por mes argentino.
+export interface WalletAggregatesQuery {
+  from: string;
+  to: string;
+  // "month": cada grupo trae `month`. Sin él, los grupos se suman por concepto en todo el rango.
+  groupBy?: "month";
+}
+
 export interface CoreWalletGateway {
-  // `from` y `to` en AAAA-MM-DD; se pide un mes por llamada.
-  getAggregates(from: string, to: string): Promise<WalletAggregates>;
+  // fecha inválida, from >= to o groupBy distinto de "month": GatewayError 400 WALLET_AGGREGATES_INVALID_QUERY.
+  getAggregates(query: WalletAggregatesQuery): Promise<WalletAggregates>;
 }

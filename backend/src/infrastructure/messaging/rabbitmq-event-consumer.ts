@@ -1,7 +1,15 @@
 // Consumer de RabbitMQ: lee la cola de CORE (analytics.all-events.v1) y pasa cada mensaje por RecordEventUseCase.
-// Ack manual: ack al guardar/descartar/duplicado; nack(requeue=false) → DLQ si el evento es inválido o si el error
-// transitorio (DB) persiste tras los reintentos en proceso (CORE v1 §10). La cola la crea CORE: no se declara acá.
+// El usuario del broker sólo puede LEER analytics.*: no se declara nada (ni assertQueue, assertExchange ni bindQueue; un
+// assert haría que RabbitMQ cierre el canal), sólo checkQueue (passive), prefetch y consume con ack manual.
+// CORE no reintenta un nack y con requeue el mensaje vuelve enseguida, así que NUNCA se hace nack:
+//  - Guardado, duplicado o descartado: ack (dedup por eventId en el inbox).
+//  - Error permanente (no es JSON, envelope o data inválidos): se guarda en rejected_events (con el motivo y el cuerpo
+//    original, para reprocesar), se loguea y se hace ack.
+//  - Error transitorio (base caída): reintentos en proceso (1 s, 5 s, 30 s) con el mensaje sin ack. Si siguen fallando
+//    se cierra la conexión sin ack: RabbitMQ devuelve a la cola los mensajes sin confirmar y la reconexión con backoff
+//    los vuelve a entregar cuando la base responda.
 import amqplib from "amqplib";
+import { RejectedEventRepository } from "../../domain/repositories/rejected-event.repository";
 import { RecordEventUseCase } from "../../application/use-cases/record-event.use-case";
 import { EventValidationError } from "../../shared/event-validation-error";
 
@@ -31,6 +39,7 @@ export class RabbitMqEventConsumer {
   constructor(
     private readonly options: RabbitMqConsumerOptions,
     private readonly recordEvent: RecordEventUseCase,
+    private readonly rejected: RejectedEventRepository,
   ) {}
 
   isConnected(): boolean {
@@ -63,7 +72,10 @@ export class RabbitMqEventConsumer {
       const connection = await amqplib.connect(this.options.url);
       this.connection = connection;
       connection.on("error", (error: Error) => console.error(`[rabbitmq] error de conexión: ${error.message}`));
-      connection.on("close", () => this.onDisconnected("se cerró la conexión"));
+      connection.on("close", () => {
+        // Una conexión ya reemplazada (o cerrada a propósito) no debe tirar abajo a la nueva.
+        if (this.connection === connection) this.onDisconnected("se cerró la conexión");
+      });
 
       const channel = await connection.createChannel();
       this.channel = channel;
@@ -122,50 +134,76 @@ export class RabbitMqEventConsumer {
   }
 
   private async handle(channel: Channel, message: Message): Promise<void> {
-    let body: unknown;
-    try {
-      body = JSON.parse(message.content.toString("utf8"));
-    } catch {
-      console.warn("[rabbitmq] mensaje que no es JSON: va a la DLQ");
-      this.settle(channel, message, "nack");
+    const outcome = await this.process(message.content, () => this.closing || this.channel !== channel);
+    if (outcome === "ack") {
+      try {
+        channel.ack(message);
+      } catch (error) {
+        // El canal se cerró mientras se procesaba: el broker reentrega el mensaje sin ack.
+        console.warn(`[rabbitmq] no se pudo hacer ack del mensaje: ${describe(error)}`);
+      }
       return;
+    }
+
+    if (outcome === "retry-later" && this.channel === channel) {
+      // Sin ack ni nack: al cerrar la conexión el broker devuelve a la cola todo lo que quedó sin confirmar.
+      console.error("[rabbitmq] error transitorio persistente: se cierra la conexión y se reconecta con backoff (los mensajes sin ack se reentregan)");
+      const connection = this.connection;
+      this.onDisconnected("conexión cerrada por error transitorio");
+      connection?.close().catch(() => undefined);
+    }
+  }
+
+  // Procesa el cuerpo de un mensaje (sin tocar el canal): "ack" si hay que confirmarlo (guardado, duplicado, descartado o
+  // rechazado y guardado en rejected_events); "retry-later" si el error transitorio persiste o la conexión ya no sirve.
+  async process(content: Buffer, isStale: () => boolean = () => this.closing): Promise<"ack" | "retry-later"> {
+    const raw = content.toString("utf8");
+    let body: unknown;
+    let rejection: { reason: string; eventId: string | null } | null = null;
+    try {
+      body = JSON.parse(raw);
+    } catch {
+      rejection = { reason: "El mensaje no es JSON.", eventId: null };
     }
 
     for (let attempt = 1; ; attempt++) {
       try {
-        const outcome = await this.recordEvent.execute(body);
-        this.settle(channel, message, "ack");
-        if (outcome === "duplicate") console.log("[rabbitmq] evento duplicado (ack)");
-        return;
-      } catch (error) {
-        if (error instanceof EventValidationError) {
-          console.warn(`[rabbitmq] evento inválido, va a la DLQ: ${error.problems.join(" ")}`);
-          this.settle(channel, message, "nack");
-          return;
+        if (!rejection) {
+          try {
+            const outcome = await this.recordEvent.execute(body);
+            if (outcome === "duplicate") console.log("[rabbitmq] evento duplicado (ack)");
+            return "ack";
+          } catch (error) {
+            if (!(error instanceof EventValidationError)) throw error;
+            rejection = { reason: error.problems.join(" "), eventId: eventIdOf(body) };
+          }
         }
 
-        if (attempt >= this.options.maxAttempts || this.closing) {
-          console.error(`[rabbitmq] error transitorio tras ${attempt} intento(s), va a la DLQ: ${describe(error)}`);
-          this.settle(channel, message, "nack");
-          return;
+        // Error permanente: reprocesable desde rejected_events. Si guardar falla (base caída) es transitorio.
+        await this.rejected.save({ ...rejection, raw });
+        console.warn(`[rabbitmq] mensaje rechazado, guardado en rejected_events (ack): ${rejection.reason}`);
+        return "ack";
+      } catch (error) {
+        if (attempt >= this.options.maxAttempts || isStale()) {
+          console.error(`[rabbitmq] error transitorio tras ${attempt} intento(s): ${describe(error)}`);
+          return "retry-later";
         }
 
         const delay = RETRY_DELAYS_MS[Math.min(attempt - 1, RETRY_DELAYS_MS.length - 1)];
         console.warn(`[rabbitmq] error transitorio (intento ${attempt}), reintento en ${delay / 1000} s: ${describe(error)}`);
         await new Promise((resolve) => setTimeout(resolve, delay));
+        if (isStale()) return "retry-later";
       }
     }
   }
+}
 
-  private settle(channel: Channel, message: Message, action: "ack" | "nack"): void {
-    try {
-      if (action === "ack") channel.ack(message);
-      else channel.nack(message, false, false);
-    } catch (error) {
-      // El canal se cerró mientras se procesaba: el broker reentrega el mensaje sin ack.
-      console.warn(`[rabbitmq] no se pudo ${action} el mensaje: ${describe(error)}`);
-    }
-  }
+const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// eventId del cuerpo si es un UUID; null si no se pudo leer.
+function eventIdOf(body: unknown): string | null {
+  const id = typeof body === "object" && body !== null ? (body as { eventId?: unknown }).eventId : undefined;
+  return typeof id === "string" && UUID.test(id) ? id : null;
 }
 
 function describe(error: unknown): string {

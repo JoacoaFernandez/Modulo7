@@ -7,6 +7,7 @@
 //   npm run mocks:generate -- --dry-run     sólo informa qué haría
 import { mkdirSync, readFileSync, readdirSync, rmSync, writeFileSync, existsSync } from "node:fs";
 import path from "node:path";
+import { argentinaMonthStart, nextMonthYm } from "../src/domain/services/wallet-range.service";
 import { argYm, buildDemoDataset, createRng, SPANS } from "../demo/dataset";
 import {
   CAREERS,
@@ -85,12 +86,7 @@ for (const event of dataset.events) {
 
 {
   const rng = createRng(20261109);
-  const lastDay = (ym: string) => {
-    const [year, month] = ym.split("-").map(Number);
-    return `${ym}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, "0")}`;
-  };
   const todayYm = argYm(DEMO_NOW);
-  const todayDate = new Date(DEMO_NOW - 3 * 3_600_000).toISOString().slice(0, 10);
   let balance = 6_200_000;
 
   for (const span of SPANS) {
@@ -125,7 +121,8 @@ for (const event of dataset.events) {
     ];
 
     put(`core/wallets-aggregates/${span.ym}.json`, {
-      range: { from: `${span.ym}-01`, to: partial ? todayDate : lastDay(span.ym) },
+      // Un archivo = un mes completo; el mock arma el `range` de la respuesta con lo que se pida (README de mocks).
+      range: { from: new Date(argentinaMonthStart(span.ym)).toISOString(), to: new Date(argentinaMonthStart(nextMonthYm(span.ym))).toISOString() },
       currency: "ARS",
       outstandingBalance: money(balance),
       walletCount: 1480 + span.index * 45,

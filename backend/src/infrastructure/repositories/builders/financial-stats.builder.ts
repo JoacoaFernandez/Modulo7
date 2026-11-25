@@ -1,5 +1,5 @@
 // Arma el tablero financiero (docs/INTEGRACION.md, 6.2): ingresos, egresos y sueldos salen de `aggregates` de CORE
-// (un llamado por mes de la ventana), el saldo de los snapshots, y productos y comedor de eventos del inbox.
+// (un solo llamado con groupBy=month para toda la ventana), el saldo de los snapshots (y el de cierre del mes elegido), y productos y comedor de eventos del inbox.
 // Si CORE falla, los bloques afectados salen vacíos ("—") con un warning; nunca números inventados.
 import { PrismaClient } from "@prisma/client";
 import { createDelta, createNeutralDelta, Delta } from "../../../domain/entities/delta.value-object";
@@ -15,7 +15,8 @@ import { KpiCard } from "../../../domain/entities/kpi.value-object";
 import { Period } from "../../../domain/entities/period.entity";
 import { Site } from "../../../domain/entities/site.entity";
 import { CoreWalletGateway, WalletAggregates } from "../../../domain/gateways/core-wallet.gateway";
-import { argentinaToday, currentMonthYm, periodWindow } from "../../../domain/services/period-catalog.service";
+import { periodWindow } from "../../../domain/services/period-catalog.service";
+import { walletMonthsQuery } from "../../../domain/services/wallet-range.service";
 import { DINING_INCLUDE_PURCHASES, EXPENSE_CONCEPTS, INCOME_CONCEPTS, REVERSAL_CONCEPTS, SERIES_LENGTH, TOP_PRODUCTS_LIMIT } from "../../config/dashboard.config";
 import {
   ProductRow,
@@ -47,11 +48,6 @@ function monthRange(month: Period): MonthRange {
   if (!range) throw new Error(`Mes inválido en el catálogo: ${month.id}`);
 
   return range;
-}
-
-function lastDayOf(ym: string): string {
-  const [year, month] = ym.split("-").map(Number);
-  return `${ym}-${String(new Date(Date.UTC(year, month, 0)).getUTCDate()).padStart(2, "0")}`;
 }
 
 const sumGroups = (aggregates: WalletAggregates, type: string, keys: readonly string[]): number =>
@@ -150,31 +146,34 @@ export async function buildFinancialStats(prisma: PrismaClient, filters: Financi
   const selected = monthRange(months[current]);
   const previousRange = monthRange(months[previous]);
   const window = periodWindow(months, current, SERIES_LENGTH);
-  const currentYm = currentMonthYm(context.now);
 
-  // Un `aggregates` por mes de la ventana (el mes en curso, hasta hoy). Los avisos iguales se juntan en uno.
-  const readMonth = async (month: Period): Promise<WalletAggregates | null> => {
-    const { ym } = monthRange(month);
-    const to = ym === currentYm ? argentinaToday(context.now) : lastDayOf(ym);
-    const read = await warnings.guard("core", "los agregados de wallet", () => context.wallet.getAggregates(`${ym}-01`, to), null);
+  // Una sola llamada con groupBy=month para toda la ventana (la última es el mes elegido): los grupos se reparten por
+  // `month` (mes argentino) y, como `to` es el inicio del mes siguiente al elegido, el saldo es el de su cierre. Un mes sin
+  // grupos es un mes sin movimientos; si CORE falla, ningún mes tiene dato (un solo aviso).
+  const windowYms = window.map((month) => monthRange(month).ym);
+  const readWindow = async (): Promise<WalletAggregates | null> => {
+    const query = walletMonthsQuery(windowYms[0], windowYms[windowYms.length - 1], "month");
+    const read = await warnings.guard("core", "los agregados de wallet", () => context.wallet.getAggregates(query), null);
     return read.value;
   };
+  const byMonth = (body: WalletAggregates | null, ym: string): WalletAggregates | null =>
+    body && { ...body, groups: body.groups.filter((group) => group.month === ym) };
 
-  const [aggregates, snapshots, productRows, diningRows, diningSites] = await Promise.all([
-    Promise.all(window.map(readMonth)),
-    queryBalanceSnapshots(prisma, window.map((month) => monthRange(month).ym)),
+  const [windowBody, snapshots, productRows, diningRows, diningSites] = await Promise.all([
+    readWindow(),
+    queryBalanceSnapshots(prisma, windowYms),
     queryTopProducts(prisma, selected, siteId),
     queryDiningRevenue(prisma, previousRange.start, selected.end, context.diningNetOfAttendance, DINING_INCLUDE_PURCHASES),
     queryDiningSites(prisma, DINING_INCLUDE_PURCHASES),
   ]);
 
-  // Serie mensual en millones. Saldo: el mes en curso toma el valor en vivo de CORE; los meses cerrados sólo el snapshot
-  // (CORE puede devolver el saldo "a hoy" para un rango pasado, así que no sirve como saldo histórico).
+  // Serie mensual en millones. Saldo: el mes elegido toma el de CORE al cierre del mes (el `to` de la consulta; si el mes
+  // está en curso, el de hoy); los anteriores salen de los snapshots (los completa el backfill del job).
   const points: MonthPoint[] = window.map((month, index) => {
-    const { ym } = monthRange(month);
-    const figures = figuresOf(aggregates[index]);
-    const live = ym === currentYm && figures.aggregates ? Number(figures.aggregates.outstandingBalance) : undefined;
-    const balance = live ?? snapshots.get(ym);
+    const figures = figuresOf(byMonth(windowBody, windowYms[index]));
+    const isSelected = index === window.length - 1;
+    const closing = isSelected && windowBody && windowBody.walletCount > 0 ? Number(windowBody.outstandingBalance) : undefined;
+    const balance = closing ?? snapshots.get(windowYms[index]);
 
     return {
       figures,

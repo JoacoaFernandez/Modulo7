@@ -115,9 +115,11 @@ Un cuerpo que no es JSON también da `400` (`code: "BAD_REQUEST"`). Un error nue
 caída) da `500` (`INTERNAL_ERROR`): el emisor debe reintentar.
 
 Por la cola la semántica es la equivalente: guardado, duplicado o descartado se confirman con `ack`; un
-evento inválido o un mensaje que no es JSON se rechaza con `nack` sin reencolar y va a la DLQ de CORE; un
-error transitorio (base caída) se reintenta en proceso `RABBITMQ_MAX_ATTEMPTS` veces (esperas de 1, 5 y 30 s)
-y, si persiste, también va a la DLQ. `GET /health/ready` informa si el consumer está conectado.
+evento inválido o un mensaje que no es JSON se guarda en la tabla `rejected_events` (motivo, `eventId` si se
+pudo leer y cuerpo original, para reprocesar) y se confirma con `ack`: nunca se hace `nack`, porque CORE no
+reintenta un nack y con requeue el mensaje vuelve enseguida; un error transitorio (base caída) se reintenta en
+proceso `RABBITMQ_MAX_ATTEMPTS` veces (esperas de 1, 5 y 30 s) y, si persiste, se cierra la conexión sin ack para
+que la reconexión con backoff reciba de nuevo los mensajes. El usuario de la cola sólo lee: no se declara nada. `GET /health/ready` informa si el consumer está conectado.
 
 ---
 

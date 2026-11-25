@@ -3,6 +3,7 @@ import { RecordEventUseCase } from "../../application/use-cases/record-event.use
 import { config } from "../../shared/config";
 import { backofficeGateway } from "../integrations/gateways";
 import { inboxRepository } from "../repositories/inbox-repository.provider";
+import { rejectedEventRepository } from "../repositories/rejected-event-repository.provider";
 import { RabbitMqEventConsumer } from "./rabbitmq-event-consumer";
 
 export function startEventConsumer(): RabbitMqEventConsumer | null {
@@ -17,7 +18,7 @@ export function startEventConsumer(): RabbitMqEventConsumer | null {
     storeUnknown: config.events.inboxStoreUnknown,
     onUserChanged: (userId) => backofficeGateway.invalidateUser(userId),
   });
-  const consumer = new RabbitMqEventConsumer({ url, queue, prefetch, maxAttempts }, recordEvent);
+  const consumer = new RabbitMqEventConsumer({ url, queue, prefetch, maxAttempts }, recordEvent, rejectedEventRepository);
   consumer.start();
   return consumer;
 }

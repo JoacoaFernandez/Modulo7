@@ -3,6 +3,7 @@
 //   npm run mocks:check
 import { existsSync, readdirSync, readFileSync } from "node:fs";
 import path from "node:path";
+import { argentinaMonthStart, nextMonthYm } from "../src/domain/services/wallet-range.service";
 import { buildDemoDataset } from "../demo/dataset";
 import { UNKNOWN_LOCATION_ID } from "../demo/ids";
 import { validateEnvelope } from "../src/domain/services/event-envelope-validator.service";
@@ -135,10 +136,13 @@ for (const month of list("core/wallets-aggregates/x.json").filter((name) => /^\d
   const content = read(file);
   if (!shape(file, "body", content, { range: "object", currency: "string", outstandingBalance: "money", walletCount: "int", groups: "array" })) continue;
   const range = content.range as Obj;
-  if (!DATE.test(String(range.from)) || !DATE.test(String(range.to))) fail(file, "range.from y range.to deben ser AAAA-MM-DD");
-  if (String(range.from).slice(0, 7) !== month) fail(file, `range.from (${range.from}) no es del mes ${month}`);
+  // Un archivo = un mes calendario argentino completo: range en ISO UTC, [inicio del mes, inicio del siguiente).
+  const expectedFrom = new Date(argentinaMonthStart(month)).toISOString();
+  const expectedTo = new Date(argentinaMonthStart(nextMonthYm(month))).toISOString();
+  if (range.from !== expectedFrom || range.to !== expectedTo) fail(file, `range debe ser { from: "${expectedFrom}", to: "${expectedTo}" } (vino ${range.from} / ${range.to})`);
   (content.groups as unknown[]).forEach((group, index) => {
     if (shape(file, `groups[${index}]`, group, { key: "string", type: "string", count: "int", total: "money" })) {
+      if ("month" in (group as Obj)) fail(file, `groups[${index}] no lleva "month": el mock lo agrega con groupBy=month`);
       if (!["CREDIT", "DEBIT", "REVERSAL"].includes(String(group.type))) fail(file, `groups[${index}].type inválido (${group.type})`);
     }
   });
