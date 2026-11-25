@@ -17,6 +17,8 @@ académica, dirección financiera y estadísticas de eventos.
 - **Cada gateway tiene modo mock o real por flag** (`CORE_MOCK`, `BACKOFFICE_MOCK`,
   `ACADEMIC_MOCK`, todos `true` por defecto): el mock lee `backend/mocks/**.json` en cada llamada.
   Los otros grupos todavía no tienen todo listo, así que lo normal en desarrollo es mock.
+  Producción: frontend en Vercel, backend en Render y base en Neon (deploy en `README.md` y `frontend/DEPLOY.md`);
+  allá CORE y Backoffice son reales y `ACADEMIC_MOCK=true` hasta que G9 nos habilite.
 - **Ingesta:** consumer RabbitMQ de la cola `analytics.all-events.v1` (sólo con `RABBITMQ_URL`) y
   `POST /api/analytics/events` como mock de la cola (sólo con `EVENTS_HTTP_INGEST=true`).
 - **Auth:** proxy `/api/auth/*` que habla con CORE (o su mock). El token viaja como Bearer, el

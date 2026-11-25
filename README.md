@@ -5,9 +5,14 @@ CORE), consulta en vivo a CORE, Backoffice y Gestión Académica, y muestra todo
 dirección académica y la dirección financiera, con una sección de estadísticas de eventos
 académicos. Los eventos se guardan en PostgreSQL; el resto sale por REST.
 
-Mientras los otros grupos no estén listos, cada integración se puede **simular** con un flag: los
-eventos con Postman y las respuestas REST con archivos `.json` editables a mano (ver
-[Modos mock y real](#modos-mock-y-real)).
+Cada integración se puede **simular** con un flag (eventos con Postman, respuestas REST con archivos
+`.json` editables) o usar en **modo real**. En producción: frontend en Vercel
+(`https://modulo7-umber.vercel.app`), backend en Render y base en Neon.
+
+**Contenido:** [Qué hace](#qué-hace) · [Arquitectura del módulo](#arquitectura-del-módulo) ·
+[Arquitectura general de UADEnet](#arquitectura-general-del-sistema-uadenet) ·
+[Instalación y ejecución local](#instalación-y-ejecución-local) · [Modo real y producción](#modo-real-y-producción) ·
+[Herramientas](#herramientas) · [Estado de integración](#estado-de-integración-por-módulo) · [API](#api)
 
 ## Qué hace
 
@@ -27,84 +32,148 @@ los valores institucionales y el tablero lo aclara.
 Los filtros viajan como `?sedeId=` (el `siteId` UUID de Backoffice), `?cuatrimestre=2026-2C`,
 `?facultad=` y `?periodo=AAAA-MM`.
 
-## Arquitectura
+## Arquitectura del módulo
 
 ```mermaid
 flowchart LR
-  subgraph EM["Módulos emisores (1 a 6, 8, 9)"]
-    G["Estudiante, Docente, Biblioteca,<br/>Comedor, Tienda, Eventos,<br/>Backoffice, Gestión Académica"]
-  end
-
   subgraph CORE["10 · CORE"]
-    BUS[("Bus de eventos<br/>cola analytics.all-events.v1")]
-    CREST["REST: auth, JWKS,<br/>token de servicio, wallets/aggregates"]
+    BUS[("Bus de eventos<br/>cola analytics.all-events.v1 (#)")]
+    CREST["REST: auth, JWKS, token de servicio,<br/>wallets/aggregates"]
+    CGW["Gateway /api/v1/analytics/*<br/>(firma X-Core-Signature)"]
   end
 
+  EXT["Backoffice (sedes, usuarios)<br/>Gestión Académica (períodos, cursos,<br/>resultados de cursada)"]
   PM["Postman<br/>(simula la cola)"]
+  USR["Dirección académica /<br/>financiera"]
 
   subgraph M7["7 · Analítica Institucional"]
     direction TB
     CONS["Consumer RabbitMQ<br/>(con RABBITMQ_URL)"]
     POST["POST /api/analytics/events<br/>(con EVENTS_HTTP_INGEST)"]
     REC["RecordEventUseCase<br/>valida contra event-catalog.ts"]
-    DB[("PostgreSQL<br/>inbox_events, source_ingestions,<br/>wallet_balance_snapshots")]
+    DB[("PostgreSQL<br/>inbox_events, rejected_events,<br/>source_ingestions,<br/>wallet_balance_snapshots")]
     JOB["Job de snapshots<br/>del saldo"]
     GW["Gateways<br/>CORE · Backoffice · Académica"]
     HTTP["Implementación HTTP<br/>(token de servicio, caché TTL)"]
     MOCK["Implementación mock<br/>(backend/mocks/*.json)"]
+    SIG["Middleware de firma<br/>del gateway"]
     DASH["Tableros: académico,<br/>financiero, eventos, filtros, fuentes"]
     AUTH["Proxy de login /api/auth<br/>+ verificación del JWT"]
     FE["Frontend React + Vite"]
 
     CONS --> REC
     POST --> REC
-    REC --> DB
+    REC -->|"válido"| DB
+    REC -->|"inválido: se guarda y se hace ack"| DB
     HTTP --> GW
     MOCK --> GW
     GW --> JOB --> DB
     GW --> DASH
     DB --> DASH
+    SIG --> DASH
     DASH --> FE
     AUTH --> FE
   end
 
-  G --> BUS --> CONS
+  BUS --> CONS
   PM -.-> POST
   CREST --> HTTP
   CREST --> AUTH
-  G -. "REST (Backoffice, Gestión Académica)" .-> HTTP
+  EXT -.-> HTTP
+  CGW -.-> SIG
+  USR --> FE
 ```
 
-Líneas punteadas: caminos que dependen de flags o de que el otro grupo habilite la ruta. Ambos paquetes
-siguen arquitectura por capas (`domain` → `application` → `infrastructure` / `interfaces` /
+Líneas punteadas: caminos que dependen de flags o de que el otro grupo habilite la ruta. El consumer nunca
+hace `nack`: un mensaje inválido se guarda en `rejected_events` (motivo y cuerpo original) y se hace `ack`;
+un error transitorio se reintenta y, si persiste, se reconecta para recibir de nuevo los mensajes. Ambos
+paquetes siguen arquitectura por capas (`domain` → `application` → `infrastructure` / `interfaces` /
 `presentation`); el detalle está en [CLAUDE.md](CLAUDE.md).
 
-## Modos mock y real
+## Arquitectura general del sistema UADEnet
 
-Cada servicio externo tiene su flag. Con el flag en `true` (valor por defecto) el gateway lee
-`backend/mocks/<servicio>/*.json` en cada llamada; con `false` llama al servicio real. Se pueden mezclar
-(por ejemplo, CORE real y Backoffice mock).
+UADEnet son 10 módulos independientes. **CORE** (módulo 10) autentica, expone el gateway de los portales,
+administra la wallet y las notificaciones, y opera el bus de eventos. Los portales hablan sólo con el gateway;
+los backends se publican eventos por CORE y se consultan entre sí por REST interno con token de servicio.
 
-| Variable | Default | Efecto |
-|---|---|---|
-| `CORE_MOCK` | `true` | `true`: login, JWT (firmado con un par RSA local en `backend/.mock-keys/`) y `wallets/aggregates` de `mocks/core/`. `false`: CORE real (exige `CORE_BASE_URL`, `CORE_CLIENT_SECRET` y `CORE_JWT_ISSUER`) |
-| `BACKOFFICE_MOCK` | `true` | `true`: sedes y fichas de usuario de `mocks/backoffice/`. `false`: exige `BACKOFFICE_BASE_URL` |
-| `ACADEMIC_MOCK` | `true` | `true`: períodos, sedes, catálogo y cursos de `mocks/academic/`. `false`: exige `ACADEMIC_BASE_URL` |
-| `EVENTS_HTTP_INGEST` | `false` (`true` en `.env.example`) | `true` monta `POST` y `GET /api/analytics/events`, que simulan la cola. Apagado, ambas dan `404` |
-| `RABBITMQ_URL` | sin definir | Si existe, arranca el consumer de la cola `analytics.all-events.v1`; si no, no hay consumer |
-| `INBOX_STORE_UNKNOWN` | `false` | Guarda también los `eventType` fuera del catálogo |
-| `WALLET_SNAPSHOT_ENABLED` | `true` | Job que fotografía el saldo de CORE cada `WALLET_SNAPSHOT_INTERVAL_MIN` minutos |
-| `WALLET_SNAPSHOT_BACKFILL_MONTHS` | `0` (`6` en `.env.example`) | Meses anteriores a reconstruir al arrancar. Sólo con mocks, o cuando CORE confirme que `to` fija la fecha del saldo |
-| `DATABASE_URL` | obligatoria | Postgres. Sin ella el servidor no arranca |
+```mermaid
+flowchart TB
+  USER(["Usuarios: estudiantes, docentes,<br/>direcciones, administración"])
 
-Todas las variables, sus defaults y su efecto están en [`docs/INTEGRACION.md`](docs/INTEGRACION.md#2-variables-de-entorno-y-flags)
-(sección 2) y en `backend/.env.example`. `GET /health/ready` informa el modo de cada servicio
-(`core`, `backoffice`, `academic`: `mock` o `http`), la base y el consumer.
+  subgraph PORT["Portales"]
+    P1["1 · Portal Estudiante"]
+    P2["2 · Portal Docente"]
+    FE7["7 · Frontend de Analítica"]
+  end
 
-## Cómo levantarlo desde cero
+  subgraph CORE["10 · CORE"]
+    GW["Gateway /api/v1/*<br/>(JWT + firma X-Core-Signature)"]
+    AUTH["Auth: login, JWT, JWKS,<br/>tokens de servicio"]
+    WAL["Wallet: débitos, créditos,<br/>reversas, aggregates"]
+    NOT["Notificaciones"]
+    PUB["POST /internal/v1/events<br/>(outbox)"]
+    BUS[("Bus de eventos<br/>exchange uadenet.events.v1")]
+    QANA[("analytics.all-events.v1<br/>binding #")]
+    QOTH[("Colas de los demás<br/>módulos")]
+  end
 
-Requiere **Node 20.12 o superior** y **Docker** (para PostgreSQL). Son dos paquetes independientes, cada
-uno con su `node_modules`; hacen falta **dos terminales**.
+  subgraph BACK["Backends de dominio"]
+    M3["3 · Biblioteca"]
+    M4["4 · Comedor"]
+    M5["5 · Tienda"]
+    M6["6 · Eventos"]
+    M8["8 · Backoffice"]
+    M9["9 · Gestión Académica"]
+  end
+
+  M7["7 · Analítica<br/>(backend)"]
+
+  USER --> P1
+  USER --> P2
+  USER --> FE7
+  P1 -->|"/api/v1/*"| GW
+  P2 -->|"/api/v1/*"| GW
+  FE7 -->|"/api/v1/analytics/*"| GW
+  GW --> AUTH
+  GW -->|"proxy por módulo"| BACK
+  GW -->|"proxy"| M7
+  GW --> NOT
+
+  BACK -->|"POST /internal/v1/events"| PUB
+  P2 -->|"POST /internal/v1/events"| PUB
+  PUB --> BUS
+  BUS --> QANA --> M7
+  BUS --> QOTH
+  BUS --> NOT
+
+  M3 -->|"débitos y reversas"| WAL
+  M4 --> WAL
+  M5 --> WAL
+  M6 --> WAL
+  M8 -->|"créditos: sueldos, becas"| WAL
+
+  M3 -.->|"/internal/v1/rates, locations"| M8
+  M4 -.-> M8
+  M6 -.-> M8
+
+  M7 -.->|"/internal/v1/sites, users"| M8
+  M7 -.->|"/internal/v1/..."| M9
+  M7 -->|"wallets/aggregates"| WAL
+  M7 -->|"token de servicio, JWKS"| AUTH
+```
+
+Línea continua: integración operativa; línea punteada: lectura REST interna entre backends o integración
+que depende de que el otro grupo la habilite. Para Analítica, CORE y Backoffice están integrados; Gestión
+Académica todavía no nos habilitó sus rutas (ver [estado de integración](#estado-de-integración-por-módulo)).
+El detalle de eventos y endpoints de cada módulo está en
+[`docs/CORE-contrato-integracion-v1.md`](docs/CORE-contrato-integracion-v1.md) y en
+[`docs/INTEGRACION.md`](docs/INTEGRACION.md).
+
+## Instalación y ejecución local
+
+Modo mock, todo en tu máquina y sin depender de los otros grupos. Requiere **Node 20.12 o superior** (en
+producción se usa Node 22) y **Docker** (para PostgreSQL). Son dos paquetes independientes, cada uno con su
+`node_modules`; hacen falta **dos terminales**, siempre parado en `backend/` o `frontend/` (la raíz no tiene scripts).
 
 ```bash
 # Terminal 1: backend en http://localhost:3000
@@ -112,9 +181,8 @@ cd backend
 cp .env.example .env     # modo demo: todo mock y POST de eventos activo
 npm install              # corre prisma generate
 npm run db:up            # PostgreSQL 16 en Docker (localhost:5432, usuario/clave/base: analitica)
-npm run db:migrate       # aplica las migraciones (inbox_events, source_ingestions, wallet_balance_snapshots)
-npm run db:demo          # ~42 mil eventos de demo en formato v1 (determinístico y re-ejecutable)
-npm run mocks:generate   # opcional: sólo si borraste backend/mocks; no pisa tus ediciones sin --force
+npm run db:migrate       # aplica las migraciones
+npm run db:demo          # ~35 mil eventos de demo en formato v1 + snapshots de saldo (re-ejecutable)
 npm run dev
 
 # Terminal 2: frontend en http://localhost:5173
@@ -124,16 +192,15 @@ npm install
 npm run dev
 ```
 
-- Los mocks ya están versionados en `backend/mocks/`; `mocks:generate` sólo los recrea. Los eventos del demo y
-  los mocks salen de los mismos ids (`backend/demo/ids.ts`), así que se ven coherentes en los tres tableros.
-  `npm run mocks:check` valida el shape de cada archivo y esa coherencia.
-- `npm run db:demo` también carga los snapshots de saldo de los meses de los mocks de CORE.
-  `npm run db:demo:clear` borra los eventos del demo y esos snapshots, sin tocar los eventos que llegaron por
-  Postman o por la cola.
-- Producción: `npm run build` y `npm run start` en `backend/` (requiere `DATABASE_URL`; las migraciones se
-  aplican con `npx prisma migrate deploy`) y `npm run build` en `frontend/`.
+Entrar a `http://localhost:5173` con un usuario demo (abajo). `GET http://localhost:3000/health/ready` informa
+el modo de cada servicio (`mock` o `http`), la base y el consumer.
 
-### Usuarios demo
+- Los mocks ya están versionados en `backend/mocks/`; `npm run mocks:generate` sólo los recrea. Los eventos del
+  demo y los mocks salen de los mismos ids (`backend/demo/ids.ts`), así que se ven coherentes en los tres tableros.
+- `npm run db:demo:clear` borra los eventos del demo y sus snapshots, sin tocar los que llegaron por Postman o la cola.
+- `npm run build` en cada paquete compila (`tsc`); el frontend además valida tipos con `tsc -b`. No hay tests automatizados.
+
+### Usuarios
 
 Con `CORE_MOCK=true` el login `@uade.edu.ar` sale de `backend/mocks/core/users.json`. La contraseña de todos
 es `uadenet2026`: es de demo y existe sólo en el mock, **no** es ninguna credencial de CORE.
@@ -149,45 +216,71 @@ es `uadenet2026`: es de demo y existe sólo en el mock, **no** es ninguna creden
 Con CORE real se usan las identidades de CORE: `ACADEMIC_ADMIN` ve la sección académica, `FINANCE_ADMIN` la
 financiera y `ADMIN` ambas.
 
-## Simular eventos con Postman
+## Modo real y producción
 
-La colección [`docs/postman/UADEnet-Analitica.postman_collection.json`](docs/postman/UADEnet-Analitica.postman_collection.json)
-se genera con `npm run docs` (en `backend/`) desde el catálogo de eventos. Con `EVENTS_HTTP_INGEST=true`:
+Cada servicio externo tiene su flag. Con `*_MOCK=true` (valor por defecto) el gateway lee
+`backend/mocks/<servicio>/*.json` en cada llamada; con `false` llama al servicio real. Se pueden mezclar
+(por ejemplo CORE real y Gestión Académica mock). **Los secretos van sólo en el entorno del deploy, nunca en Git.**
 
-1. Importarla y correr un login de la carpeta **Auth**: el token se guarda solo.
-2. En **Cola (simulación)** hay una request por cada `eventType` que se guarda, los que se descartan
-   (`202`), casos borde (corrección de un resultado, duplicado) y errores de contrato (`400`). Cada envío
-   lleva `eventId` y `occurredAt` nuevos y datos coherentes con el demo.
-3. En **Tableros** se vuelve a pedir el tablero para ver el efecto.
+| Variable | Default | Qué cambia |
+|---|---|---|
+| `DATABASE_URL` | obligatoria | Postgres (en producción, Neon). Sin ella el servidor no arranca |
+| `CORE_MOCK` | `true` | `false`: login, JWT y `wallets/aggregates` contra CORE real (`CORE_BASE_URL`, `CORE_CLIENT_ID`, `CORE_CLIENT_SECRET`, `CORE_JWT_ISSUER`, `CORE_JWT_AUDIENCE`). Los usuarios pasan a ser las cuentas de CORE |
+| `BACKOFFICE_MOCK` | `true` | `false`: sedes y fichas de usuario de Backoffice real (`BACKOFFICE_BASE_URL`) |
+| `ACADEMIC_MOCK` | `true` | `false`: períodos, cursos y catálogo de Gestión Académica real (`ACADEMIC_BASE_URL`). **Hoy sigue en `true` en producción** hasta que G9 nos habilite |
+| `RABBITMQ_URL` | sin definir | Arranca el consumer de `analytics.all-events.v1` con el usuario de sólo lectura de CORE. Debe estar definida en **un solo** backend |
+| `EVENTS_HTTP_INGEST` | `false` | `true` monta `POST/GET /api/analytics/events` (simula la cola). En producción, `false` |
+| `CORE_GATEWAY_SECRET` | vacío | Con valor, `/api/v1/*` exige `X-Core-Signature` del gateway de CORE; vacío no valida y avisa al arrancar |
+| `CORS_ORIGINS` | `http://localhost:5173` | Origen(es) del frontend, separados por coma (en producción, la URL de Vercel) |
+| `AUTH_COOKIE_SAMESITE` | `lax` | `none` cuando frontend y backend están en dominios distintos (exige HTTPS) |
+| `WALLET_SNAPSHOT_ENABLED` / `WALLET_SNAPSHOT_BACKFILL_MONTHS` | `true` / `0` | Job que fotografía el saldo de CORE y meses anteriores a reconstruir al arrancar |
+| `INBOX_STORE_UNKNOWN` | `false` | Guarda también los `eventType` fuera del catálogo |
 
-El formato de los eventos, las respuestas y qué se guarda o se descarta están en
-[`backend/EVENTOS.md`](backend/EVENTOS.md).
+Todas las variables (también caché, timeouts y tablero) están en
+[`docs/INTEGRACION.md`](docs/INTEGRACION.md#2-variables-de-entorno-y-flags) y en `backend/.env.example`, que
+trae al final el bloque de producción comentado con las URLs públicas de CORE, Backoffice y Gestión Académica.
 
-## Editar los mocks a mano
+### Deploy
 
-Cada archivo de `backend/mocks/` es el body JSON de la respuesta del módulo real, se relee en cada request
-(sin reiniciar) y puede simular una falla con `__mockStatus`. Las reglas, la lista de archivos, qué hay en el
-demo y cómo regenerar o validar están en [`backend/mocks/README.md`](backend/mocks/README.md).
+1. **Base (Neon):** crear un proyecto PostgreSQL y copiar su cadena de conexión a `DATABASE_URL` del backend.
+   No cargar el demo (`db:demo`) en esa base.
+2. **Backend (Render):** Web Service con *Root Directory* `backend`, **Node 22**.
+   - Build: `npm install && npm run build && npx prisma migrate deploy`
+   - Start: `npm run start`
+   - Variables: `DATABASE_URL`, `CORE_MOCK=false`, `BACKOFFICE_MOCK=false`, `ACADEMIC_MOCK=true` (hasta que G9
+     habilite), `CORE_BASE_URL`, `CORE_JWT_ISSUER`, `CORE_CLIENT_SECRET`, `CORE_GATEWAY_SECRET`,
+     `BACKOFFICE_BASE_URL`, `RABBITMQ_URL`, `EVENTS_HTTP_INGEST=false`, `AUTH_COOKIE_SAMESITE=none`,
+     `CORS_ORIGINS=https://modulo7-umber.vercel.app`.
+   - Mantener **una sola instancia con `RABBITMQ_URL`** (dos consumers sobre la misma cola se reparten los mensajes).
+   - Verificar `GET /health/ready`: `core` y `backoffice` en `http`, `broker` en `up`.
+3. **Frontend (Vercel):** variable `VITE_API_BASE_URL=https://<backend-en-render>/api` y deploy con
+   `vercel --prod` desde `frontend/` (pasos en [`frontend/DEPLOY.md`](frontend/DEPLOY.md)).
+4. **Carga histórica opcional** (con `CORE_MOCK=false`), parado en `backend/`: `npm run backfill:core` y
+   `npm run backfill:results`.
 
-## Pasar a modo real: checklist
+## Herramientas
 
-Todo esto depende de que cada grupo haya habilitado su parte (preguntas abiertas en
-[`docs/INTEGRACION.md`](docs/INTEGRACION.md#9-preguntas-abiertas)):
+- **Postman:** la colección [`docs/postman/UADEnet-Analitica.postman_collection.json`](docs/postman/UADEnet-Analitica.postman_collection.json)
+  se genera desde el catálogo de eventos (`npm run docs` en `backend/`). Con `EVENTS_HTTP_INGEST=true`: correr un
+  login de la carpeta **Auth** (el token se guarda solo), enviar eventos desde **Cola (simulación)** (uno por cada
+  `eventType` que se guarda, los que se descartan, casos borde y errores de contrato) y volver a pedir el tablero
+  en **Tableros**. Formato y respuestas (`201`, `200`, `202`, `400`) en [`backend/EVENTOS.md`](backend/EVENTOS.md).
+- **Mocks editables:** cada archivo de `backend/mocks/` es el body JSON de la respuesta del módulo real, se relee en
+  cada request (sin reiniciar) y puede simular una falla con `__mockStatus`. Reglas en
+  [`backend/mocks/README.md`](backend/mocks/README.md).
+- **Scripts** (en `backend/`): `mocks:generate` y `mocks:check` (regenerar y validar mocks), `docs` / `docs:payloads` /
+  `docs:postman` (regenerar `EVENTOS.md` y Postman), `db:demo` / `db:demo:clear`, `backfill:core` (histórico de eventos
+  de CORE) y `backfill:results` (histórico de resultados de cursada de Gestión Académica); ambos exigen el servicio real.
 
-- [ ] **Cola:** CORE crea `analytics.all-events.v1` y entrega una credencial de **sólo lectura**: definir
-  `RABBITMQ_URL` (y `RABBITMQ_QUEUE` si cambia). Poner `EVENTS_HTTP_INGEST=false`.
-- [ ] **CORE:** `CORE_MOCK=false` con `CORE_BASE_URL`, `CORE_CLIENT_ID`, `CORE_CLIENT_SECRET` (sólo en el entorno,
-  nunca en Git), `CORE_JWT_ISSUER` (verificar contra un JWT real) y `CORE_JWT_AUDIENCE`. El cliente
-  `analytics-service` necesita `wallet:read:aggregates` (y `events:read` para `npm run backfill:core`).
-- [ ] **Backoffice:** `BACKOFFICE_MOCK=false` y `BACKOFFICE_BASE_URL`; `analytics-service` necesita `backoffice:read`.
-- [ ] **Gestión Académica:** `ACADEMIC_MOCK=false` y `ACADEMIC_BASE_URL`; G9 tiene que exponer las rutas
-  `/internal/v1` y autorizar a `analytics-service`.
-- [ ] **Sesión:** si el SPA y el backend quedan en sitios distintos, `AUTH_COOKIE_SAMESITE=none` (exige HTTPS);
-  ajustar `CORS_ORIGINS` al origen del frontend.
-- [ ] **Base:** `DATABASE_URL` real y `npx prisma migrate deploy`. No cargar el demo (`db:demo`) en esa base.
-- [ ] **Snapshots:** `WALLET_SNAPSHOT_BACKFILL_MONTHS=0` hasta que CORE aclare qué saldo devuelve `aggregates`
-  con una fecha pasada.
-- [ ] Verificar `GET /health/ready`: `core`, `backoffice` y `academic` en `http`, y `broker` en `up`.
+## Estado de integración por módulo
+
+| Módulo | Qué usa Analítica | Estado |
+|---|---|---|
+| 10 · CORE | Login/JWT/JWKS, token de servicio, `wallets/aggregates`, cola `analytics.all-events.v1`, gateway con firma | Integrado en modo real |
+| 8 · Backoffice | `/internal/v1/sites` y `/users/{id}`; eventos de sedes y usuarios | Integrado en modo real |
+| 9 · Gestión Académica | Períodos, cursos, catálogo, `academic.course-result.published.v1` e histórico de resultados | Pendiente de G9: habilitar a `analytics-service`; en producción `ACADEMIC_MOCK=true` |
+| 3 · Biblioteca, 4 · Comedor, 5 · Tienda, 6 · Eventos | Eventos por la cola (multas, compras, reservas, inscripciones, asistencia) | Consumimos lo que publiquen; el contrato sigue en validación con cada grupo |
+| 1 · Estudiante, 2 · Docente | Eventos del Portal Docente (resultados y asistencia) | Pendiente de que publiquen; ver preguntas abiertas en `docs/INTEGRACION.md` |
 
 ## API
 
@@ -213,7 +306,9 @@ Las rutas de `/api/analytics` también responden bajo `/api/v1` (el gateway de C
 ## Más documentación
 
 - [`docs/INTEGRACION.md`](docs/INTEGRACION.md): especificación técnica de la integración (flags, catálogo de eventos, endpoints que consumimos, mocks, mapeo métrica a fuente, preguntas abiertas) y desvíos de lo implementado.
-- [`CONTEXTO-UADENET.md`](CONTEXTO-UADENET.md): consigna del TP, contrato de CORE vigente, decisiones de los POs, flujos de los otros equipos, estado de implementación y pendientes.
+- [`docs/CORE-contrato-integracion-v1.md`](docs/CORE-contrato-integracion-v1.md): contrato de CORE (auth, gateway, wallet, bus y catálogo de eventos).
 - [`backend/EVENTOS.md`](backend/EVENTOS.md): contrato de ingesta de eventos y tabla de tipos.
 - [`backend/mocks/README.md`](backend/mocks/README.md): cómo editar y regenerar los mocks.
+- [`frontend/DEPLOY.md`](frontend/DEPLOY.md): deploy del frontend a Vercel.
+- [`CONTEXTO-UADENET.md`](CONTEXTO-UADENET.md): consigna del TP, decisiones de los POs, flujos de los otros equipos y pendientes.
 - [`CLAUDE.md`](CLAUDE.md): guía de arquitectura y convenciones para trabajar en el repo.
