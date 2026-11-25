@@ -9,8 +9,13 @@ export const TOP_PRODUCTS_LIMIT = 6;
 // Conceptos de `aggregates` de CORE (docs/INTEGRACION.md, 6.2). Definiciones a validar con el equipo y la cátedra:
 // ingresos = cobros de servicios (DEBIT) menos devoluciones (REVERSAL, mínimo 0); egresos = acreditaciones de sueldos
 // y becas (CREDIT). TOP_UP y ADJUSTMENT no entran (saldo cargado, no ingreso).
-export const INCOME_CONCEPTS: readonly string[] = ["STORE_PURCHASE", "DINING_RESERVATION", "LIBRARY_FINE", "EVENT_REGISTRATION"];
+export const INCOME_CONCEPTS: readonly string[] = ["STORE_PURCHASE", "DINING_RESERVATION", "DINING_PURCHASE", "LIBRARY_FINE", "EVENT_REGISTRATION"];
 export const REVERSAL_CONCEPTS: readonly string[] = ["REFUND"];
+
+// Facturación de comedores = reservas confirmadas + compras del comedor (dining.purchase.completed.v1, concepto
+// DINING_PURCHASE en CORE); los tickets cuentan ambas. Definición a validar con la cátedra y G4: en false sólo
+// cuentan las reservas.
+export const DINING_INCLUDE_PURCHASES = true;
 
 // Egresos que además se muestran como "gastos administrativos", en el orden en que se apilan en la barra.
 export const EXPENSE_CONCEPTS: readonly { key: string; category: string; color: string }[] = [

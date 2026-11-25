@@ -63,7 +63,8 @@ const SAMPLES: Record<string, Record<string, unknown>> = {
   },
   "dining.reservation.created.v1": { reservationId: "{{reservationId}}", userId: GUID, siteId: monserrat.id, slotAt: "{{slotAt}}", amount: "2800.00", currency: "ARS" },
   "dining.reservation.cancelled.v1": { reservationId: "{{reservationId}}", userId: GUID, slotAt: "{{slotAt}}", cancelledAt: NOW },
-  "dining.attendance.recorded.v1": { reservationId: "{{reservationId}}", userId: GUID, attendedAt: NOW },
+  "dining.attendance.recorded.v1": { reservationId: "{{reservationId}}", userId: GUID, attendedAt: NOW, siteId: monserrat.id, refundAmount: "2800.00", currency: "ARS" },
+  "dining.purchase.completed.v1": { purchaseId: GUID, userId: GUID, siteId: monserrat.id, total: "3500.00", currency: "ARS", items: [{ name: "Menú del día", quantity: 1 }] },
   "store.purchase.completed.v1": {
     purchaseId: GUID,
     userId: GUID,
@@ -78,7 +79,18 @@ const SAMPLES: Record<string, Record<string, unknown>> = {
   "backoffice.user.upserted.v1": { userId: TEACHERS[0].id },
   "backoffice.user.disabled.v1": { userId: TEACHERS[1].id },
   "library.penalty.applied.v1": { penaltyId: GUID, userId: GUID, amount: "1500.00", currency: "ARS" },
-  "core.wallet.transaction-posted.v1": { transactionId: GUID, concept: "TOP_UP", amount: "20000.00" },
+  "core.wallet.transaction-posted.v1": {
+    transactionId: GUID,
+    userId: GUID,
+    type: "CREDIT",
+    concept: "PAYROLL",
+    amount: "250000.00",
+    currency: "ARS",
+    sourceModule: "backoffice",
+    externalReference: `payroll/2026-11/user/${GUID}/teacher`,
+    status: "POSTED",
+  },
+  "core.wallet.transaction-reversed.v1": { transactionId: GUID, originalTransactionId: GUID, userId: GUID, concept: "PAYROLL", amount: "250000.00", currency: "ARS" },
 };
 
 function exampleValue(field: FieldSpec): unknown {
@@ -186,6 +198,8 @@ const NOTES: Record<string, string> = {
   "academic.course-result.published.v1": `Resultado de un alumno nuevo en el curso ${course.codigo} (${course.subject.name}, ${course.site.name}, 2026-2C). Impacta en el tablero académico del cuatrimestre en curso. Guarda el alumno en {{studentId}} para la corrección de la carpeta de casos borde.`,
   "events.event.created.v1": "Crea un evento ya terminado (hace 1 hora) en la Sala de Talleres de Monserrat: cuenta como realizado en noviembre. Guarda su id en {{eventUuid}}; correr antes las inscripciones y asistencias que lo usan.",
   "dining.reservation.created.v1": "Reserva en Monserrat. Guarda el id en {{reservationId}} para cancelarla o registrar la asistencia.",
+  "dining.purchase.completed.v1": "Compra del comedor en Monserrat: suma a la facturación y a los tickets de la sede. `userId` se descarta al guardar (redact).",
+  "core.wallet.transaction-posted.v1": "Acreditación de sueldo docente. `userId` se descarta y el segmento /user/<uuid> del `externalReference` se guarda como /user/*.",
   "store.purchase.completed.v1": "Compra de un buzo y un cuaderno en Monserrat. `userId` se descarta al guardar (redact).",
 };
 
@@ -196,7 +210,7 @@ const queueItems = persisted.map((entry) => {
   return queueRequest(entry.eventType, body, { status: 201, outcome: "STORED" }, PRE_REQUEST[entry.eventType], NOTES[entry.eventType]);
 });
 
-const discarded = ["backoffice.user.upserted.v1", "library.penalty.applied.v1", "core.wallet.transaction-posted.v1"].map((eventType) => {
+const discarded = ["backoffice.user.upserted.v1", "library.penalty.applied.v1", "core.wallet.transaction-rejected.v1"].map((eventType) => {
   const entry = EVENT_CATALOG.find((candidate) => candidate.eventType === eventType)!;
   const body = envelope(entry, dataFor(entry));
   assertValid(eventType, body);

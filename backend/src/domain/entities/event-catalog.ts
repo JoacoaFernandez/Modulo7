@@ -17,6 +17,8 @@ export interface EventCatalogEntry {
   handling: EventHandling;
   // Campos de `data` que no se guardan.
   redact?: readonly string[];
+  // Saneamiento previo al guardado, después de `redact`: devuelve `data` sin datos personales que no son un campo propio.
+  sanitize?: (data: Record<string, unknown>) => Record<string, unknown>;
   // Texto para EVENTOS.md.
   feeds: string;
   // `data`; los campos que CORE lista y no usamos van como opcionales.
@@ -43,6 +45,14 @@ const int = (name: string, description: string, required = true, example = 10): 
 });
 const currency = str("currency", "Moneda (ISO 4217).", false, "ARS");
 const userIdRedacted = uuid("userId", "Id del usuario. No se guarda (redact).", false);
+
+// Reemplaza cada segmento /user/<uuid> de un texto por /user/* (p. ej. el externalReference de sueldos
+// payroll/2026-11/user/<uuid>/teacher), conservando el resto.
+const MASK_USER_SEGMENT = /\/user\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi;
+const maskUserInExternalReference = (data: Record<string, unknown>): Record<string, unknown> =>
+  typeof data.externalReference === "string"
+    ? { ...data, externalReference: data.externalReference.replace(MASK_USER_SEGMENT, "/user/*") }
+    : data;
 
 const entry = (e: EventCatalogEntry): EventCatalogEntry => e;
 
@@ -160,6 +170,7 @@ export const EVENT_CATALOG: readonly EventCatalogEntry[] = [
       userIdRedacted,
       datetime("slotAt", "Turno reservado.", false),
       datetime("cancelledAt", "Momento de la cancelación.", false),
+      str("reason", 'Motivo (opcional). "NO_SHOW" es una ausencia, sin reintegro: la reserva se sigue facturando.', false, "NO_SHOW"),
     ],
   }),
   entry({
@@ -174,6 +185,33 @@ export const EVENT_CATALOG: readonly EventCatalogEntry[] = [
       uuid("reservationId", "Id de la reserva."),
       userIdRedacted,
       datetime("attendedAt", "Momento de la asistencia.", false),
+      uuid("siteId", "Id de la sede (opcional).", false),
+      money("refundAmount", "Importe reintegrado por la asistencia (opcional).", false, "2500.00"),
+      currency,
+    ],
+  }),
+  entry({
+    eventType: "dining.purchase.completed.v1",
+    source: "dining",
+    origin: "declared",
+    declaredBy: "G4",
+    handling: "persist",
+    redact: ["userId"],
+    feeds: "Facturación y tickets de comedores por sede (compras del comedor, concepto DINING_PURCHASE)",
+    fields: [
+      uuid("purchaseId", "Id de la compra."),
+      userIdRedacted,
+      uuid("siteId", "Id de la sede."),
+      money("total", "Total de la compra.", true, "3500.00"),
+      str("currency", "Moneda (ISO 4217).", true, "ARS"),
+      {
+        name: "items",
+        type: "array",
+        required: false,
+        allowEmpty: true,
+        description: "Ítems de la compra (sin forma definida: se acepta cualquier lista de objetos).",
+        example: [{ name: "Menú del día", quantity: 1 }],
+      },
     ],
   }),
   entry({
@@ -223,10 +261,49 @@ export const EVENT_CATALOG: readonly EventCatalogEntry[] = [
     }),
   ),
 
+  // --- Wallet de CORE: se guardan sin userId y con el externalReference saneado (reserva para separar sueldos) ---
+  entry({
+    eventType: "core.wallet.transaction-posted.v1",
+    source: "core",
+    origin: "core",
+    declaredBy: "CORE",
+    handling: "persist",
+    redact: ["userId"],
+    sanitize: maskUserInExternalReference,
+    feeds: "Reserva para separar sueldos docentes y administrativos (hoy ningún tablero; los totales salen de aggregates)",
+    fields: [
+      uuid("transactionId", "Id de la transacción."),
+      userIdRedacted,
+      str("type", "Tipo (CREDIT o DEBIT).", false, "CREDIT"),
+      str("concept", "Concepto (PAYROLL, TOP_UP...).", false, "PAYROLL"),
+      money("amount", "Importe.", false, "250000.00"),
+      currency,
+      str("sourceModule", "Módulo que originó la transacción.", false, "backoffice"),
+      str("externalReference", "Referencia externa. Se guarda sin el userId: /user/<uuid> pasa a /user/*.", false, "payroll/2026-11/user/3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90/teacher"),
+      str("status", "Estado.", false, "POSTED"),
+    ],
+  }),
+  entry({
+    eventType: "core.wallet.transaction-reversed.v1",
+    source: "core",
+    origin: "core",
+    declaredBy: "CORE",
+    handling: "persist",
+    redact: ["userId"],
+    sanitize: maskUserInExternalReference,
+    feeds: "Reserva para separar sueldos docentes y administrativos (hoy ningún tablero; los totales salen de aggregates)",
+    fields: [
+      uuid("transactionId", "Id de la transacción de reverso."),
+      uuid("originalTransactionId", "Id de la transacción revertida.", false),
+      userIdRedacted,
+      str("concept", "Concepto.", false, "REFUND"),
+      money("amount", "Importe.", false, "250000.00"),
+      currency,
+    ],
+  }),
+
   // --- Se descartan con ack (sección 3.3) ---
   ...[
-    ["core.wallet.transaction-posted.v1", "core", "core", "Los totales oficiales salen de aggregates"],
-    ["core.wallet.transaction-reversed.v1", "core", "core", "Los totales oficiales salen de aggregates"],
     ["core.wallet.transaction-rejected.v1", "core", "core", "Los totales oficiales salen de aggregates"],
     ["library.penalty.applied.v1", "library", "core", "Ningún tablero lo usa (las multas ya están en aggregates)"],
     ["teacher.exam-result.published.v1", "teacher", "declared", "Es por examen, no resultado final de curso"],

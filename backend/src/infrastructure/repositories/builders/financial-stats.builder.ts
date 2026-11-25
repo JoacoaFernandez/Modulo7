@@ -16,7 +16,7 @@ import { Period } from "../../../domain/entities/period.entity";
 import { Site } from "../../../domain/entities/site.entity";
 import { CoreWalletGateway, WalletAggregates } from "../../../domain/gateways/core-wallet.gateway";
 import { argentinaToday, currentMonthYm, periodWindow } from "../../../domain/services/period-catalog.service";
-import { EXPENSE_CONCEPTS, INCOME_CONCEPTS, REVERSAL_CONCEPTS, SERIES_LENGTH, TOP_PRODUCTS_LIMIT } from "../../config/dashboard.config";
+import { DINING_INCLUDE_PURCHASES, EXPENSE_CONCEPTS, INCOME_CONCEPTS, REVERSAL_CONCEPTS, SERIES_LENGTH, TOP_PRODUCTS_LIMIT } from "../../config/dashboard.config";
 import {
   ProductRow,
   queryBalanceSnapshots,
@@ -164,8 +164,8 @@ export async function buildFinancialStats(prisma: PrismaClient, filters: Financi
     Promise.all(window.map(readMonth)),
     queryBalanceSnapshots(prisma, window.map((month) => monthRange(month).ym)),
     queryTopProducts(prisma, selected, siteId),
-    queryDiningRevenue(prisma, previousRange.start, selected.end, context.diningNetOfAttendance),
-    queryDiningSites(prisma),
+    queryDiningRevenue(prisma, previousRange.start, selected.end, context.diningNetOfAttendance, DINING_INCLUDE_PURCHASES),
+    queryDiningSites(prisma, DINING_INCLUDE_PURCHASES),
   ]);
 
   // Serie mensual en millones. Saldo: el mes en curso toma el valor en vivo de CORE; los meses cerrados sólo el snapshot

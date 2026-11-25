@@ -65,15 +65,15 @@
     },
     {
       "key": "studentId",
-      "value": "aefa24e6-8cde-4d7d-8853-3a2f3f95c201"
+      "value": "dd08f6f3-2091-42d3-9d96-6ba707ff3243"
     },
     {
       "key": "eventUuid",
-      "value": "f6f7c7cb-bf4e-4892-9aa6-fb8b5e765f5f"
+      "value": "5fa3ba09-b381-4ca5-aad8-43aa42987ab0"
     },
     {
       "key": "reservationId",
-      "value": "07d97198-2b1c-41bc-877d-34bae08557e8"
+      "value": "36cfb6de-288a-4f8d-8883-f81d6d933e6a"
     }
   ],
   "item": [
@@ -834,7 +834,55 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"dining.attendance.recorded.v1\",\n  \"source\": \"dining\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"dining-service\"\n  },\n  \"data\": {\n    \"reservationId\": \"{{reservationId}}\",\n    \"userId\": \"{{$guid}}\",\n    \"attendedAt\": \"{{$isoTimestamp}}\"\n  }\n}",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"dining.attendance.recorded.v1\",\n  \"source\": \"dining\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"dining-service\"\n  },\n  \"data\": {\n    \"reservationId\": \"{{reservationId}}\",\n    \"userId\": \"{{$guid}}\",\n    \"attendedAt\": \"{{$isoTimestamp}}\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"refundAmount\": \"2800.00\",\n    \"currency\": \"ARS\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "dining.purchase.completed.v1",
+              "description": "Compra del comedor en Monserrat: suma a la facturación y a los tickets de la sede. `userId` se descarta al guardar (redact).",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                      "pm.test('status STORED', () => pm.expect(pm.response.json().status).to.eql('STORED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "auth": {
+                  "type": "noauth"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"dining.purchase.completed.v1\",\n  \"source\": \"dining\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"dining-service\"\n  },\n  \"data\": {\n    \"purchaseId\": \"{{$guid}}\",\n    \"userId\": \"{{$guid}}\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"total\": \"3500.00\",\n    \"currency\": \"ARS\",\n    \"items\": [\n      {\n        \"name\": \"Menú del día\",\n        \"quantity\": 1\n      }\n    ]\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -883,6 +931,101 @@
                 "body": {
                   "mode": "raw",
                   "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"store.purchase.completed.v1\",\n  \"source\": \"store\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"store-service\"\n  },\n  \"data\": {\n    \"purchaseId\": \"{{$guid}}\",\n    \"userId\": \"{{$guid}}\",\n    \"total\": \"49000.00\",\n    \"currency\": \"ARS\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"items\": [\n      {\n        \"productId\": \"04d00000-0000-4000-8000-000000000005\",\n        \"productName\": \"Buzo UADE\",\n        \"category\": \"Indumentaria\",\n        \"quantity\": 1,\n        \"unitPrice\": \"46000.00\",\n        \"subtotal\": \"46000.00\"\n      },\n      {\n        \"productId\": \"04d00000-0000-4000-8000-000000000001\",\n        \"productName\": \"Cuaderno A4 rayado\",\n        \"category\": \"Papelería\",\n        \"quantity\": 1,\n        \"unitPrice\": \"3000.00\",\n        \"subtotal\": \"3000.00\"\n      }\n    ]\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "core.wallet.transaction-posted.v1",
+              "description": "Acreditación de sueldo docente. `userId` se descarta y el segmento /user/<uuid> del `externalReference` se guarda como /user/*.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                      "pm.test('status STORED', () => pm.expect(pm.response.json().status).to.eql('STORED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "auth": {
+                  "type": "noauth"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"core.wallet.transaction-posted.v1\",\n  \"source\": \"core\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"core-service\"\n  },\n  \"data\": {\n    \"transactionId\": \"{{$guid}}\",\n    \"userId\": \"{{$guid}}\",\n    \"type\": \"CREDIT\",\n    \"concept\": \"PAYROLL\",\n    \"amount\": \"250000.00\",\n    \"currency\": \"ARS\",\n    \"sourceModule\": \"backoffice\",\n    \"externalReference\": \"payroll/2026-11/user/{{$guid}}/teacher\",\n    \"status\": \"POSTED\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "core.wallet.transaction-reversed.v1",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                      "pm.test('status STORED', () => pm.expect(pm.response.json().status).to.eql('STORED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "auth": {
+                  "type": "noauth"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"core.wallet.transaction-reversed.v1\",\n  \"source\": \"core\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"core-service\"\n  },\n  \"data\": {\n    \"transactionId\": \"{{$guid}}\",\n    \"originalTransactionId\": \"{{$guid}}\",\n    \"userId\": \"{{$guid}}\",\n    \"concept\": \"PAYROLL\",\n    \"amount\": \"250000.00\",\n    \"currency\": \"ARS\"\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -993,7 +1136,7 @@
               }
             },
             {
-              "name": "core.wallet.transaction-posted.v1",
+              "name": "core.wallet.transaction-rejected.v1",
               "description": "Se recibe, se confirma y no se guarda (sólo actualiza «Fuentes de datos»).",
               "event": [
                 {
@@ -1031,7 +1174,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"core.wallet.transaction-posted.v1\",\n  \"source\": \"core\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"core-service\"\n  },\n  \"data\": {\n    \"transactionId\": \"{{$guid}}\",\n    \"concept\": \"TOP_UP\",\n    \"amount\": \"20000.00\"\n  }\n}",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"core.wallet.transaction-rejected.v1\",\n  \"source\": \"core\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"core-service\"\n  },\n  \"data\": {}\n}",
                   "options": {
                     "raw": {
                       "language": "json"

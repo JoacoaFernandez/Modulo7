@@ -155,8 +155,8 @@ function validateField(field: FieldSpec, value: unknown, path: string, problems:
       else validateFields(field.fields ?? [], value, path, problems);
       return;
     case "array":
-      if (!Array.isArray(value) || value.length === 0) {
-        problems.push(`${path} debe ser una lista con al menos un elemento.`);
+      if (!Array.isArray(value) || (value.length === 0 && !field.allowEmpty)) {
+        problems.push(`${path} debe ser una lista${field.allowEmpty ? "" : " con al menos un elemento"}.`);
         return;
       }
       value.forEach((item, index) => {

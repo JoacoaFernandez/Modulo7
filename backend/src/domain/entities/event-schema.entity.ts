@@ -24,6 +24,8 @@ export interface FieldSpec {
   // Rango admitido (inclusive) cuando el campo es `number` o `integer`.
   min?: number;
   max?: number;
+  // Con type "array": admite una lista vacía (por defecto exige al menos un elemento).
+  allowEmpty?: boolean;
   // Campos de cada elemento (type "array") o del objeto (type "object").
   fields?: readonly FieldSpec[];
   // Valor de ejemplo para armar los requests de Postman y la documentación.

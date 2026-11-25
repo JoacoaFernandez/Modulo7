@@ -148,6 +148,12 @@ Cada entrada del catálogo tiene un tratamiento (`handling`):
 - **Redacción (`redact`):** algunos tipos borran campos de `data` antes de guardar. Hoy, `userId` en las
   reservas de comedor y en las compras de tienda: no se guarda el usuario de ninguna compra. Cada tipo de la
   tabla lo indica en «No se guarda».
+- **Saneamiento (`sanitize`):** después de `redact`, algunos tipos limpian datos personales que viajan dentro de
+  otro campo. En `core.wallet.transaction-posted.v1` y `…-reversed.v1`, el segmento `/user/<uuid>` del
+  `externalReference` se guarda como `/user/*` (p. ej. `payroll/2026-11/user/*/teacher`).
+- **Cambios recientes:** `dining.purchase.completed.v1` se guarda y suma a la facturación de comedores; los
+  eventos de wallet `posted` y `reversed` se guardan (ya no se descartan); `dining.attendance.recorded.v1`
+  acepta `siteId`, `refundAmount` y `currency`, y `dining.reservation.cancelled.v1` acepta `reason`.
 - **Siempre se cuenta:** aunque el evento se descarte, se actualiza `source_ingestions` (último evento recibido
   y contadores de guardados y descartados por módulo), que alimenta «Fuentes de datos» y el pie de cada tablero.
 - Un `400` ocurre si el envelope es inválido, si el prefijo del `eventType` no coincide con `source`, si un
@@ -223,6 +229,7 @@ Esta sección se genera con `npm run docs` desde `src/domain/entities/event-cata
 | `data.userId` | `uuid` | no | Id del usuario. No se guarda (redact). |
 | `data.slotAt` | `datetime` ISO 8601 UTC con `Z` | no | Turno reservado. |
 | `data.cancelledAt` | `datetime` ISO 8601 UTC con `Z` | no | Momento de la cancelación. |
+| `data.reason` | `string` | no | Motivo (opcional). "NO_SHOW" es una ausencia, sin reintegro: la reserva se sigue facturando. |
 
 **`dining.attendance.recorded.v1`** · G4
 
@@ -236,6 +243,25 @@ Esta sección se genera con `npm run docs` desde `src/domain/entities/event-cata
 | `data.reservationId` | `uuid` | sí | Id de la reserva. |
 | `data.userId` | `uuid` | no | Id del usuario. No se guarda (redact). |
 | `data.attendedAt` | `datetime` ISO 8601 UTC con `Z` | no | Momento de la asistencia. |
+| `data.siteId` | `uuid` | no | Id de la sede (opcional). |
+| `data.refundAmount` | `money` texto con 2 decimales | no | Importe reintegrado por la asistencia (opcional). |
+| `data.currency` | `string` | no | Moneda (ISO 4217). |
+
+**`dining.purchase.completed.v1`** · G4
+
+- Estado: declarado por el equipo emisor.
+- Tratamiento: se guarda.
+- Alimenta: Facturación y tickets de comedores por sede (compras del comedor, concepto DINING_PURCHASE).
+- No se guarda: `data.userId` (redact).
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `data.purchaseId` | `uuid` | sí | Id de la compra. |
+| `data.userId` | `uuid` | no | Id del usuario. No se guarda (redact). |
+| `data.siteId` | `uuid` | sí | Id de la sede. |
+| `data.total` | `money` texto con 2 decimales | sí | Total de la compra. |
+| `data.currency` | `string` | sí | Moneda (ISO 4217). |
+| `data.items` | `array` de objetos | no | Ítems de la compra (sin forma definida: se acepta cualquier lista de objetos). |
 
 #### `source: store`
 
@@ -390,17 +416,40 @@ Esta sección se genera con `npm run docs` desde `src/domain/entities/event-cata
 
 #### `source: core`
 
-**`core.wallet.transaction-posted.v1`**
+**`core.wallet.transaction-posted.v1`** · CORE
 
 - Estado: CORE oficial.
-- Tratamiento: se recibe y se descarta (ack).
-- Alimenta: Los totales oficiales salen de aggregates.
+- Tratamiento: se guarda.
+- Alimenta: Reserva para separar sueldos docentes y administrativos (hoy ningún tablero; los totales salen de aggregates).
+- No se guarda: `data.userId` (redact).
 
-**`core.wallet.transaction-reversed.v1`**
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `data.transactionId` | `uuid` | sí | Id de la transacción. |
+| `data.userId` | `uuid` | no | Id del usuario. No se guarda (redact). |
+| `data.type` | `string` | no | Tipo (CREDIT o DEBIT). |
+| `data.concept` | `string` | no | Concepto (PAYROLL, TOP_UP...). |
+| `data.amount` | `money` texto con 2 decimales | no | Importe. |
+| `data.currency` | `string` | no | Moneda (ISO 4217). |
+| `data.sourceModule` | `string` | no | Módulo que originó la transacción. |
+| `data.externalReference` | `string` | no | Referencia externa. Se guarda sin el userId: /user/<uuid> pasa a /user/*. |
+| `data.status` | `string` | no | Estado. |
+
+**`core.wallet.transaction-reversed.v1`** · CORE
 
 - Estado: CORE oficial.
-- Tratamiento: se recibe y se descarta (ack).
-- Alimenta: Los totales oficiales salen de aggregates.
+- Tratamiento: se guarda.
+- Alimenta: Reserva para separar sueldos docentes y administrativos (hoy ningún tablero; los totales salen de aggregates).
+- No se guarda: `data.userId` (redact).
+
+| Campo | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `data.transactionId` | `uuid` | sí | Id de la transacción de reverso. |
+| `data.originalTransactionId` | `uuid` | no | Id de la transacción revertida. |
+| `data.userId` | `uuid` | no | Id del usuario. No se guarda (redact). |
+| `data.concept` | `string` | no | Concepto. |
+| `data.amount` | `money` texto con 2 decimales | no | Importe. |
+| `data.currency` | `string` | no | Moneda (ISO 4217). |
 
 **`core.wallet.transaction-rejected.v1`**
 
@@ -424,7 +473,7 @@ Esta sección se genera con `npm run docs` desde `src/domain/entities/event-cata
 |---|---|---|
 | Académico | `academic.course-result.published.v1` (tasa de aprobación por materia, facultad y docente) | Cursos, períodos, catálogo de asignaturas y docentes de Gestión Académica; sedes y nombres de Backoffice |
 | Estadísticas de eventos | `events.event.created.v1`, `events.registration.completed.v1`, `events.attendance.recorded.v1`, `backoffice.location.upserted.v1` (la sede de un evento sale de su `locationId`) | Sedes de Backoffice |
-| Financiero | `store.purchase.completed.v1` (productos más vendidos), `dining.reservation.created.v1`, `dining.reservation.cancelled.v1`, `dining.attendance.recorded.v1` (comedores por sede) | `wallets/aggregates` de CORE (saldo, ingresos, egresos, sueldos) y los snapshots mensuales del saldo |
+| Financiero | `store.purchase.completed.v1` (productos más vendidos), `dining.reservation.created.v1`, `dining.reservation.cancelled.v1`, `dining.attendance.recorded.v1`, `dining.purchase.completed.v1` (comedores por sede) | `wallets/aggregates` de CORE (saldo, ingresos, egresos, sueldos) y los snapshots mensuales del saldo |
 
 Los tipos de efecto lateral y los descartados no alimentan ningún tablero. El detalle de cada métrica y su
 fuente está en `docs/INTEGRACION.md`, sección 6.

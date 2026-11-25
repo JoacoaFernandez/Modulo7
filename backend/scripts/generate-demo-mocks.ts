@@ -54,10 +54,11 @@ const dataset = buildDemoDataset();
 interface MonthTotals {
   store: { count: number; total: number };
   dining: { count: number; total: number };
+  diningPurchases: { count: number; total: number };
   cancelled: { count: number; total: number };
   registrations: { count: number; total: number };
 }
-const empty = (): MonthTotals => ({ store: { count: 0, total: 0 }, dining: { count: 0, total: 0 }, cancelled: { count: 0, total: 0 }, registrations: { count: 0, total: 0 } });
+const empty = (): MonthTotals => ({ store: { count: 0, total: 0 }, dining: { count: 0, total: 0 }, diningPurchases: { count: 0, total: 0 }, cancelled: { count: 0, total: 0 }, registrations: { count: 0, total: 0 } });
 const totalsByMonth = new Map<string, MonthTotals>();
 const monthOf = (ym: string) => totalsByMonth.get(ym) ?? totalsByMonth.set(ym, empty()).get(ym)!;
 const reservationAmount = new Map<string, number>();
@@ -73,7 +74,8 @@ for (const event of dataset.events) {
   else if (event.eventType === "dining.reservation.created.v1") {
     bump(monthOf(ym).dining, Number(data.amount));
     reservationAmount.set(String(data.reservationId), Number(data.amount));
-  } else if (event.eventType === "events.registration.completed.v1" && Number(data.amount) > 0) bump(monthOf(ym).registrations, Number(data.amount));
+  } else if (event.eventType === "dining.purchase.completed.v1") bump(monthOf(ym).diningPurchases, Number(data.total));
+  else if (event.eventType === "events.registration.completed.v1" && Number(data.amount) > 0) bump(monthOf(ym).registrations, Number(data.amount));
 }
 for (const event of dataset.events) {
   if (event.eventType === "dining.reservation.cancelled.v1") {
@@ -100,7 +102,7 @@ for (const event of dataset.events) {
     // Saldo vigente creciente (entre +3% y +6% por mes; el mes en curso sólo suma lo de los primeros días).
     balance = rounded(balance * (1 + (partial ? 0.012 : 0.03 + rng.next() * 0.03)));
 
-    const serviceSpend = totals.store.total + totals.dining.total + totals.registrations.total;
+    const serviceSpend = totals.store.total + totals.dining.total + totals.diningPurchases.total + totals.registrations.total;
     const topUp = rounded(serviceSpend * (1.1 + rng.next() * 0.08));
     const libraryFine = rounded(130_000 * span.infl * span.frac * (0.8 + rng.next() * 0.4));
     const refund = rounded(totals.cancelled.total + totals.store.total * 0.015);
@@ -114,6 +116,7 @@ for (const event of dataset.events) {
       group("SCHOLARSHIP", "CREDIT", scholarship, scholarship / 12_500),
       group("STORE_PURCHASE", "DEBIT", totals.store.total, totals.store.count),
       group("DINING_RESERVATION", "DEBIT", totals.dining.total, totals.dining.count),
+      group("DINING_PURCHASE", "DEBIT", totals.diningPurchases.total, totals.diningPurchases.count),
       group("LIBRARY_FINE", "DEBIT", libraryFine, libraryFine / 2_400),
       group("EVENT_REGISTRATION", "DEBIT", totals.registrations.total, totals.registrations.count),
       group("REFUND", "REVERSAL", refund, totals.cancelled.count + totals.store.count * 0.015),

@@ -41,8 +41,10 @@ export class RecordEventUseCase {
     if (entry.handling !== "persist") return this.discard(envelope);
 
     // Se borran los campos redactados (p. ej. userId de compras) antes de guardar.
-    const data = { ...envelope.data };
+    let data = { ...envelope.data };
     for (const field of entry.redact ?? []) delete data[field];
+    // Y se sanea lo que lleva datos personales dentro de otro campo (p. ej. /user/<uuid> del externalReference).
+    if (entry.sanitize) data = entry.sanitize(data);
 
     return this.store(envelope, data, "OK");
   }

@@ -509,6 +509,14 @@ function buildStore(out: Emitter): void {
 }
 
 const DINING_BASE: Partial<Record<SiteKey, number>> = { monserrat: 330, belgrano: 240, recoleta: 200, pinamar: 150 };
+// Compras del comedor (dining.purchase.completed.v1): unas pocas por mes y sede, aparte de las reservas.
+const DINING_PURCHASE_BASE: Partial<Record<SiteKey, number>> = { monserrat: 60, belgrano: 45, recoleta: 35, pinamar: 25 };
+const DINING_PURCHASE_ITEMS = [
+  { name: "Menú del día", price: 3500 },
+  { name: "Sándwich y bebida", price: 2800 },
+  { name: "Ensalada", price: 2400 },
+  { name: "Café y medialunas", price: 1800 },
+] as const;
 
 function buildDining(out: Emitter): void {
   const rng = createRng(20261106);
@@ -552,6 +560,32 @@ function buildDining(out: Emitter): void {
         if (ms === null) continue;
         const cancelled = rng.chance(0.07);
         reserve(site, ms, round50(2500 * span.infl), cancelled ? ms + (1 + rng.next() * 19) * HOUR : null, "res");
+      }
+    }
+  }
+
+  // Compras del comedor: otro generador de azar, para no alterar las reservas de arriba.
+  const purchaseRng = createRng(20261125);
+  let purchaseCounter = 0;
+  for (const span of SPANS) {
+    for (const site of DINING_SITES) {
+      const purchases = purchaseRng.around((DINING_PURCHASE_BASE[site.key] ?? 0) * SEASON[span.month] * span.frac);
+      for (let i = 0; i < purchases; i += 1) {
+        const ms = randomMoment(purchaseRng, span, 11, 15);
+        if (ms === null) continue;
+        const dish = purchaseRng.pick(DINING_PURCHASE_ITEMS);
+        const quantity = purchaseRng.weighted([[1, 0.75], [2, 0.25]] as const);
+        const unitPrice = round50(dish.price * span.infl);
+        purchaseCounter += 1;
+        const purchaseId = demoUuid("purchase", 900000 + purchaseCounter);
+        out.emit(`dining-purchase:${purchaseCounter}`, "dining", "dining.purchase.completed.v1", ms, {
+          purchaseId,
+          userId: randomStudent(purchaseRng, site),
+          siteId: site.id,
+          total: money(unitPrice * quantity),
+          currency: "ARS",
+          items: [{ name: dish.name, quantity, unitPrice: money(unitPrice) }],
+        }, `purchase/${purchaseId}`);
       }
     }
   }

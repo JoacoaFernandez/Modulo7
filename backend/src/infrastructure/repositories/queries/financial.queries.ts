@@ -47,10 +47,21 @@ export async function queryTopProducts(prisma: PrismaClient, month: MonthRange, 
   }));
 }
 
-// Facturación y tickets de comedor por sede y mes: reservas creadas en el rango sin su cancelación (cruce por
-// reservationId, sin límite de fecha) y, con `netOfAttendance`, también sin la asistencia (lo restituido).
-// Sin filtro de sede: el tablero muestra todas las sedes y el filtro sólo resalta.
-export async function queryDiningRevenue(prisma: PrismaClient, from: string, to: string, netOfAttendance: boolean): Promise<DiningRow[]> {
+// Facturación y tickets de comedor por sede y mes (definición a validar con la cátedra y G4):
+//   facturación = reservas confirmadas + compras del comedor (dining.purchase.completed.v1) del mes y la sede;
+//   tickets = reservas confirmadas + compras (cuentan ambas); ticket promedio = facturación / tickets.
+// Reserva confirmada: creada en el rango y sin su cancelación (cruce por reservationId, sin límite de fecha). Una
+// cancelación con reason "NO_SHOW" es una ausencia sin reintegro: la reserva se sigue facturando. Las compras se
+// pueden excluir con DINING_INCLUDE_PURCHASES (dashboard.config.ts). Con `netOfAttendance`, la asistencia descuenta
+// lo restituido: `refundAmount` si el evento lo trae y, si no, el monto completo de la reserva (y entonces no
+// cuenta como ticket). Sin filtro de sede: el tablero muestra todas las sedes y el filtro sólo resalta.
+export async function queryDiningRevenue(
+  prisma: PrismaClient,
+  from: string,
+  to: string,
+  netOfAttendance: boolean,
+  includePurchases: boolean,
+): Promise<DiningRow[]> {
   const rows = await prisma.$queryRaw<{ site_id: string; ym: string; revenue: number; tickets: number }[]>`
     WITH res AS (
       SELECT DISTINCT ON (data->>'reservationId')
@@ -60,31 +71,53 @@ export async function queryDiningRevenue(prisma: PrismaClient, from: string, to:
       WHERE event_type = 'dining.reservation.created.v1'
         AND occurred_at >= ${from}::timestamptz AND occurred_at < ${to}::timestamptz
       ORDER BY data->>'reservationId', occurred_at
-    )
-    SELECT r.site_id, ${argentinaMonth(Prisma.sql`r.occurred_at`)} AS ym,
-           COALESCE(SUM(r.amount), 0)::float8 AS revenue, COUNT(*)::int AS tickets
-    FROM res r
-    WHERE NOT EXISTS (SELECT 1 FROM inbox_events c
-                      WHERE c.event_type = 'dining.reservation.cancelled.v1'
-                        AND c.data->>'reservationId' = r.reservation_id)
+    ),
+    lines AS (
+      SELECT r.site_id, r.occurred_at, r.amount - CASE WHEN att.refund IS NULL THEN 0 ELSE LEAST(att.refund, r.amount) END AS revenue,
+             (att.refund IS NULL OR att.refund < r.amount) AS is_ticket
+      FROM res r
+      LEFT JOIN LATERAL (
+        SELECT MAX(COALESCE(NULLIF(a.data->>'refundAmount', '')::numeric, r.amount)) AS refund
+        FROM inbox_events a
+        WHERE ${netOfAttendance ? Prisma.sql`TRUE` : Prisma.sql`FALSE`}
+          AND a.event_type = 'dining.attendance.recorded.v1'
+          AND a.data->>'reservationId' = r.reservation_id
+      ) att ON TRUE
+      WHERE NOT EXISTS (SELECT 1 FROM inbox_events c
+                        WHERE c.event_type = 'dining.reservation.cancelled.v1'
+                          AND c.data->>'reservationId' = r.reservation_id
+                          AND COALESCE(c.data->>'reason', '') <> 'NO_SHOW')
       ${
-        netOfAttendance
-          ? Prisma.sql`AND NOT EXISTS (SELECT 1 FROM inbox_events a
-                         WHERE a.event_type = 'dining.attendance.recorded.v1'
-                           AND a.data->>'reservationId' = r.reservation_id)`
+        includePurchases
+          ? Prisma.sql`UNION ALL
+      SELECT p.site_id, p.occurred_at, p.total AS revenue, TRUE AS is_ticket
+      FROM (
+        SELECT DISTINCT ON (data->>'purchaseId')
+          data->>'siteId' AS site_id, (data->>'total')::numeric AS total, occurred_at
+        FROM inbox_events
+        WHERE event_type = 'dining.purchase.completed.v1'
+          AND occurred_at >= ${from}::timestamptz AND occurred_at < ${to}::timestamptz
+        ORDER BY data->>'purchaseId', occurred_at
+      ) p`
           : Prisma.empty
       }
-    GROUP BY r.site_id, ym`;
+    )
+    SELECT l.site_id, ${argentinaMonth(Prisma.sql`l.occurred_at`)} AS ym,
+           COALESCE(SUM(l.revenue), 0)::float8 AS revenue, COUNT(*) FILTER (WHERE l.is_ticket)::int AS tickets
+    FROM lines l
+    GROUP BY l.site_id, ym`;
 
   return rows.map((row) => ({ siteId: row.site_id, ym: row.ym, revenue: row.revenue, tickets: row.tickets }));
 }
 
-// Sedes con alguna reserva de comedor en cualquier fecha: las que tienen servicio.
-export async function queryDiningSites(prisma: PrismaClient): Promise<string[]> {
+// Sedes con alguna reserva (o compra, si se cuentan) de comedor en cualquier fecha: las que tienen servicio.
+export async function queryDiningSites(prisma: PrismaClient, includePurchases: boolean): Promise<string[]> {
   const rows = await prisma.$queryRaw<{ site_id: string }[]>`
     SELECT DISTINCT data->>'siteId' AS site_id
     FROM inbox_events
-    WHERE event_type = 'dining.reservation.created.v1' AND data->>'siteId' IS NOT NULL`;
+    WHERE (event_type = 'dining.reservation.created.v1'
+           ${includePurchases ? Prisma.sql`OR event_type = 'dining.purchase.completed.v1'` : Prisma.empty})
+      AND data->>'siteId' IS NOT NULL`;
 
   return rows.map((row) => row.site_id);
 }
