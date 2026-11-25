@@ -310,23 +310,67 @@ function buildAcademic(out: Emitter): DemoCourse[] {
       const resultsAt = current ? at(2026, 10, 5 + rng.int(0, 27), 10 + rng.int(0, 7)) : endMs + (2 + rng.next() * 10) * DAY + (10 + rng.next() * 8) * HOUR;
       const approvedCount = clamp(Math.round(finishers.length * (rate / 100) + rng.gauss() * 0.8), 0, finishers.length);
 
+      // Datos del curso que viajan en cada resultado (formato de G9, Trello 24/11): materia, carrera, plan y docentes.
+      const courseData = {
+        courseId: String(course.id),
+        subjectId: String(course.asignaturaId),
+        periodId: String(period.id),
+        subjectCode: subject.code,
+        subjectName: subject.name,
+        careerId: String(subject.careerId),
+        planId: String(course.asignaturaId === subject.id ? subject.planId : 12),
+        siteId: site.id,
+        teachers: [
+          { teacherId: teacher.id, role: "TITULAR" },
+          ...(course.auxiliar ? [{ teacherId: course.auxiliar.id, role: "AUXILIAR" }] : []),
+        ],
+      };
+      // Sin consumir el azar (el demo no cambia): una fracción estable por (curso, alumno, motivo).
+      const fraction = (reason: string, studentId: string) => parseInt(hashHex(`${reason}:${course.id}:${studentId}`).slice(0, 6), 16) / 0xffffff;
+
+      // Bajas: G9 también las publica (BAJA, sin nota); no cuentan en la tasa.
+      course.studentIds
+        .filter((studentId) => !finishers.includes(studentId))
+        .forEach((studentId, index) => {
+          out.emit(
+            `res-baja:${course.id}:${studentId}`,
+            "academic",
+            "academic.course-result.published.v1",
+            resultsAt + index * 3 * MIN,
+            { studentId, ...courseData, finalGrade: null, status: "BAJA", resultDate: argDate(resultsAt) },
+            `course/${course.id}`,
+          );
+        });
+
       rng.shuffle(finishers).forEach((studentId, index) => {
         const approved = index < approvedCount;
         const publishedAt = resultsAt + index * 7 * MIN;
+        // Algunos desaprobados quedan LIBRES (sin nota): cuentan igual en la tasa.
+        const libre = !approved && fraction("libre", studentId) < 0.08;
         const grade = rng.weighted(approved ? NOTAS_APROBADO : NOTAS_DESAPROBADO);
-        const base = {
-          studentId,
-          courseId: String(course.id),
-          subjectId: String(course.asignaturaId),
-          periodId: String(period.id),
-          siteId: site.id,
-        };
+        const base = { studentId, ...courseData };
+        // Un REGULAR previo a la nota final: la cursada se aprobó y falta el final; el último estado es el que vale.
+        if (fraction("regular", studentId) < 0.03) {
+          out.emit(
+            `res-reg:${course.id}:${studentId}`,
+            "academic",
+            "academic.course-result.published.v1",
+            publishedAt - 3 * DAY,
+            { ...base, finalGrade: null, status: "REGULAR", resultDate: argDate(publishedAt - 3 * DAY) },
+            `course/${course.id}`,
+          );
+        }
         out.emit(
           `res:${course.id}:${studentId}`,
           "academic",
           "academic.course-result.published.v1",
           publishedAt,
-          { ...base, finalGrade: grade, status: approved ? "APROBADO" : "DESAPROBADO", resultDate: argDate(publishedAt) },
+          {
+            ...base,
+            finalGrade: libre ? null : grade,
+            status: approved ? "APROBADO" : libre ? "LIBRE" : "DESAPROBADO",
+            resultDate: argDate(publishedAt),
+          },
           `course/${course.id}`,
         );
 

@@ -113,7 +113,7 @@ cp .env.example .env     # modo demo: todo mock y POST de eventos activo
 npm install              # corre prisma generate
 npm run db:up            # PostgreSQL 16 en Docker (localhost:5432, usuario/clave/base: analitica)
 npm run db:migrate       # aplica las migraciones (inbox_events, source_ingestions, wallet_balance_snapshots)
-npm run db:demo          # ~34,6 mil eventos de demo en formato v1 (determinístico y re-ejecutable)
+npm run db:demo          # ~42 mil eventos de demo en formato v1 (determinístico y re-ejecutable)
 npm run mocks:generate   # opcional: sólo si borraste backend/mocks; no pisa tus ediciones sin --force
 npm run dev
 

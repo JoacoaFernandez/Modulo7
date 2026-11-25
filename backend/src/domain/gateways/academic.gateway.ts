@@ -71,6 +71,30 @@ export interface AcademicCourseDetail {
   docentes: { docenteId: string; rol: "TITULAR" | "ADJUNTO" | "AUXILIAR" }[];
 }
 
+// Resultado final de cursada: mismo formato que el `data` de academic.course-result.published.v1 (respuesta de G9, 24/11).
+// Los ids de G9 pueden venir como número o como texto.
+export interface AcademicCourseResult {
+  studentId: string;
+  courseId: string | number;
+  subjectId: string | number;
+  periodId: string | number;
+  subjectCode?: string;
+  subjectName?: string;
+  careerId?: string | number;
+  planId?: string | number;
+  // UUID de Backoffice; null si el curso no tiene sede.
+  siteId: string | null;
+  teachers?: { teacherId: string; role: "TITULAR" | "ADJUNTO" | "AUXILIAR" }[];
+  finalGrade: number | null;
+  status: "APROBADO" | "DESAPROBADO" | "REGULAR" | "LIBRE" | "BAJA";
+  resultDate?: string;
+}
+
+export interface AcademicCourseResultsPage {
+  items: AcademicCourseResult[];
+  nextCursor: string | null;
+}
+
 // Errores como GatewayError con el `code` de G9 (RESOURCE_NOT_FOUND...).
 export interface AcademicGateway {
   listPeriods(): Promise<AcademicPeriod[]>;
@@ -80,4 +104,6 @@ export interface AcademicGateway {
   listSubjects(planId: number | string): Promise<AcademicSubject[]>;
   listCourses(periodId: number | string): Promise<AcademicCourse[]>;
   getCourse(courseId: number | string): Promise<AcademicCourseDetail>;
+  // Histórico de resultados de un período, paginado (GET /internal/v1/resultados-cursada); sin cursor = primera página.
+  listCourseResults(periodId: number | string, cursor?: string, limit?: number): Promise<AcademicCourseResultsPage>;
 }

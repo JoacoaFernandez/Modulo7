@@ -352,13 +352,20 @@ Esta sección se genera con `npm run docs` desde `src/domain/entities/event-cata
 
 | Campo | Tipo | Obligatorio | Descripción |
 |---|---|---|---|
-| `data.studentId` | `uuid` | sí | Id del alumno. |
+| `data.studentId` | `uuid` | sí | Id del alumno (userId de CORE). Se guarda sólo su hash (`studentRef`), no el id. |
 | `data.courseId` | `string` | sí | Id del curso (texto). |
 | `data.subjectId` | `string` | sí | Id de la asignatura (texto). |
 | `data.periodId` | `string` | sí | Id del período (texto). |
-| `data.siteId` | `uuid` | sí | Id de la sede en Backoffice (backofficeSiteId). |
-| `data.status` | enum (`APROBADO`, `DESAPROBADO`) | sí | Resultado final. |
-| `data.finalGrade` | `number` | no | Nota final (0 a 10). |
+| `data.subjectCode` | `string` | no | Código de la asignatura (agrupa la materia entre planes). |
+| `data.subjectName` | `string` | no | Nombre de la asignatura. |
+| `data.careerId` | `string` | no | Id de la carrera (G9). |
+| `data.planId` | `string` | no | Id del plan de estudios (G9). |
+| `data.siteId` | `uuid` | no | Id de la sede en Backoffice (backofficeSiteId). Puede ser null: el resultado sólo cuenta en «Todas las sedes». |
+| `data.teachers` | `array` de objetos | no | Docentes del curso; todos los roles cuentan para la tasa por docente. |
+| `data.teachers[].teacherId` | `string` | sí | Id del docente (userId de CORE / Backoffice). |
+| `data.teachers[].role` | enum (`TITULAR`, `ADJUNTO`, `AUXILIAR`) | sí | Rol en el curso. |
+| `data.status` | enum (`APROBADO`, `DESAPROBADO`, `REGULAR`, `LIBRE`, `BAJA`) | sí | Estado final de la cursada. Cuentan APROBADO, DESAPROBADO y LIBRE; REGULAR y BAJA no. |
+| `data.finalGrade` | `number` | no | Nota final (0 a 10); null en REGULAR, LIBRE y BAJA. |
 | `data.resultDate` | `date` AAAA-MM-DD | no | Fecha del resultado (AAAA-MM-DD). |
 
 **`academic.term-defined.v1`**

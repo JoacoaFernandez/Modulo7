@@ -103,6 +103,8 @@ function load() {
       jwtAudience: text("CORE_JWT_AUDIENCE") ?? "uadenet",
       jwksUrl: text("CORE_JWKS_URL") ?? (coreBaseUrl ? `${coreBaseUrl}/.well-known/jwks.json` : undefined),
     },
+    // Secreto compartido con el gateway de CORE para validar X-Core-Signature en /api/v1/* (vacío = no se valida).
+    coreGatewaySecret: text("CORE_GATEWAY_SECRET"),
     backoffice: { baseUrl: text("BACKOFFICE_BASE_URL") },
     academic: { baseUrl: text("ACADEMIC_BASE_URL") },
     gateway: {

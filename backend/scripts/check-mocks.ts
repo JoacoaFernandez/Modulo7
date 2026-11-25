@@ -255,6 +255,29 @@ for (const [file, teacherId] of teacherRefs) {
   if (!userIds.has(teacherId)) fail(file, `el docente ${teacherId} no tiene ficha en backoffice/users/`);
 }
 
+// Resultados de cursada (GET /internal/v1/resultados-cursada): { items, nextCursor }, un archivo por período.
+const RESULT_STATUSES = ["APROBADO", "DESAPROBADO", "REGULAR", "LIBRE", "BAJA"];
+for (const id of list("academic/resultados-cursada/x.json")) {
+  const file = `academic/resultados-cursada/${id}.json`;
+  const body = read(file);
+  if (!shape(file, "body", body, { items: "array" })) continue;
+  if (!periodIds.has(Number(id))) fail(file, `el período ${id} no existe en academic/periodos.json`);
+  (body.items as unknown[]).forEach((item, index) => {
+    const where = `items[${index}]`;
+    if (!shape(file, where, item, { studentId: "uuid", courseId: "string", subjectId: "string", periodId: "string", status: "string" })) return;
+    if (item.periodId !== id) fail(file, `${where}.periodId (${item.periodId}) no coincide con el archivo`);
+    if (!RESULT_STATUSES.includes(String(item.status))) fail(file, `${where}.status inválido (${item.status})`);
+    if (item.finalGrade !== null && item.finalGrade !== undefined && (typeof item.finalGrade !== "number" || item.finalGrade < 0 || item.finalGrade > 10)) {
+      fail(file, `${where}.finalGrade debe ser null o un número de 0 a 10`);
+    }
+    if (item.siteId !== null && item.siteId !== undefined && !siteIds.has(String(item.siteId))) fail(file, `${where}.siteId no existe en backoffice/sites.json`);
+    if (!courseById.has(Number(item.courseId))) fail(file, `${where}.courseId ${item.courseId} no existe en academic/cursos`);
+    for (const teacher of (item.teachers as Obj[] | undefined) ?? []) {
+      if (!userIds.has(String(teacher.teacherId))) fail(file, `${where}.teachers: el docente ${teacher.teacherId} no tiene ficha en backoffice/users/`);
+    }
+  });
+}
+
 // ---------------------------------------------------------------------------------------------
 // Eventos de demo contra los mocks
 // ---------------------------------------------------------------------------------------------
@@ -285,7 +308,12 @@ for (const event of events) {
       if (academicSites.get(course.sedeId) !== siteId) note(`course-result: siteId del curso ${data.courseId} no coincide con la sede del curso en academic/sedes.json`);
     }
     if (!periodIds.has(Number(data.periodId))) note(`course-result: periodId ${data.periodId} no existe en academic/periodos.json`);
-    if (!subjectById.has(Number(data.subjectId))) note(`course-result: subjectId ${data.subjectId} no existe en academic/asignaturas`);
+    const subject = subjectById.get(Number(data.subjectId));
+    if (!subject) note(`course-result: subjectId ${data.subjectId} no existe en academic/asignaturas`);
+    else if (data.subjectCode !== subject.codigo) note(`course-result: subjectCode ${data.subjectCode} no es el código de la asignatura ${data.subjectId} (${subject.codigo})`);
+    for (const teacher of (data.teachers as Obj[] | undefined) ?? []) {
+      if (!userIds.has(String(teacher.teacherId))) note(`course-result: el docente ${teacher.teacherId} no tiene ficha en backoffice/users/`);
+    }
   }
 
   // La locación sin location.upserted es el caso borde "evento sin sede" y es la única permitida.

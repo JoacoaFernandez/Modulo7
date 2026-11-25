@@ -1,5 +1,6 @@
 // Catálogo de eventos que consume Analítica (docs/INTEGRACION.md, sección 3). Es la fuente de verdad del contrato:
 // el validador de ingesta lo aplica y EVENTOS.md y la colección de Postman se generan de acá (npm run docs).
+import { createHash } from "node:crypto";
 import { FieldSpec } from "./event-schema.entity";
 import { CoreSource } from "./event-source.entity";
 
@@ -54,6 +55,15 @@ const maskUserInExternalReference = (data: Record<string, unknown>): Record<stri
     ? { ...data, externalReference: data.externalReference.replace(MASK_USER_SEGMENT, "/user/*") }
     : data;
 
+// Reemplaza `studentId` por `studentRef` (SHA-256 truncado del id): no se guarda el id del alumno, pero la bandeja puede
+// seguir quedándose con el último resultado de cada (alumno, curso).
+export const hashStudentId = (studentId: string): string =>
+  createHash("sha256").update(`uadenet-analytics:student:${studentId.toLowerCase()}`).digest("hex").slice(0, 32);
+function pseudonymizeStudent(data: Record<string, unknown>): Record<string, unknown> {
+  const { studentId, ...rest } = data;
+  return typeof studentId === "string" ? { ...rest, studentRef: hashStudentId(studentId) } : data;
+}
+
 const entry = (e: EventCatalogEntry): EventCatalogEntry => e;
 
 export const EVENT_CATALOG: readonly EventCatalogEntry[] = [
@@ -64,15 +74,31 @@ export const EVENT_CATALOG: readonly EventCatalogEntry[] = [
     origin: "proposed",
     declaredBy: "G9",
     handling: "persist",
+    // studentId no se guarda: se reemplaza por un hash (studentRef) que alcanza para quedarse con el último resultado
+    // por (alumno, curso) sin conservar el id de CORE (ver pseudonymizeStudent).
+    sanitize: pseudonymizeStudent,
     feeds: "Tasa de aprobación (KPI, por materia, por facultad, por docente)",
     fields: [
-      uuid("studentId", "Id del alumno."),
+      uuid("studentId", "Id del alumno (userId de CORE). Se guarda sólo su hash (`studentRef`), no el id."),
       str("courseId", "Id del curso (texto).", true, "42"),
       str("subjectId", "Id de la asignatura (texto).", true, "15"),
       str("periodId", "Id del período (texto).", true, "8"),
-      uuid("siteId", "Id de la sede en Backoffice (backofficeSiteId)."),
-      oneOf("status", "Resultado final.", ["APROBADO", "DESAPROBADO"]),
-      { name: "finalGrade", type: "number", required: false, description: "Nota final (0 a 10).", min: 0, max: 10, example: 8 },
+      str("subjectCode", "Código de la asignatura (agrupa la materia entre planes).", false, "ISI-101"),
+      str("subjectName", "Nombre de la asignatura.", false, "Análisis Matemático I"),
+      str("careerId", "Id de la carrera (G9).", false, "1"),
+      str("planId", "Id del plan de estudios (G9).", false, "11"),
+      uuid("siteId", "Id de la sede en Backoffice (backofficeSiteId). Puede ser null: el resultado sólo cuenta en «Todas las sedes».", false),
+      {
+        name: "teachers", type: "array", required: false, allowEmpty: true,
+        description: "Docentes del curso; todos los roles cuentan para la tasa por docente.",
+        example: [{ teacherId: "5f0a8e21-4c7b-4d19-9a3e-61b2c8d7f034", role: "TITULAR" }],
+        fields: [
+          str("teacherId", "Id del docente (userId de CORE / Backoffice).", true, "5f0a8e21-4c7b-4d19-9a3e-61b2c8d7f034"),
+          oneOf("role", "Rol en el curso.", ["TITULAR", "ADJUNTO", "AUXILIAR"]),
+        ],
+      },
+      oneOf("status", "Estado final de la cursada. Cuentan APROBADO, DESAPROBADO y LIBRE; REGULAR y BAJA no.", ["APROBADO", "DESAPROBADO", "REGULAR", "LIBRE", "BAJA"]),
+      { name: "finalGrade", type: "number", required: false, description: "Nota final (0 a 10); null en REGULAR, LIBRE y BAJA.", min: 0, max: 10, example: 8 },
       { name: "resultDate", type: "date", required: false, description: "Fecha del resultado (AAAA-MM-DD).", example: "2026-09-30" },
     ],
   }),

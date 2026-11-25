@@ -12,6 +12,7 @@
     "docs:postman": "tsx scripts/generate-postman.ts",
     "docs": "npm run docs:payloads && npm run docs:postman",
     "backfill:core": "tsx scripts/backfill-from-core.ts",
+    "backfill:results": "tsx scripts/backfill-course-results.ts",
     "db:up": "docker compose up -d",
     "db:migrate": "prisma migrate dev",
     "db:demo": "tsx prisma/demo-seed.ts",

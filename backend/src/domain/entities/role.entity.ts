@@ -31,8 +31,10 @@ export const ROLES: readonly Role[] = [
   },
 ];
 
-// Roles de CORE (Novedades 04/11, p. 4) → secciones de Analítica. Ningún permiso `analytics:*` existe hoy en
-// CORE; si se crean, otorgan la sección por sí solos sin mirar el rol (docs/INTEGRACION.md, 1.1 y objeción 1).
+// Roles de CORE (Novedades 04/11, p. 4) → secciones de Analítica. Además de los roles, CORE recomienda autorizar por los
+// permisos del JWT (se mantienen los dos caminos, alcanza con uno): `academic:manage` habilita la sección académica (que
+// incluye las estadísticas de eventos) y `wallet:read:aggregates` la financiera. Los `analytics:*` quedan por si CORE los
+// crea (docs/INTEGRACION.md, 1.1 y objeción 1).
 const SECTIONS_BY_CORE_ROLE: Record<string, readonly RoleId[]> = {
   ACADEMIC_ADMIN: ["academica"],
   FINANCE_ADMIN: ["financiera"],
@@ -42,6 +44,8 @@ const SECTIONS_BY_CORE_ROLE: Record<string, readonly RoleId[]> = {
 const SECTIONS_BY_PERMISSION: Record<string, RoleId> = {
   "analytics:academic:read": "academica",
   "analytics:finance:read": "financiera",
+  "academic:manage": "academica",
+  "wallet:read:aggregates": "financiera",
 };
 
 // Secciones que corresponden a los roles y permisos de CORE; vacío = sin acceso a Analítica.

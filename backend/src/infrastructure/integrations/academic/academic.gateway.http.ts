@@ -1,6 +1,6 @@
 // Gestión Académica real (G9): rutas en academic.routes.ts, sin paginación.
 import {
-  AcademicCareer, AcademicCourse, AcademicCourseDetail, AcademicGateway, AcademicPeriod, AcademicPlan, AcademicSite, AcademicSubject,
+  AcademicCareer, AcademicCourse, AcademicCourseResultsPage, AcademicCourseDetail, AcademicGateway, AcademicPeriod, AcademicPlan, AcademicSite, AcademicSubject,
 } from "../../../domain/gateways/academic.gateway";
 import { GatewayError } from "../../../domain/gateways/gateway-error";
 import { HttpClient } from "../http/http-client";
@@ -29,6 +29,15 @@ export class AcademicGatewayHttp implements AcademicGateway {
   }
   async getCourse(courseId: number | string): Promise<AcademicCourseDetail> {
     return this.http.request<AcademicCourseDetail>({ path: ACADEMIC_ROUTES.course(courseId) });
+  }
+
+  async listCourseResults(periodId: number | string, cursor?: string, limit?: number): Promise<AcademicCourseResultsPage> {
+    const path = ACADEMIC_ROUTES.courseResults();
+    const body = await this.http.request<Partial<AcademicCourseResultsPage>>({ path, query: { periodId, cursor, limit } });
+    if (!body || !Array.isArray(body.items)) {
+      throw new GatewayError("academic", 502, "INVALID_RESPONSE", `Gestión Académica devolvió algo que no es { items, nextCursor } en ${path}.`);
+    }
+    return { items: body.items, nextCursor: body.nextCursor ?? null };
   }
 
   private async list<T>(path: string, query?: Record<string, string | number>): Promise<T[]> {

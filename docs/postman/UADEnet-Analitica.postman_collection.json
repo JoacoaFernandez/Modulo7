@@ -65,15 +65,15 @@
     },
     {
       "key": "studentId",
-      "value": "dd08f6f3-2091-42d3-9d96-6ba707ff3243"
+      "value": "48fafca6-12e8-473e-8779-73ff333b079a"
     },
     {
       "key": "eventUuid",
-      "value": "5fa3ba09-b381-4ca5-aad8-43aa42987ab0"
+      "value": "e7b87860-aae6-4c1b-a71a-f8365e049f96"
     },
     {
       "key": "reservationId",
-      "value": "36cfb6de-288a-4f8d-8883-f81d6d933e6a"
+      "value": "249926f0-65c3-4653-8fe2-1d13017c64a0"
     }
   ],
   "item": [
@@ -485,7 +485,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{studentId}}\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 8,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{studentId}}\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"subjectCode\": \"MAT-101\",\n    \"subjectName\": \"Análisis Matemático I\",\n    \"careerId\": \"1\",\n    \"planId\": \"11\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"teachers\": [\n      {\n        \"teacherId\": \"02d00000-0000-4000-8000-000000000003\",\n        \"role\": \"TITULAR\"\n      }\n    ],\n    \"finalGrade\": 8,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1274,7 +1274,101 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{studentId}}\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 3,\n    \"status\": \"DESAPROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{studentId}}\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"subjectCode\": \"MAT-101\",\n    \"subjectName\": \"Análisis Matemático I\",\n    \"careerId\": \"1\",\n    \"planId\": \"11\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"teachers\": [\n      {\n        \"teacherId\": \"02d00000-0000-4000-8000-000000000003\",\n        \"role\": \"TITULAR\"\n      }\n    ],\n    \"finalGrade\": 3,\n    \"status\": \"DESAPROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Corrección que pasa a REGULAR (sale del cálculo)",
+              "description": "Correr después del resultado de la carpeta de la cola: el último estado es REGULAR, que no cuenta en la tasa, así que el alumno sale del cálculo.",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP 200 o 201', () => pm.expect([200, 201]).to.include(pm.response.code));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "auth": {
+                  "type": "noauth"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{studentId}}\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"subjectCode\": \"MAT-101\",\n    \"subjectName\": \"Análisis Matemático I\",\n    \"careerId\": \"1\",\n    \"planId\": \"11\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"teachers\": [\n      {\n        \"teacherId\": \"02d00000-0000-4000-8000-000000000003\",\n        \"role\": \"TITULAR\"\n      }\n    ],\n    \"finalGrade\": null,\n    \"status\": \"REGULAR\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                }
+              }
+            },
+            {
+              "name": "Resultado sin sede (siteId null): sólo cuenta en «Todas las sedes»",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "type": "text/javascript",
+                    "exec": [
+                      "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                      "pm.test('status STORED', () => pm.expect(pm.response.json().status).to.eql('STORED'));"
+                    ]
+                  }
+                }
+              ],
+              "request": {
+                "method": "POST",
+                "auth": {
+                  "type": "noauth"
+                },
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/analytics/events",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "analytics",
+                    "events"
+                  ]
+                },
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"{{$guid}}\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"subjectCode\": \"MAT-101\",\n    \"subjectName\": \"Análisis Matemático I\",\n    \"careerId\": \"1\",\n    \"planId\": \"11\",\n    \"siteId\": null,\n    \"teachers\": [],\n    \"finalGrade\": 8,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"
@@ -1292,7 +1386,7 @@
                   "script": {
                     "type": "text/javascript",
                     "exec": [
-                      "pm.test('HTTP 200 o 201', () => pm.expect([200, 201]).to.include(pm.response.code));"
+                      "pm.test('HTTP 201', () => pm.response.to.have.status(201));"
                     ]
                   }
                 }
@@ -1604,7 +1698,7 @@
                 },
                 "body": {
                   "mode": "raw",
-                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"alumno-123\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"finalGrade\": 8,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
+                  "raw": "{\n  \"specVersion\": \"1.0\",\n  \"eventId\": \"{{$guid}}\",\n  \"eventType\": \"academic.course-result.published.v1\",\n  \"source\": \"academic\",\n  \"occurredAt\": \"{{$isoTimestamp}}\",\n  \"correlationId\": \"{{$guid}}\",\n  \"causationId\": null,\n  \"actor\": {\n    \"type\": \"service\",\n    \"id\": \"academic-service\"\n  },\n  \"data\": {\n    \"studentId\": \"alumno-123\",\n    \"courseId\": \"8001\",\n    \"subjectId\": \"101\",\n    \"periodId\": \"8\",\n    \"subjectCode\": \"MAT-101\",\n    \"subjectName\": \"Análisis Matemático I\",\n    \"careerId\": \"1\",\n    \"planId\": \"11\",\n    \"siteId\": \"3e9b0a12-55cc-4d77-9a01-6b2f8c4e1d90\",\n    \"teachers\": [\n      {\n        \"teacherId\": \"02d00000-0000-4000-8000-000000000003\",\n        \"role\": \"TITULAR\"\n      }\n    ],\n    \"finalGrade\": 8,\n    \"status\": \"APROBADO\",\n    \"resultDate\": \"{{today}}\"\n  }\n}",
                   "options": {
                     "raw": {
                       "language": "json"

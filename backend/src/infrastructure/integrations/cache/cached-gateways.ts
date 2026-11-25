@@ -88,6 +88,11 @@ export class CachedAcademicGateway implements AcademicGateway {
     return this.cache.wrap(`courses:${periodId}`, closed ? this.ttls.static : this.ttls.courses, () => this.inner.listCourses(periodId));
   }
 
+  // Sin caché: sólo lo usa el script de backfill.
+  listCourseResults(periodId: number | string, cursor?: string, limit?: number) {
+    return this.inner.listCourseResults(periodId, cursor, limit);
+  }
+
   getCourse(courseId: number | string) {
     return this.cache.wrap(`course:${courseId}`, COURSE_DETAIL_TTL_SECONDS, () => this.inner.getCourse(courseId));
   }

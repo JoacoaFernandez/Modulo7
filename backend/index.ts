@@ -7,6 +7,7 @@ import { correlationMiddleware } from "./src/interfaces/http/middleware/correlat
 import { sendProblem } from "./src/interfaces/http/problem-json";
 import { analyticsRoutes } from "./src/interfaces/http/routes/analytics.routes";
 import { authRoutes } from "./src/interfaces/http/routes/auth.routes";
+import { createVerifyCoreSignature } from "./src/interfaces/http/middleware/verify-core-signature.middleware";
 import { createHealthRoutes } from "./src/interfaces/http/routes/health.routes";
 import { startEventConsumer } from "./src/infrastructure/messaging/start-event-consumer";
 import { gatewayModes } from "./src/infrastructure/integrations/gateways";
@@ -33,7 +34,9 @@ app.use("/health", createHealthRoutes(consumer));
 app.use("/api/auth", authRoutes);
 app.use("/api/analytics", analyticsRoutes);
 // El gateway de CORE reescribe /api/v1/analytics/* → /api/v1/* (CORE v1 §6): mismas rutas, sin quitar las anteriores.
-app.use("/api/v1", analyticsRoutes);
+// Sólo estas rutas llegan por el gateway de CORE, que las firma (X-Core-Signature); /api/analytics y /api/auth las usa
+// nuestro frontend directo y no la exigen.
+app.use("/api/v1", createVerifyCoreSignature(config.coreGatewaySecret), analyticsRoutes);
 
 app.use((req, res) => {
   sendProblem(req, res, { status: 404, code: "NOT_FOUND", detail: "Recurso no encontrado" });

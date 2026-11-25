@@ -6,6 +6,12 @@ export const SERIES_LENGTH = 6;
 
 export const TOP_PRODUCTS_LIMIT = 6;
 
+// Tasa de aprobación (academic.course-result.published.v1, respuesta de G9 del 24/11): vale el último estado de cada
+// (alumno, curso). Entran al denominador los resultados finales (APROBADO, DESAPROBADO y LIBRE); REGULAR (falta el
+// final) y BAJA no cuentan, y si el último estado es uno de ellos el alumno sale del cálculo. Aprueban sólo los APROBADO.
+export const COURSE_RESULT_COUNTED_STATUSES: readonly string[] = ["APROBADO", "DESAPROBADO", "LIBRE"];
+export const COURSE_RESULT_APPROVED_STATUSES: readonly string[] = ["APROBADO"];
+
 // Conceptos de `aggregates` de CORE (docs/INTEGRACION.md, 6.2). Definiciones a validar con el equipo y la cátedra:
 // ingresos = cobros de servicios (DEBIT) menos devoluciones (REVERSAL, mínimo 0); egresos = acreditaciones de sueldos
 // y becas (CREDIT). TOP_UP y ADJUSTMENT no entran (saldo cargado, no ingreso).

@@ -2,6 +2,7 @@
 // cursos y montos que siembra prisma/demo-seed.ts). docs/INTEGRACION.md, 5.3.
 //   npm run mocks:generate                  escribe los archivos; si alguno ya existe y difiere de lo que generaría (edición a
 //                                           mano o mock viejo), no escribe NADA y avisa: hay que pasar --force
+//   npm run mocks:generate -- --only-new    escribe sólo los archivos que faltan y deja los que difieren como están
 //   npm run mocks:generate -- --force       sobrescribe los archivos que difieren
 //   npm run mocks:generate -- --force --prune   además borra los archivos de las carpetas generadas que ya no corresponden
 //   npm run mocks:generate -- --dry-run     sólo informa qué haría
@@ -25,6 +26,7 @@ const MOCKS_DIR = path.resolve(__dirname, "..", "mocks");
 const force = process.argv.includes("--force");
 const prune = process.argv.includes("--prune");
 const dryRun = process.argv.includes("--dry-run");
+const onlyNew = process.argv.includes("--only-new");
 
 type Files = Map<string, unknown>;
 const files: Files = new Map();
@@ -249,6 +251,29 @@ for (const period of PERIODS) {
   }
 }
 
+// Histórico de resultados de cursada (GET /internal/v1/resultados-cursada): el último estado de cada (alumno, curso) del
+// dataset, con el mismo formato que el `data` del evento. Sólo los últimos períodos: el archivo de cada uno pesa cientos de KB.
+const RESULT_MOCK_PERIODS = 2;
+const COMPACT_FILES = new Set<string>();
+{
+  const latest = new Map<string, { occurredAt: string; data: Record<string, unknown> }>();
+  for (const event of dataset.events) {
+    if (event.eventType !== "academic.course-result.published.v1") continue;
+    const key = `${event.data.courseId}|${event.data.studentId}`;
+    const previous = latest.get(key);
+    if (!previous || previous.occurredAt < event.occurredAt) latest.set(key, { occurredAt: event.occurredAt, data: event.data });
+  }
+  for (const period of PERIODS.slice(-RESULT_MOCK_PERIODS)) {
+    const items = [...latest.values()]
+      .map((entry) => entry.data)
+      .filter((data) => data.periodId === String(period.id))
+      .sort((a, b) => Number(a.courseId) - Number(b.courseId) || String(a.studentId).localeCompare(String(b.studentId)));
+    if (items.length === 0) continue;
+    put(`academic/resultados-cursada/${period.id}.json`, { items, nextCursor: null });
+    COMPACT_FILES.add(`academic/resultados-cursada/${period.id}.json`);
+  }
+}
+
 // ---------------------------------------------------------------------------------------------
 // Escritura protegida
 // ---------------------------------------------------------------------------------------------
@@ -271,6 +296,7 @@ const MANAGED_DIRS: [dir: string, filter: (name: string) => boolean][] = [
   ["academic/asignaturas", (name) => name.endsWith(".json")],
   ["academic/cursos", (name) => name.endsWith(".json")],
   ["academic/curso-detalle", (name) => name.endsWith(".json")],
+  ["academic/resultados-cursada", (name) => name.endsWith(".json")],
   ["backoffice/users", (name) => name.endsWith(".json")],
   ["core/wallets-aggregates", (name) => /^\d{4}-\d{2}\.json$/.test(name)],
 ];
@@ -306,7 +332,7 @@ const orphans = MANAGED_DIRS.flatMap(([dir, filter]) => {
 
 console.log(`Generaría ${files.size} archivos: ${created.length} nuevos, ${unchanged.length} idénticos, ${differing.length} distintos de lo que hay en disco.`);
 
-if (differing.length > 0 && !force) {
+if (differing.length > 0 && !force && !onlyNew) {
   console.error("\nNo se escribió nada: estos archivos ya existen y difieren de lo generado (¿ediciones a mano o mocks viejos?):");
   for (const name of differing.slice(0, 40)) console.error(`  ${name}`);
   if (differing.length > 40) console.error(`  ... y ${differing.length - 40} más`);
@@ -326,11 +352,16 @@ if (dryRun) {
   process.exit(0);
 }
 
-for (const relativePath of [...created, ...differing]) {
+for (const relativePath of [...created, ...(onlyNew ? [] : differing)]) {
   const file = path.join(MOCKS_DIR, relativePath);
   mkdirSync(path.dirname(file), { recursive: true });
-  writeFileSync(file, `${JSON.stringify(files.get(relativePath), null, 2)}\n`);
+  const content = files.get(relativePath) as { items?: unknown[] };
+  // Los archivos grandes llevan un item por línea.
+  const text = COMPACT_FILES.has(relativePath)
+    ? `{\n  "items": [\n${(content.items ?? []).map((item) => `    ${JSON.stringify(item)}`).join(",\n")}\n  ],\n  "nextCursor": null\n}`
+    : JSON.stringify(content, null, 2);
+  writeFileSync(file, `${text}\n`);
 }
 if (prune) for (const relativePath of orphans) rmSync(path.join(MOCKS_DIR, relativePath));
 
-console.log(`\nListo: ${created.length} creados, ${differing.length} sobrescritos${prune ? `, ${orphans.length} borrados` : ""}.`);
+console.log(`\nListo: ${created.length} creados, ${onlyNew ? 0 : differing.length} sobrescritos${prune ? `, ${orphans.length} borrados` : ""}.`);

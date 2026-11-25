@@ -7,7 +7,7 @@ Especificación técnica para implementar. Redactada el 2026-11-05 sobre la rama
 > - **Feeders.** `EVENTS_FEEDERS` suma `backoffice` (`["eventos", "backoffice"]`, por `location.upserted`); `ACADEMIC_FEEDERS` es `["gestion-academica", "backoffice"]` y `FINANCIAL_FEEDERS` `["core", "backoffice", "tienda", "comedor"]`.
 > - **Validators tolerantes.** Si Backoffice o Gestión Académica fallan al armar los catálogos, `parseAcademicFilters` y `parseFinancialFilters` aceptan un `sedeId`, `facultad` o `cuatrimestre` bien formado aunque no esté en la lista reducida, y el tablero sale con aviso; con las fuentes sanas un valor desconocido sigue dando `400`.
 > - **Seed mínimo eliminado.** `prisma/seed.ts` y `npm run db:seed` se borraron (usaban el contrato viejo): el único seed es el demo (`npm run db:demo`).
-> - **Demo.** Son 9 tipos persistidos (no 8), ~34,6 mil envelopes v1 con `eventId` estables (prefijo `de0de0de`), y `wallets-aggregates` de marzo a noviembre de 2026 (nueve meses, no seis). `db:demo` también carga los snapshots de saldo desde los mocks; `db:demo:clear` los borra junto con los eventos del demo.
+> - **Demo.** Son 9 tipos persistidos (no 8), ~42 mil envelopes v1 con `eventId` estables (prefijo `de0de0de`), y `wallets-aggregates` de marzo a noviembre de 2026 (nueve meses, no seis). `db:demo` también carga los snapshots de saldo desde los mocks; `db:demo:clear` los borra junto con los eventos del demo.
 > - **Respuestas del POST.** Los 400 llevan `code: "INVALID_EVENT"` y `errors[]`; los códigos del POST son `201 STORED`, `200 DUPLICATE`, `202 IGNORED`.
 > - **Backfill.** `npm run backfill:core` exige `CORE_MOCK=false`: con el mock no existe `CoreEventsGateway`.
 > - **Agregados de wallet (CORE, 25/11).** `GET /internal/v1/wallets/aggregates` acepta `from` y `to` (ISO-8601; `from` incluido, `to` excluido) y `groupBy=month` (cada grupo trae `month`, mes calendario en hora argentina); responde `range: { from, to }`, y con `to`, `outstandingBalance` y `walletCount` son **a esa fecha**. Errores: `400 WALLET_AGGREGATES_INVALID_QUERY` (fecha inválida, `from >= to`, `groupBy` distinto de `month`). El gateway es `getAggregates({ from, to, groupBy? })` y las fechas se arman con `domain/services/wallet-range.service.ts` (`AAAA-MM-01T00:00:00-03:00`). El tablero financiero hace **una sola llamada** con `groupBy=month` para toda la ventana; el saldo del mes elegido es el `outstandingBalance` de esa llamada (cierre del mes) y el de los meses anteriores sale de los snapshots. Un movimiento revertido sigue en su grupo y la devolución va aparte (`REFUND`/`REVERSAL`): ingresos = DEBIT de servicios menos REFUND, que da el neto. Las secciones 4 a 7 y las preguntas 8 y 9 que digan un llamado por mes o que el backfill sólo sirve con mock están superadas.
@@ -15,6 +15,9 @@ Especificación técnica para implementar. Redactada el 2026-11-05 sobre la rama
 > - **Snapshots.** Un mes sin datos (`walletCount: 0`) no se guarda; el ciclo siempre revisa el mes anterior y, con `WALLET_SNAPSHOT_BACKFILL_MONTHS=N`, los N anteriores.
 > - **Mocks.** `core/wallets-aggregates/_empty.json` es opcional y no existe en el repo (sin él, respuesta vacía); los mocks de períodos (ids 3 a 8), sedes (una `INACTIVE`) y cursos son más ricos que los ejemplos de la sección 5.
 > - **Comedor y wallet (2026-11-25).** Se persiste `dining.purchase.completed.v1` (compras del comedor, `redact: userId`; `items` sin forma definida) y suma a la facturación y a los tickets de comedores (constante `DINING_INCLUDE_PURCHASES` en `dashboard.config.ts`). `dining.attendance.recorded.v1` acepta opcionales `siteId`, `refundAmount` y `currency` (con `DINING_REVENUE_NET_OF_ATTENDANCE=true` se descuenta `refundAmount`, o la reserva completa si no viene) y `dining.reservation.cancelled.v1` acepta `reason`: `"NO_SHOW"` es una ausencia sin reintegro y no descuenta la reserva. `core.wallet.transaction-posted.v1` y `…-reversed.v1` pasan de descartarse a persistirse, sin `userId` y con `sanitize` (`/user/<uuid>` del `externalReference` guardado como `/user/*`); todavía no alimentan ningún tablero.
+> - **Resultado final de cursada (G9, 24/11).** `academic.course-result.published.v1` pasa a llevar `subjectCode`, `subjectName`, `careerId`, `planId`, `siteId` (puede ser `null`), `teachers: [{teacherId, role}]` y `status` `APROBADO|DESAPROBADO|REGULAR|LIBRE|BAJA`. **Tasa:** vale el último estado por (alumno, curso) (`occurredAt`); cuentan en el denominador `APROBADO`, `DESAPROBADO` y `LIBRE` y aprueban sólo los `APROBADO` (constantes `COURSE_RESULT_*_STATUSES` en `dashboard.config.ts`); si el último estado es `REGULAR` o `BAJA` el alumno sale del cálculo. **Docente:** salen de `teachers` del evento, con todos los roles (si el evento no los trae se usan los docentes de G9 `/cursos`, también todos los roles). **Materia:** `subjectCode`/`subjectName` del evento (fallback al catálogo). **Sede:** `siteId` del evento; con `null` el resultado sólo cuenta en «Todas las sedes». **Privacidad:** `studentId` no se guarda: `sanitize` lo reemplaza por `studentRef` (SHA-256 truncado) que alcanza para elegir el último resultado (así no se usa `redact`, que borraría la clave de las correcciones); hace falta la migración `20261125130000_course_result_student_ref` (índice) y recargar el demo (`db:demo:clear && db:demo`) si había datos con el formato viejo. **Histórico:** `GET /internal/v1/resultados-cursada?periodId=&cursor=&limit=` → `{items, nextCursor}` (gateway `listCourseResults`; mock `mocks/academic/resultados-cursada/<periodId>.json`, sólo los dos últimos períodos) y `npm run backfill:results` (ver 4.3).
+> - **Firma del gateway de CORE.** Con `CORE_GATEWAY_SECRET`, el middleware `verify-core-signature` valida `X-Core-Signature` en `/api/v1/*` (ver sección 2); `/api/analytics/*` y `/api/auth/*` no la exigen.
+> - **Permisos.** Además de los roles, `academic:manage` habilita la sección académica (y eventos) y `wallet:read:aggregates` la financiera (`role.entity.ts`).
 > - **Tests.** No se agregó `backend/test/` ni el script `test`: sigue sin haber tests automatizados.
 
 **Objetivo.** Pasar de nuestro contrato propio (`sourceModule` + `payload`) al contrato de CORE (envelope v1 y catálogo de eventos), consultar en vivo a los módulos dueños de cada dato y, **mientras los otros grupos no estén listos**, simularlos con una capa de mocks apagable por flag: los eventos de cola con Postman y las respuestas REST con archivos `.json` editables a mano.
@@ -160,6 +163,7 @@ Se leen una sola vez en `backend/src/shared/config.ts` (objeto `config` tipado y
 | `WALLET_SNAPSHOT_BACKFILL_MONTHS` | `0` | Meses anteriores a reconstruir al arrancar: se pide un `to` por mes y se guarda el saldo de cierre real (CORE confirmó el 25/11 que `to` fija la fecha del saldo) |
 | `DASHBOARD_FIRST_MONTH` | `2026-03` | Primer mes del filtro de períodos (inicio de 2026-1C) |
 | `DINING_REVENUE_NET_OF_ATTENDANCE` | `false` | `true`: la facturación del comedor descuenta también lo restituido por asistencia (pregunta 25) |
+| `CORE_GATEWAY_SECRET` | *(vacío)* | Secreto compartido con el gateway de CORE. Con valor, `/api/v1/*` exige `X-Core-Signature` = HMAC-SHA256 hex de `MÉTODO\nRUTA\nSUB\nX-Correlation-Id\nX-Core-Timestamp` (RUTA completa sin query, SUB = `X-User-Id` = `sub` del JWT, timestamp en ms con tolerancia de 5 minutos; comparación en tiempo constante); falta o no coincide → `401 CORE_SIGNATURE_INVALID`. Vacío: no valida y lo avisa al arrancar. `/api/analytics/*` y `/api/auth/*` nunca la exigen |
 | `AUTH_COOKIE_SAMESITE` | `lax` | `none` sólo si SPA y backend quedan en sitios distintos (exige HTTPS) |
 
 ### `.env.example` propuesto (`backend/.env.example`, modo demo)
@@ -260,7 +264,7 @@ Leyenda de `data`: `campo*` = obligatorio para nosotros (lo necesita una métric
 
 | `eventType` | Emisor | Estado | `data` | Alimenta | Fuente |
 |---|---|---|---|---|---|
-| `academic.course-result.published.v1` | G9 Gestión Académica | **Propuesto / pendiente de registrar en CORE** | `studentId*` uuid, `courseId*` string, `subjectId*` string, `periodId*` string, `siteId*` uuid (`backofficeSiteId`), `status*` `APROBADO\|DESAPROBADO`, `finalGrade` number 0–10, `resultDate` date | Tasa de aprobación (KPI, por materia, por facultad, por docente) | xlsx M7, hoja «Flujo de Datos», fila `academic.course-result.published.v1`. G9 hoy publica `academica.resultado.publicado` sin `eventId` ni sede (CONTEXTO §6.6): no sirve |
+| `academic.course-result.published.v1` | G9 Gestión Académica | **Declarado por G9** (respuesta en Trello, 24/11); pendiente de registrar en CORE | `studentId*` uuid (**sanitize**: se guarda `studentRef`, un hash), `courseId*` string, `subjectId*` string, `periodId*` string, `subjectCode`, `subjectName`, `careerId`, `planId` (strings, opcionales), `siteId` uuid o `null` (`backofficeSiteId`), `teachers` lista de `{teacherId* string, role* TITULAR\|ADJUNTO\|AUXILIAR}`, `status*` `APROBADO\|DESAPROBADO\|REGULAR\|LIBRE\|BAJA`, `finalGrade` number 0–10 o `null`, `resultDate` date | Tasa de aprobación (KPI, por materia, por facultad, por docente) | Trello (G9), 2026-11-24; xlsx M7, hoja «Flujo de Datos». El evento viejo `academica.resultado.publicado` no sirve (sin `eventId` ni sede, CONTEXTO §6.6) |
 | `events.event.created.v1` | G6 Eventos | **CORE oficial** (CORE v1 §11). G6 lo declara con otro nombre (`evento.creado`) y "todavía no se emite" | `eventId*` uuid, `title` string, `locationId*` uuid, `startAt` datetime, `endAt*` datetime, `capacity*` integer, `price` money\|null, `currency`. **Propuesto (opcional):** `category` string | Frecuencia, ocupación de cupo, tipo de evento | CORE v1 §11; xlsx M6, hoja «Flujo de Datos», fila `evento.creado`; xlsx M7 fila `events.event.created.v1` |
 | `events.registration.completed.v1` | G6 | CORE oficial. G6 declara `inscripcion.registrada` sin `amount` | `eventId*` uuid, `registrationId*` uuid, `userId*` uuid, `amount` money, `currency` | Inscriptos, presentismo | CORE v1 §11; xlsx M6 fila `inscripcion.registrada` |
 | `events.attendance.recorded.v1` | G6 | CORE oficial. G6 declara `asistencia.confirmada`; sólo emite presentes | `eventId*` uuid, `userId*` uuid, `present*` boolean, `checkedAt` datetime | Concurrencia, presentismo | CORE v1 §11; xlsx M6 fila `asistencia.confirmada` |
@@ -274,8 +278,8 @@ Leyenda de `data`: `campo*` = obligatorio para nosotros (lo necesita una métric
 | `store.purchase.completed.v1` | G5 Tienda | CORE oficial para el envelope; **`items[]` sin especificar en v1** y pedido por nosotros (en revisión) | `purchaseId*` uuid, `userId` (**redact**), `total` money, `currency`, `siteId` uuid (opcional), `items*` lista de `{productId* uuid, productName* string (al momento de la compra), category string, quantity* integer, unitPrice money, subtotal* money}` | Productos más vendidos (unidades y facturación) | CORE v1 §11; Trello, «G5→G7 #26–#28», 2026-10-22; xlsx M7 fila `store.purchase.completed.v1` |
 
 Notas:
-- **`redact`**: `RecordEventUseCase` borra esos campos de `data` antes de insertar. En eventos de G6 y de resultados se conserva `userId`/`studentId` porque hace falta para contar personas distintas y quedarse con el último resultado.
-- **Resultado vigente**: se republica el evento con `eventId` nuevo cuando se corrige la nota; la query toma el último por `(studentId, courseId)` según `occurredAt` (xlsx M7, fila `academic.course-result.published.v1`).
+- **`redact`**: `RecordEventUseCase` borra esos campos de `data` antes de insertar. En eventos de G6 se conserva `userId` porque hace falta para contar personas distintas. En los resultados de cursada `studentId` tampoco se guarda tal cual: `sanitize` lo cambia por `studentRef` (hash), que sirve para quedarse con el último resultado por alumno y curso.
+- **Resultado vigente**: se republica el evento con `eventId` nuevo cuando se corrige la nota; la query toma el último por `(studentRef, courseId)` según `occurredAt` (un estado `REGULAR` o `BAJA` posterior saca al alumno del cálculo) (xlsx M7, fila `academic.course-result.published.v1`).
 - **Idempotencia**: un `eventId` repetido no inserta ni pisa (sección 7). Mismo `eventId` con otro contenido: se ignora y se loguea `warn` (CORE ya lo rechaza al publicar).
 
 ### 3.3 Eventos recibidos que se descartan (con ack)
@@ -428,8 +432,9 @@ Estado: G9 **no respondió** nada sobre Analítica (CONTEXTO §4.4). Hoy autoriz
 | Asignaturas | `GET /internal/v1/planes/{planId}/asignaturas` | Propuesto (hoy `/api/academica/planes/{planId}/asignaturas`) | `[{id, codigo, nombre, anio, creditos, cargaHoraria, estado, planId}]` | estático | xlsx M9 |
 | Cursos del período | `GET /internal/v1/cursos?periodoId={id}` | **Propuesto: no figura en el xlsx de G9** | `[{id, codigo, asignaturaId, periodoId, sedeId, sedeNombre, estado, cupoMaximo, inscriptosActivos, docentes?}]`; `estado` `PLANIFICADO\|EN_CURSO\|FINALIZADO\|CANCELADO`; `docentes?: [{docenteId, rol}]` es un pedido opcional para evitar N consultas | período en curso `CACHE_TTL_SECONDS_COURSES`, cerrados estático | xlsx M7 fila `/cursos?periodoId=` |
 | Curso con docentes | `GET /internal/v1/cursos/{cursoId}` | **Propuesto** | `{curso: {id, asignatura: {id, codigo, nombre}, periodo: {id, anio, numero}, sedeId, estado}, docentes: [{docenteId: uuid de Backoffice, rol: TITULAR\|ADJUNTO\|AUXILIAR}]}` | 30 min | xlsx M7 fila `/cursos/{cursoId}` |
+| Resultados de cursada (histórico) | `GET /internal/v1/resultados-cursada?periodId={id}&cursor=&limit=` | **Declarado por G9** (Trello, 24/11) | `{items, nextCursor}`; cada item con el mismo formato que el `data` de `academic.course-result.published.v1` (con `studentId` en claro, `teachers`, `status`, etc.) | sin caché | Trello (G9), 2026-11-24 |
 
-Paginación: ninguna (G9 lo confirma sólo para carreras/planes). Snapshot: **no** por ahora; hay que confirmar que `/cursos` devuelve también los períodos cerrados (pregunta de G9 más abajo) o se agregaría un snapshot por período (objeción 2).
+Paginación: sólo `resultados-cursada` (`cursor`/`limit`); el resto, ninguna (G9 lo confirma sólo para carreras/planes). **Backfill de resultados:** `npm run backfill:results [-- --period=7,8 --limit=500 --dry-run]` recorre los períodos del catálogo de G9 (o `--period=`), pagina `resultados-cursada` y graba cada item como envelope v1 sintético (`source: academic`, `actor: analytics-backfill`, `occurredAt` = `resultDate` a las 12:00 de Argentina) por `RecordEventUseCase`. El `eventId` es un UUID v5 de `studentId|courseId|resultDate|status`: re-ejecutarlo no duplica y convive con los eventos reales (vale el de `occurredAt` más reciente por alumno y curso). Con `ACADEMIC_MOCK=true` lee `mocks/academic/resultados-cursada/<periodId>.json`. Snapshot: **no** por ahora; hay que confirmar que `/cursos` devuelve también los períodos cerrados (pregunta de G9 más abajo) o se agregaría un snapshot por período (objeción 2).
 
 `AcademicCatalogService` (`application/services/academic-catalog.service.ts`) recorre carreras → planes → asignaturas **una vez por TTL** y arma `{asignaturaId → {codigo, nombre, facultad}}` más la lista de facultades; la materia se agrupa por `codigo` (varios planes repiten asignaturas con ids distintos). El período `AAAA-NC` sale de `anio` + `numero`.
 
@@ -555,12 +560,12 @@ Contrato HTTP hacia el frontend: se mantienen los `*-stats.entity.ts`. Cambios a
 | Métrica / campo | Fuente nueva | Cálculo | Estado | Si falta |
 |---|---|---|---|---|
 | KPI **Materias en curso** | G9 `cursos?periodoId` + catálogo de asignaturas | Materias distintas (por `codigo`) con `estado ∈ {EN_CURSO, FINALIZADO}` en el período y la sede (curso `sedeId` → `backofficeSiteId` por `sedes`) y la facultad. Delta contra el período anterior (mismo cálculo) | **Parcial**: ruta `/cursos` propuesta; depende de que G9 devuelva períodos cerrados | `value: 0`, `—` y `warnings` |
-| KPI **Tasa de aprobación general** | `academic.course-result.published.v1` | Último resultado por `(studentId, courseId)`; `aprobados / total` del período y sede; facultad vía `subjectId` | **Parcial**: evento propuesto, nadie lo emite | `0` y sin datos; **pedir a G9 el evento** (o alternativa pull, objeción 3) |
+| KPI **Tasa de aprobación general** | `academic.course-result.published.v1` | Último estado por `(studentRef, courseId)`; denominador: `APROBADO`, `DESAPROBADO` y `LIBRE`; numerador: `APROBADO`; `REGULAR` y `BAJA` no cuentan (y sacan al alumno si son lo último); período y sede (`siteId` `null` sólo en «Todas las sedes»); facultad vía `subjectId` | **Parcial**: G9 confirmó el evento (24/11), falta que lo emita | `0` y sin datos; **pedir a G9 el evento** (o alternativa pull, objeción 3) |
 | KPI **Comisiones activas** | G9 `cursos` | Cantidad de cursos con los estados de arriba (sede y facultad aplicadas) | **Parcial** (igual que Materias) | Idem |
 | KPI **Estudiantes con cursada activa** | G9 `cursos.inscriptosActivos` | Σ `inscriptosActivos`. **Cuenta inscripciones, no alumnos distintos**: `note: "Cuenta inscripciones activas, no alumnos distintos"` | **Parcial** (no hay emisor de `inscripcion.*`: G1 sin xlsx) | Pedir a G1/G9 un conteo de alumnos distintos |
-| **Aprobación por materia** (`subjectApprovalRates`, serie de 3 cuatrimestres, delta pp) | Resultados + catálogo de asignaturas (`codigo`, `nombre`) + `periodos` | Por `periodId`→`AAAA-NC`, agrupado por `codigo` de asignatura | **Parcial** | Si la asignatura no está en el catálogo: código = `subjectId`, nombre `Asignatura {id}` |
+| **Aprobación por materia** (`subjectApprovalRates`, serie de 3 cuatrimestres, delta pp) | Resultados + catálogo de asignaturas (`codigo`, `nombre`) + `periodos` | Por `periodId`→`AAAA-NC`, agrupado por `subjectCode` del evento (si falta, `codigo` del catálogo) | **Parcial** | Si la asignatura no está en el catálogo: código = `subjectId`, nombre `Asignatura {id}` |
 | **Tendencia por facultad** (6 cuatrimestres) | Resultados + facultad de la carrera de la asignatura | Agrupado por `facultad`; asignaturas sin carrera no se atribuyen | **Parcial** | Pedir a G9 `facultad` en `/asignaturas` o en `/cursos` (evita recorrer carreras → planes) |
-| **Aprobación por docente** (`teacherApprovalRates`, `totalTeachersCount`) | Resultados + docentes del curso (G9) + nombre (Backoffice `users`) | `courseId` → docente(s) con rol `TITULAR` (si no hay titular, todos); materia del docente = la de más resultados. `totalTeachersCount` cuenta **docentes con resultados**, no docentes con cursos sin resultados | **Parcial** | Pedir a G9 `docentes[]` en `/cursos` |
+| **Aprobación por docente** (`teacherApprovalRates`, `totalTeachersCount`) | Resultados + docentes del curso (G9) + nombre (Backoffice `users`) | `teachers` del evento: todos los roles cuentan (si el evento no los trae, los `docentes` de G9 del curso, también todos); materia del docente = la de más resultados. `totalTeachersCount` cuenta **docentes con resultados**, no docentes con cursos sin resultados | **Parcial** | Pedir a G9 `docentes[]` en `/cursos` |
 | `quarter`, `previousQuarter`, `comparedQuarters` | G9 `periodos` | Etiqueta `anio-numeroC` | **Parcial** (ruta propuesta) | — |
 | `sourceModules`, `lastIngestionAt` | `source_ingestions` | Último evento recibido de los feeders del tablero | Completa | — |
 | Filtro **sede** | Backoffice `sites` | `siteId` UUID + `todas-las-sedes` | Parcial (necesita `backoffice:read`) | Lista con sólo "Todas las sedes" y `warnings` |
@@ -571,19 +576,24 @@ Query de resultados (base de las filas por materia, docente y facultad; se agreg
 
 ```sql
 WITH last_result AS (
-  SELECT DISTINCT ON (data->>'studentId', data->>'courseId')
+  SELECT DISTINCT ON (data->>'studentRef', data->>'courseId')
     data->>'periodId' AS period_id, data->>'subjectId' AS subject_id,
-    data->>'courseId' AS course_id,
-    (data->>'status') = 'APROBADO' AS approved
+    data->>'subjectCode' AS subject_code, data->>'subjectName' AS subject_name,
+    data->>'courseId' AS course_id, data->>'siteId' AS site_id,
+    CASE WHEN jsonb_typeof(data->'teachers') = 'array' THEN data->'teachers' END AS teachers,
+    data->>'status' AS status
   FROM inbox_events
   WHERE event_type = 'academic.course-result.published.v1'
-    AND data->>'periodId' = ANY (${periodIds})
-    ${siteId ? Prisma.sql`AND data->>'siteId' = ${siteId}` : Prisma.empty}
-  ORDER BY data->>'studentId', data->>'courseId', occurred_at DESC, received_at DESC
+    AND data->>'periodId' IN (${periodIds})
+  ORDER BY data->>'studentRef', data->>'courseId', occurred_at DESC, received_at DESC
 )
-SELECT period_id, subject_id, course_id,
-       COUNT(*)::int AS total, (COUNT(*) FILTER (WHERE approved))::int AS approved
-FROM last_result GROUP BY period_id, subject_id, course_id;
+SELECT period_id, subject_id, subject_code, subject_name, course_id, teachers,
+       COUNT(*)::int AS total,
+       (COUNT(*) FILTER (WHERE status IN (${APPROVED_STATUSES})))::int AS approved
+FROM last_result
+WHERE status IN (${COUNTED_STATUSES})            -- APROBADO, DESAPROBADO, LIBRE
+  ${siteId ? Prisma.sql`AND site_id = ${siteId}` : Prisma.empty}
+GROUP BY period_id, subject_id, subject_code, subject_name, course_id, teachers;
 ```
 
 ### 6.2 Tablero financiero (`GET /api/analytics/dashboard/financial`)
@@ -860,7 +870,7 @@ Bloquean (B) o condicionan (C) lo que está implementable hoy con mocks. Las num
 36. (C) ¿`/cursos` devuelve períodos cerrados con `estado FINALIZADO` y `inscriptosActivos`? Si no, hace falta un snapshot por período.
 37. (C) `docentes[]` dentro de `/cursos` y `facultad` en `/asignaturas` evitan N consultas y el recorrido carreras → planes → asignaturas.
 38. (C) Ids numéricos como texto en los eventos (`"42"`): confirmar. ¿`termId` UUID de `academic.term-defined.v1` se corresponde con un `id` numérico de período?
-39. (C) Docentes con varios roles por curso: ¿atribuimos sólo al `TITULAR`?
+39. (R) Docentes con varios roles por curso: G9 manda `teachers` con `TITULAR`, `ADJUNTO` y `AUXILIAR` en cada resultado; se atribuye a todos los roles (24/11). Abierto: confirmar si es el criterio que quiere la cátedra.
 
 **Eventos (G6)**
 21. (C) `category` opcional en `events.event.created.v1` para agrupar por tipo; si no, usamos la clase de precio.

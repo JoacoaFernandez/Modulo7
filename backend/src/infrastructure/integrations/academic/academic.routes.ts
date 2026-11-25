@@ -8,5 +8,7 @@ export const ACADEMIC_ROUTES = {
   plans: (careerId: number | string) => `/internal/v1/carreras/${encodeURIComponent(String(careerId))}/planes`,
   subjects: (planId: number | string) => `/internal/v1/planes/${encodeURIComponent(String(planId))}/asignaturas`,
   courses: () => "/internal/v1/cursos",
+  // Histórico de resultados de cursada (G9, Trello 24/11): ?periodId=&cursor=&limit= → { items, nextCursor }.
+  courseResults: () => "/internal/v1/resultados-cursada",
   course: (courseId: number | string) => `/internal/v1/cursos/${encodeURIComponent(String(courseId))}`,
 } as const;

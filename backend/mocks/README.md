@@ -19,6 +19,7 @@ Cada archivo se lee **en cada llamada** (sin caché ni watcher): editar un `.jso
 | G9 `planes/{id}/asignaturas` | `academic/asignaturas/<planId>.json` | lista vacía |
 | G9 `cursos?periodoId=8` | `academic/cursos/8.json` | lista vacía |
 | G9 `cursos/{id}` | `academic/curso-detalle/<cursoId>.json` | `404 RESOURCE_NOT_FOUND` |
+| G9 `resultados-cursada?periodId=8` | `academic/resultados-cursada/8.json` (`{ "items": [...], "nextCursor": null }` o directamente la lista; el mock lo devuelve en una sola página). Lo usa `npm run backfill:results`; sólo se generan los dos últimos períodos | lista vacía |
 
 Las claves de archivo sólo aceptan letras, números, `_` y `-`. Un JSON mal formado da `500` con la ruta del archivo en el mensaje.
 
@@ -63,6 +64,7 @@ Estos archivos se generan con `npm run mocks:generate` (script `scripts/generate
 ```
 npm run mocks:generate                      # escribe sólo si no hay archivos editados
 npm run mocks:generate -- --dry-run         # informa qué haría
+npm run mocks:generate -- --only-new        # escribe sólo los archivos que faltan y no toca los que difieren
 npm run mocks:generate -- --force           # sobrescribe los archivos que difieren
 npm run mocks:generate -- --force --prune   # además borra archivos de las carpetas generadas que ya no corresponden
 npm run mocks:check                         # valida el shape de cada archivo y que los ids referenciados existan

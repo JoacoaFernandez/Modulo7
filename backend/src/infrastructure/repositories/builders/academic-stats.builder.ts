@@ -148,7 +148,14 @@ export async function buildAcademicStats(prisma: PrismaClient, filters: Academic
     const resultQuarter = quarterByPeriodId.get(row.periodId);
     if (!resultQuarter || (facultad !== null && faculty !== facultad)) return [];
 
-    return [{ ...row, quarter: resultQuarter, code: info?.codigo ?? row.subjectId, name: info?.nombre ?? `Asignatura ${row.subjectId}`, faculty }];
+    // Materia: la del evento; si G9 no la mandó, la del catálogo.
+    return [{
+      ...row,
+      quarter: resultQuarter,
+      code: row.subjectCode ?? info?.codigo ?? row.subjectId,
+      name: row.subjectName ?? info?.nombre ?? `Asignatura ${row.subjectId}`,
+      faculty,
+    }];
   });
 
   const overallAt = (id: string | null): number | undefined =>
@@ -228,9 +235,14 @@ export async function buildAcademicStats(prisma: PrismaClient, filters: Academic
       };
     });
 
-  // --- Aprobación por docente: curso → docentes (TITULAR, o todos si no hay titular) de G9.
+  // --- Aprobación por docente: los `teachers` del evento (todos los roles); si el evento no los trae, los docentes del curso en G9.
   const teacherLines = lines.filter((line) => line.quarter === quarter || line.quarter === previousId);
-  const teachersByCourse = await resolveTeachers(academic, warnings, [...(coursesNow ?? []), ...(coursesBefore ?? [])], teacherLines);
+  const teachersByCourse = await resolveTeachers(
+    academic,
+    warnings,
+    [...(coursesNow ?? []), ...(coursesBefore ?? [])],
+    teacherLines.filter((line) => line.teacherIds === null),
+  );
 
   interface TeacherAgg {
     byQuarter: Map<string, Tally>;
@@ -238,7 +250,7 @@ export async function buildAcademicStats(prisma: PrismaClient, filters: Academic
   }
   const teachers = new Map<string, TeacherAgg>();
   for (const line of teacherLines) {
-    for (const teacherId of teachersByCourse.get(line.courseId) ?? []) {
+    for (const teacherId of line.teacherIds ?? teachersByCourse.get(line.courseId) ?? []) {
       const agg = teachers.get(teacherId) ?? { byQuarter: new Map<string, Tally>(), subjects: new Map() };
       agg.byQuarter.set(line.quarter, add(agg.byQuarter.get(line.quarter), line));
       if (line.quarter === quarter) {
@@ -282,7 +294,7 @@ export async function buildAcademicStats(prisma: PrismaClient, filters: Academic
   };
 }
 
-// courseId → docenteIds. Usa `docentes` de /cursos; si G9 no lo trae, pide el detalle del curso (sólo los que
+// courseId → docenteIds (todos los roles) de los resultados cuyo evento no trae `teachers`. Usa `docentes` de /cursos; si G9 no lo trae, pide el detalle del curso (sólo los que
 // tienen resultados). Un detalle que falla deja ese curso sin atribuir y anota un aviso.
 async function resolveTeachers(
   academic: AcademicGateway,
@@ -291,10 +303,7 @@ async function resolveTeachers(
   lines: ResultLine[],
 ): Promise<Map<string, string[]>> {
   const byId = new Map(courses.map((course) => [String(course.id), course]));
-  const pick = (docentes: { docenteId: string; rol: string }[]): string[] => {
-    const titulares = docentes.filter((docente) => docente.rol === "TITULAR");
-    return (titulares.length > 0 ? titulares : docentes).map((docente) => docente.docenteId);
-  };
+  const pick = (docentes: { docenteId: string; rol: string }[]): string[] => docentes.map((docente) => docente.docenteId);
 
   // Sólo se atribuyen los cursos que G9 listó: sin la lista del período (cayó) no hay docentes que mostrar.
   const result = new Map<string, string[]>();

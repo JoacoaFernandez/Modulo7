@@ -21,7 +21,7 @@ académica, dirección financiera y estadísticas de eventos.
   `POST /api/analytics/events` como mock de la cola (sólo con `EVENTS_HTTP_INGEST=true`).
 - **Auth:** proxy `/api/auth/*` que habla con CORE (o su mock). El token viaja como Bearer, el
   refresh va en una cookie `HttpOnly`; el rol (académica / financiera) sale de los roles de
-  CORE (`ACADEMIC_ADMIN`, `FINANCE_ADMIN`, `ADMIN`) y los tableros exigen sesión y el rol correcto.
+  CORE (`ACADEMIC_ADMIN`, `FINANCE_ADMIN`, `ADMIN`) o de los permisos `academic:manage` / `wallet:read:aggregates`, y los tableros exigen sesión y la sección correcta. Con `CORE_GATEWAY_SECRET`, `/api/v1/*` exige la firma `X-Core-Signature` del gateway de CORE.
 - Sedes: el catálogo sale de Backoffice y toda sede viaja como `sedeId` (el `siteId` UUID),
   nunca como nombre.
 - La spec de la integración es `docs/INTEGRACION.md` (con los desvíos de lo implementado arriba
@@ -55,7 +55,7 @@ npm run build           # tsc → dist/
 npm run start           # node dist/index.js (requiere build previo)
 npm run db:up           # Postgres 16 en Docker (docker compose up -d)
 npm run db:migrate      # prisma migrate dev
-npm run db:demo         # carga el demo (~34,6 mil envelopes v1 + snapshots de saldo); re-ejecutable
+npm run db:demo         # carga el demo (~42 mil envelopes v1 + snapshots de saldo); re-ejecutable
 npm run db:demo:clear   # borra sólo el demo
 npm run mocks:generate  # regenera backend/mocks desde demo/ (no pisa ediciones; --force, --dry-run, --prune)
 npm run mocks:check     # valida el shape de los mocks y que los ids de los eventos del demo existan
@@ -63,6 +63,7 @@ npm run docs            # regenera la tabla de tipos de EVENTOS.md y la colecci�
 npm run docs:payloads   # sólo EVENTOS.md
 npm run docs:postman    # sólo Postman
 npm run backfill:core   # carga histórica desde GET /internal/v1/events (requiere CORE_MOCK=false)
+npm run backfill:results # resultados de cursada desde G9 /resultados-cursada como envelopes sintéticos (idempotente; --period=, --dry-run)
 ```
 `postinstall` corre `prisma generate`.
 
